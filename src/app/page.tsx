@@ -70,7 +70,7 @@ export default function HomePage() {
         <div className="hero-emblem" aria-hidden="true">
           <div className="emblem-orbit orbit-a" />
           <div className="emblem-orbit orbit-b" />
-          <div className="emblem-core">V</div>
+          <div className="emblem-core"><span>V</span></div>
           <span className="emblem-caption">INTELLIGENCE · CONNECTED</span>
         </div>
       </section>
