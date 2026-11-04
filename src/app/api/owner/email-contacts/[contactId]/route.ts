@@ -40,7 +40,11 @@ export async function PATCH(request: Request, context: Context) {
     const updated = await prisma.$transaction(async tx => {
       if (parsed.data.isPrimary === true) await tx.emailContact.updateMany({ where: { isPrimary: true, id: { not: contactId } }, data: { isPrimary: false } });
       const shouldPromoteReplacement = current.isPrimary && parsed.data.enabled === false;
-      const updateData = shouldPromoteReplacement ? { ...parsed.data, isPrimary: false } : parsed.data;
+      const updateData = {
+        ...parsed.data,
+        ...(parsed.data.purposes ? { purposes: parsed.data.purposes as EmailPurpose[] } : {}),
+        ...(shouldPromoteReplacement ? { isPrimary: false } : {})
+      };
       const contact = await tx.emailContact.update({ where: { id: contactId }, data: updateData, select: { id: true, email: true, label: true, purposes: true, enabled: true, isPrimary: true, verifiedAt: true, updatedAt: true } });
       if (shouldPromoteReplacement) {
         const replacement = await tx.emailContact.findFirst({ where: { enabled: true, verifiedAt: { not: null }, id: { not: contactId } }, orderBy: { createdAt: "asc" }, select: { id: true } });
