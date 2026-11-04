@@ -1,61 +1,49 @@
-# VAYRO Email Operations
+# VAYRO Authentication and Email Operations
 
-## Contact management
+## Authentication capabilities in this branch
+- Persian-first pages: /login, /register, /verify-email, /resend-verification, /forgot-password, /reset-password and /owner/setup.
+- APIs: register, login, logout, current session, email verification, verification resend, password recovery and password reset.
+- Passwords use Node.js scrypt with random salts; session and action tokens are high-entropy random values and only their digests are stored.
+- Session cookies are HttpOnly, SameSite=Lax, Secure in production and expire after seven days. Logout and password reset revoke database sessions.
+- Verification and reset links are one-time tokens with expiry (24 hours for initial email verification, 30 minutes for password reset).
+- Mutating browser requests require an exact same-origin Origin header.
+- Persistent PostgreSQL rate limits apply to registration, login, resend, recovery, reset and owner bootstrap. Rate-limit fingerprints are hashed.
+- Public registration is disabled until the first OWNER account has been bootstrapped.
+- The initial OWNER can be created once through /owner/setup, backed by POST /api/owner/bootstrap. The deployment operator must set VAYRO_OWNER_BOOTSTRAP_TOKEN (minimum 32 characters) as a protected hosting secret. The token is entered only into the HTTPS setup page, never into chat or Git. Remove the secret from hosting immediately after successful bootstrap.
+- The bootstrap operation is serialized and refuses to run if an OWNER or PLATFORM_ADMIN already exists. It creates the OWNER account, an OWNER-purpose email contact and an authenticated session. The OWNER account is initialized through the one-time deployment secret; the separate email contact remains unverified until it receives and confirms a delivery link.
+
+## Owner email contact management
 - Recipient contacts are dynamic PostgreSQL records, not source-code constants.
 - A contact can serve OWNER, SUPPORT, BILLING, SECURITY and/or GENERAL purposes.
 - Contacts can be enabled/disabled, verified, promoted to primary, added and removed.
 - Only an authenticated, active platform OWNER session can manage contacts.
-- Every create, update, delete and verification action is audited.
-- The last enabled, verified OWNER contact cannot be deleted. Add and verify a replacement first.
+- Every create, update and delete action is audited. Email confirmation tokens are single-use and hashed at rest.
+- The last enabled, verified OWNER contact cannot be deleted or disabled. Add and verify a replacement first.
 - Email addresses are normalized to lowercase and unique.
+- Recipient contacts are separate from the sending identity. The sender is configured through protected runtime variables.
 
-## Sender versus recipients
-Recipient contacts are separate from the sending identity. The sender is configured through protected runtime variables. Never put API keys or personal mailbox credentials in Git, browser code, database contact rows, or chat.
-
-## Provider adapter
-The first adapter supports Resend:
+## Email provider adapter
+The provider adapter is isolated in src/lib/email-provider.ts. The first supported provider is Resend:
 - EMAIL_PROVIDER=resend
 - EMAIL_API_KEY — protected provider API key
 - EMAIL_FROM — provider-verified sender identity
-- NEXT_PUBLIC_APP_URL — canonical HTTPS application URL
+- EMAIL_TEST_RECIPIENT — exact verified mailbox allowed when EMAIL_FROM is onboarding@resend.dev
+- NEXT_PUBLIC_APP_URL — canonical application URL; HTTPS in production
 
-No provider is configured by default. A production sender normally requires a domain verified with the provider. Until a provider and sender identity are configured, contact creation works after owner authentication, but verification email delivery remains unavailable. Unverified addresses must not receive operational notifications.
+### Without a domain
+A Gmail address can be used as the owner's recipient/contact address, but it is not a verified sender identity for VAYRO. Resend's shared onboarding@resend.dev sender is a test-only option and can send only to the exact verified inbox associated with the Resend account. The adapter enforces that recipient allowlist. This supports an owner-only delivery test; it does not support arbitrary user registration or password recovery.
 
-## Adding a provider
-Implement the provider behind sendTransactionalEmail in src/lib/email-provider.ts. Do not change contact-management APIs or account workflows when switching provider. Add provider-specific tests and failure handling.
+An authorized adult/account owner must create/configure the provider account and set its API key in protected hosting variables. Do not send provider keys, Gmail passwords, app passwords or OAuth secrets through chat. No provider credentials are currently configured in this repository or Railway.
 
-## Verification
-- Verification tokens contain 256 bits of randomness.
-- Only SHA-256 token digests are stored.
-- Tokens expire after 30 minutes and are single-use.
-- Provider errors are not returned verbatim to clients.
-- A contact is not considered verified until the confirmation endpoint consumes a valid token.
+### Production email
+To deliver account verification and password reset to arbitrary users, configure a provider-verified sender identity. A verified domain is the usual production route. Once configured, dynamic recipient contacts can be added or removed without changing authentication code or deployment source.
 
-## Current limitations / release gates
-- The repository does not yet have a complete login/session issuance flow. These APIs fail closed until a valid vayro_session belonging to a non-disabled OWNER exists.
-- Database migration generation and application have not been performed against any live database.
-- No email provider, verified sender domain, API key, or live delivery has been configured or tested.
-- Production notifications must select only enabled and verified contacts and need retry, bounce, suppression and delivery-event handling before launch.
+### Adding another provider
+Implement the provider behind sendTransactionalEmail in src/lib/email-provider.ts. Keep contact-management APIs and account workflows unchanged. Add provider-specific tests, webhook handling, bounce/suppression controls, retry policy and delivery-event audit before production use.
 
-
-## Authentication foundation
-- Registration creates a USER account with a scrypt password hash and sends a 24-hour, single-use email verification link.
-- Login requires verified email and an active account. Sessions are random 256-bit tokens; only SHA-256 digests are stored. Cookies are HttpOnly, SameSite=Lax, Secure in production, and expire after seven days.
-- Logout revokes the database session. Password reset tokens are single-use, expire after 30 minutes, and revoke every active session after a password change.
-- Registration, login, resend, recovery and first-owner bootstrap have persistent PostgreSQL rate limiting.
-- The initial OWNER must be provisioned once through POST /api/owner/bootstrap using VAYRO_OWNER_BOOTSTRAP_TOKEN. The secret must be at least 32 characters, generated by the authorized adult/operator, stored only in Railway protected variables, and removed immediately after bootstrap. Never send it in chat or commit it.
-- The first-owner bootstrap is permitted only before any platform account exists. Public registration should be enabled after the first owner is created.
-- Owner bootstrap marks the account as initialized through the one-time deployment secret; it does not verify the separately stored notification contact. That contact remains unverified until the email provider delivers a confirmation link.
-
-## Migration and deployment
-- New Prisma models: AuthActionToken and AuthRateLimit; new enum: AuthTokenPurpose.
-- CI uses prisma db push against an isolated PostgreSQL service for validation. Production must receive a reviewed migration and a verified backup before applying schema changes.
-- Do not run schema changes against the live Railway database until the migration, backup and restore gates are independently verified.
-
-## No-domain test limitation
-- Resend's shared onboarding@resend.dev sender is test-only and can deliver only to the email address associated with the Resend account. It is not a production sender for arbitrary VAYRO users.
-- A Gmail address is a recipient/contact, not a sender domain. Do not attempt to send as gmail.com.
-- Production account verification and password recovery for arbitrary users require a verified sender identity and a provider API key configured as protected server-side secrets.
-
-- No-domain test option: Resend's shared test sender may be used only for the exact inbox attached to the Resend account. Configure EMAIL_FROM=onboarding@resend.dev and EMAIL_TEST_RECIPIENT to that same account inbox. The adapter enforces this recipient allowlist server-side. This is only an owner-mailbox integration test, not customer email delivery.
-- A provider API key and account setup are still required even for this limited test. An authorized adult/account owner must configure protected hosting secrets; no credentials should be sent through chat or committed.
+## Database and release gates
+- Prisma schema includes AuthActionToken and AuthRateLimit; migration 20261104190000_auth_foundation creates these tables and enum.
+- CI validates schema and runs unit plus PostgreSQL authorization integration tests. It does not prove a migration has been safely applied to the production database.
+- Apply migrations only after an independent backup and restore proof. Do not use prisma db push on the live database.
+- No live Railway secret, email provider, mailbox ownership, external delivery or production migration has been configured or verified by this work.
+- Keep public release blocked until fresh CI passes, auth flows are tested end-to-end against isolated PostgreSQL, provider delivery is verified, owner bootstrap is completed by the authorized operator, and production backup/restore gates pass.
