@@ -1,14 +1,14 @@
 import { z } from "zod";
 import { AuthTokenPurpose } from "@prisma/client";
 import { hashPassword,isSameOriginRequest } from "@/lib/auth-core.mjs";
-import { noStoreJson,sha256 } from "@/lib/auth-service";
+import { allowAttempt,noStoreJson,requestFingerprint,sha256 } from "@/lib/auth-service";
 import { prisma } from "@/lib/prisma";
 export const runtime="nodejs";
 export async function POST(request:Request){
  if(!isSameOriginRequest(request))return noStoreJson({error:"invalid_origin"},403);
  const p=z.object({token:z.string().regex(/^[a-f0-9]{64}$/),password:z.string().min(12).max(128)}).strict().safeParse(await request.json().catch(()=>null));
  if(!p.success)return noStoreJson({error:"invalid_input"},400);
- const passwordHash=await hashPassword(p.data.password);
+ const limits=await Promise.all([allowAttempt(await requestFingerprint("reset-password-ip","all"),10,3600000),allowAttempt(await requestFingerprint("reset-password-token",sha256(p.data.token)),5,900000)]);\n if(limits.some(x=>!x))return noStoreJson({error:"try_again_later"},429);\n const passwordHash=await hashPassword(p.data.password);
  try{
   const ok=await prisma.$transaction(async tx=>{
    const t=await tx.authActionToken.findUnique({where:{tokenHash:sha256(p.data.token)}});
