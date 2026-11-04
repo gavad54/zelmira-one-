@@ -22,8 +22,10 @@ export async function POST(request: Request, context: Context) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!appUrl) return NextResponse.json({ error: "email_service_not_configured" }, { status: 503 });
   let verificationUrl: URL;
-  try { verificationUrl = new URL("/owner/email-settings", appUrl); }
-  catch { return NextResponse.json({ error: "email_service_not_configured" }, { status: 503 }); }
+  try {
+    verificationUrl = new URL("/owner/email-settings", appUrl);
+    if (process.env.NODE_ENV === "production" && verificationUrl.protocol !== "https:") return NextResponse.json({ error: "email_service_not_configured" }, { status: 503 });
+  } catch { return NextResponse.json({ error: "email_service_not_configured" }, { status: 503 }); }
   const rawToken = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(rawToken).digest("hex");
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
