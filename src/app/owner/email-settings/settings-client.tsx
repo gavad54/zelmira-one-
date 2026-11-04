@@ -18,7 +18,7 @@ export default function EmailSettings({ verificationToken }: { verificationToken
       const data = await response.json(); setContacts(data.contacts); setError("");
     } catch(err) { setError(err instanceof Error ? err.message : "خطای نامشخص"); }
     finally { setLoading(false); }
-  }
+  },[]);
   useEffect(() => {
     const fragmentToken = verificationToken ?? new URLSearchParams(window.location.hash.slice(1)).get("verify");
     if (fragmentToken) {
