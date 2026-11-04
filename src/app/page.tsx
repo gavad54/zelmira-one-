@@ -25,7 +25,7 @@ export default function HomePage() {
         </p>
         <div className="hero-actions">
           <a className="primary-action" href="#products">مشاهده محصولات <span aria-hidden="true">←</span></a>
-          <a className="secondary-action" href="#vision">آشنایی با ZELMIRA ONE</a>
+          <a className="secondary-action" href="/growth">صفحات هوشمند و رشد فروش</a>
         </div>
         <div className="orb orb-one" aria-hidden="true" />
         <div className="orb orb-two" aria-hidden="true" />
