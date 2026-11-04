@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ZELMIRA ONE | هوشمندی، بدون مرز",
-  description: "درگاه یکپارچه محصولات و خدمات هوشمند زلمیرا",
-  applicationName: "ZELMIRA ONE",
+  title: "VAYRO ONE | وایرو وان — هوشمندی، بدون مرز",
+  description: "درگاه مرکزی محصولات تخصصی و مستقل اکوسیستم وایرو",
+  applicationName: "VAYRO ONE",
   robots: { index: false, follow: false }
 };
 

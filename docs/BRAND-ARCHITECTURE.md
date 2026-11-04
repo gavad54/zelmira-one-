@@ -1,36 +1,54 @@
-# ZELMIRA ecosystem — naming architecture
+# VAYRO ecosystem — brand and product architecture
 
 ## Master brand
-- **ZELMIRA** — parent brand.
-- **ZELMIRA ONE** — central platform, account, governance and product access.
+
+- **VAYRO (وایرو)** — approved parent brand.
+- **VAYRO ONE (وایرو وان)** — central platform for product discovery, identity, governance and access.
 - Brand line: **INTELLIGENCE. WITHOUT LIMITS.**
 - Persian line: **هوشمندی، بدون مرز**
-- Visual system: ZELMIRA SIGNATURE — dark luxury, restrained gold and ice-blue accents, Persian-first RTL and mobile-first layouts.
+- Visual direction: VAYRO SIGNATURE — dark luxury, architectural geometry, restrained champagne-gold and ice-blue accents, Persian-first RTL and mobile-first layouts.
 
-## Product and service names
+## Newly named specialist products
 
-| Domain | Recommended product name | Purpose |
+| Product | Persian display name | Domain | Intended responsibility |
+|---|---|---|---|
+| ARVAND | اروند | International trade | Export/import workflows, trade documentation and partner discovery |
+| CHARSU | چهارسو | Marketplace | Buyer/seller discovery, listings and marketplace workflows |
+| GANJINEH | گنجینه | E-commerce | Digital storefronts, catalogues and online retail |
+| NEGAH | نگاه | Creative studio | Creative production, brand assets and digital content |
+| SEPEHR | سپهر | Cloud | Cloud workspace, storage and infrastructure services |
+| NAMA | نما | Website builder | Website, landing-page and digital-presence creation |
+| PAYAM | پیام | Marketing and growth | Campaigns, customer acquisition, attribution and compliant referrals |
+| DANA | دانا | AI orchestration | Governed AI assistance and workflow orchestration |
+
+These are approved working product names for the VAYRO ecosystem, not assertions of trademark registration, domain availability or completed product delivery. Before commercial launch, each name requires trademark, company-name, domain, app-store, social-handle and target-language screening.
+
+## Existing independent products — names retained
+
+| Product | Domain | Boundary |
 |---|---|---|
-| Central platform | ZELMIRA ONE | Identity, product directory, governance and subscriptions |
-| Shared identity and licensing | ZELMIRA CORE | Authentication, tenant boundaries, license entitlements and audit |
-| AI orchestration | ZELMIRA NEXUS | Governed AI assistant and workflow orchestration |
-| Smart landing pages | ZELMIRA PAGEFLOW | Audience-specific campaign pages and conversion analytics |
-| Distribution operations | LEADORA | Sales, distribution, inventory and commercial operations |
-| Accounting and ERP | ARIANA | Accounting, finance and enterprise resource planning |
-| Social and services | ARIA | Community, listings, services and marketplace; no accounting or ERP |
-| Supplier request marketplace | ARMIN MARKET | Buyer requests and supplier quotations |
-| Export and import | ZELMIRA TRADE | Export/import workflows, documentation and partner discovery |
-| Marketing campaigns | ZELMIRA REACH | Campaign planning, attribution and compliant referrals |
-| Digital storefront | ZELMIRA STORE | Software and digital product storefront |
-| Creative services | ZELMIRA STUDIO | Creative production and brand assets |
-| Cloud services | ZELMIRA CLOUD | Storage and managed workspace services |
+| LEADORA | Distribution and sales operations | Inventory, sales and commercial workflows |
+| ARIANA | Accounting and ERP | Accounting, finance and enterprise resource planning |
+| ARIA | Social, services and marketplace | Must not contain accounting or ERP features |
+| ARMIN MARKET | Supplier request marketplace | Buyer requests and supplier quotations |
 
-Existing product names LEADORA, ARIANA, ARIA and ARMIN MARKET are retained to avoid breaking recognition, repositories or customer contracts. New names are recommendations pending trademark, domain and local-language checks. No registration or availability claim is made.
+Do not rename these established products as part of the VAYRO master-brand change without a separate explicit decision. Their repositories, deployments, customer-facing identifiers and integrations remain independent.
 
-## Commercial ownership
+## Platform architecture
 
-Each specialist app is separately licensed. The customer receives the contracted usage rights and control over its own tenant data, exports and authorized users. The platform owner retains ownership of the software and intellectual property unless a separate written transfer agreement says otherwise. "100% under customer control" means customer control of its tenant, data and access—not transfer of source-code copyright or ownership of the whole platform.
+VAYRO ONE is the central access and governance layer. It does not silently merge specialist product databases or business rules.
 
-## Financial and transaction boundary
+- Identity and access: central identity with scoped product entitlements.
+- Licensing: independent product subscriptions, trials, renewals and support.
+- Integration: versioned APIs, least-privilege service credentials and auditable events.
+- Data: tenant isolation by product; explicit data-sharing consent and export controls.
+- AI: DANA orchestrates approved tools and workflows with permission checks, human approval for consequential actions and audit trails.
+- Operations: each product has independent health, backup, restore, release and incident procedures.
 
-For buyer/seller transactions between customers, the marketplace is a technology intermediary only where contracts and applicable law support that role. The platform must not claim zero liability categorically. Terms, payment handling, dispute processes, consumer law, product safety, tax and jurisdiction-specific duties require legal review. Avoid holding customer funds; if payments are later supported, use a regulated payment provider and explicit contractual allocation of responsibilities.
+## Commercial and legal boundaries
+
+Customers control their tenant data, authorized users, settings and exports according to contract. This does not transfer software copyright or source-code ownership unless a separate written IP assignment says so.
+
+For customer-to-customer commerce, the platform's legal role depends on actual product behavior, contracts and applicable law. Do not claim blanket zero liability. Avoid holding customer funds; use regulated payment providers and jurisdiction-specific legal review if payments are introduced.
+
+PAYAM referral rewards must be tied to verified completed sales to end customers, not recruitment, joining fees or payment for introducing new members. Provide clear disclosures, anti-fraud controls, refund/chargeback handling and legal review in each operating jurisdiction.
