@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 // without exposing connection details or internal error messages.
 export async function GET() {
   try {
-    await prisma.$queryRaw\`SELECT 1\`;
+    await prisma.$queryRawUnsafe("SELECT 1");
     return NextResponse.json(
       {
         status: "ready",
