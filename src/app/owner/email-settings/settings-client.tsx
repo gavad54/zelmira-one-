@@ -8,6 +8,7 @@ export default function EmailSettings({ verificationToken }: { verificationToken
   const [selected,setSelected] = useState<string[]>(["OWNER"]);
   const [loading,setLoading] = useState(true); const [busy,setBusy] = useState(false);
   const [notice,setNotice] = useState(""); const [error,setError] = useState("");
+  const [pendingToken,setPendingToken] = useState<string | null>(null);
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -18,21 +19,30 @@ export default function EmailSettings({ verificationToken }: { verificationToken
     finally { setLoading(false); }
   }
   useEffect(() => {
-    let active=true;
-    async function initialize() {
-      const fragmentToken = verificationToken ?? new URLSearchParams(window.location.hash.slice(1)).get("verify");
-      if (fragmentToken) {
-        try {
-          const response=await fetch("/api/owner/email-contacts/confirm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:fragmentToken})});
-          if (!response.ok) throw new Error("پیوند تأیید نامعتبر یا منقضی شده است.");
-          if (active) setNotice("نشانی ایمیل با موفقیت تأیید شد.");
-        } catch(err) { if(active) setError(err instanceof Error?err.message:"تأیید ایمیل ناموفق بود."); }
-        finally { if(active) window.history.replaceState({},"","/owner/email-settings"); }
-      }
-      if(active) await load();
+    const fragmentToken = verificationToken ?? new URLSearchParams(window.location.hash.slice(1)).get("verify");
+    if (fragmentToken) {
+      setPendingToken(fragmentToken);
+      window.history.replaceState({}, "", "/owner/email-settings");
     }
-    void initialize(); return ()=>{active=false;};
+    void load();
   },[verificationToken,load]);
+  async function confirmVerification() {
+    if (!pendingToken) return;
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const response = await fetch("/api/owner/email-contacts/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: pendingToken })
+      });
+      if (!response.ok) throw new Error("پیوند تأیید نامعتبر یا منقضی شده است.");
+      setPendingToken(null);
+      setNotice("نشانی ایمیل با موفقیت تأیید شد.");
+      await load();
+    } catch(err) {
+      setError(err instanceof Error ? err.message : "تأیید ایمیل ناموفق بود.");
+    } finally { setBusy(false); }
+  }
   async function addContact(event:React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
     try {
@@ -72,7 +82,7 @@ export default function EmailSettings({ verificationToken }: { verificationToken
   }
   return <main className="email-admin">
     <header className="email-admin-header"><a href="/" className="email-back">← بازگشت به وایرو</a><span className="email-kicker">VAYRO CONTROL CENTER</span><h1>مدیریت ایمیل‌ها</h1><p>افزودن، تأیید، دسته‌بندی و حذف ایمیل‌های مدیریتی و ارتباطی.</p></header>
-    {notice&&<div className="email-notice" role="status">{notice}</div>}{error&&<div className="email-error" role="alert">{error}</div>}
+    {notice&&<div className="email-notice" role="status">{notice}</div>}{pendingToken&&<div className="email-notice" role="group"><p>برای تکمیل تأیید، دکمه زیر را انتخاب کنید.</p><button type="button" disabled={busy} onClick={()=>void confirmVerification()}>تأیید نشانی ایمیل</button></div>}{error&&<div className="email-error" role="alert">{error}</div>}
     <section className="email-panel"><h2>افزودن ایمیل جدید</h2><form onSubmit={addContact} className="email-form">
       <label>نشانی ایمیل<input type="email" required maxLength={254} value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@example.com" dir="ltr"/></label>
       <label>عنوان یا نام گیرنده<input required minLength={2} maxLength={60} value={label} onChange={e=>setLabel(e.target.value)} placeholder="مثلاً ایمیل مدیریت"/></label>
