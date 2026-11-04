@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const products = [
   { name: "ARVAND", fa: "اروند", detail: "تجارت بین‌الملل، صادرات و واردات", tag: "تجارت جهانی" },
   { name: "CHARSU", fa: "چهارسو", detail: "بازارگاه و شبکه خریدوفروش", tag: "بازارگاه" },
@@ -20,10 +22,10 @@ export default function HomePage() {
   return (
     <main className="page-shell">
       <header className="topbar">
-        <a className="brand" href="/" aria-label="خانه وایرو">
+        <Link className="brand" href="/" aria-label="خانه وایرو">
           <span className="brand-mark">V</span>
           <span><strong>وایرو</strong><small>VAYRO</small></span>
-        </a>
+        </Link>
         <span className="topbar-note">هوشمندی، بدون مرز</span>
       </header>
 
@@ -36,7 +38,7 @@ export default function HomePage() {
         </p>
         <div className="hero-actions">
           <a className="primary-action" href="#products">کشف محصولات <span aria-hidden="true">←</span></a>
-          <a className="secondary-action" href="/growth">راهکارهای رشد کسب‌وکار</a>
+          <Link className="secondary-action" href="/growth">راهکارهای رشد کسب‌وکار</Link>
         </div>
         <div className="orb orb-one" aria-hidden="true" />
         <div className="orb orb-two" aria-hidden="true" />
