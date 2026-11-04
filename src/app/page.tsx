@@ -26,7 +26,7 @@ export default function HomePage() {
           <span className="brand-mark">V</span>
           <span><strong>وایرو</strong><small>VAYRO</small></span>
         </Link>
-        <span className="topbar-note">هوشمندی، بدون مرز</span>
+        <nav className="home-auth-nav" aria-label="حساب کاربری"><Link href="/login">ورود</Link><Link href="/register">ساخت حساب</Link></nav>
       </header>
 
       <section className="hero">
