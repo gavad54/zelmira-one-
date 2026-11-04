@@ -19,5 +19,5 @@ export async function POST(request:Request){
   await prisma.auditEvent.create({data:{actorUserId:user.id,action:"auth.registered",resource:"User",resourceId:user.id}});
   try{await sendActionEmail(email,"تأیید ایمیل وایرو",actionUrl("/verify-email",token),"برای فعال‌سازی حساب، ایمیل خود را تأیید کنید. اعتبار پیوند ۲۴ ساعت است.");return noStoreJson({created:true,verificationEmailSent:true},201);}
   catch{return noStoreJson({created:true,verificationEmailSent:false,code:"EMAIL_DELIVERY_UNAVAILABLE"},202);}
- }catch(e){if(typeof e==="object"&&e!==null&&"code" in e&&e.code==="P2002")return noStoreJson({error:"registration_unavailable"},409);return noStoreJson({error:"registration_failed"},500);}
+ }catch(e){if(typeof e==="object"&&e!==null&&"code" in e&&e.code==="P2002")return noStoreJson({accepted:true},202);return noStoreJson({error:"registration_failed"},500);}
 }
