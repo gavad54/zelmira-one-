@@ -15,7 +15,7 @@ export async function POST(request:Request){
  try{
   const email=p.data.email.toLowerCase(),passwordHash=await hashPassword(p.data.password);
   const user=await prisma.$transaction(async tx=>{
-   const exists=await tx.user.count({where:{platformRole:{in:[PlatformRole.OWNER,PlatformRole.PLATFORM_ADMIN]}}});
+   const exists=await tx.user.count();
    if(exists>0)throw new Error("BOOTSTRAP_ALREADY_USED");
    const created=await tx.user.create({data:{email,displayName:p.data.displayName,passwordHash,platformRole:PlatformRole.OWNER,emailVerifiedAt:new Date()}});
    await tx.emailContact.create({data:{email,label:"ایمیل اولیه مالک",purposes:[EmailPurpose.OWNER],enabled:true}});
