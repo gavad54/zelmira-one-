@@ -2,10 +2,11 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ZELMIRA ONE | هوشمندی، بدون مرز",
-  description: "درگاه یکپارچه محصولات و خدمات هوشمند زلمیرا",
-  applicationName: "ZELMIRA ONE",
-  robots: { index: false, follow: false }
+  title: "وایرو | VAYRO",
+  description: "درگاه هوشمند محصولات و خدمات مستقل وایرو",
+  applicationName: "وایرو",
+  manifest: "/manifest.webmanifest",
+  robots: { index: true, follow: true }
 };
 
 export const viewport: Viewport = {
