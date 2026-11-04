@@ -20,9 +20,10 @@ export default function EmailSettings({ verificationToken }: { verificationToken
   useEffect(() => {
     let active=true;
     async function initialize() {
-      if (verificationToken) {
+      const fragmentToken = verificationToken ?? new URLSearchParams(window.location.hash.slice(1)).get("verify");
+      if (fragmentToken) {
         try {
-          const response=await fetch("/api/owner/email-contacts/confirm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:verificationToken})});
+          const response=await fetch("/api/owner/email-contacts/confirm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:fragmentToken})});
           if (!response.ok) throw new Error("پیوند تأیید نامعتبر یا منقضی شده است.");
           if (active) setNotice("نشانی ایمیل با موفقیت تأیید شد.");
         } catch(err) { if(active) setError(err instanceof Error?err.message:"تأیید ایمیل ناموفق بود."); }
