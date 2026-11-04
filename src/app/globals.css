@@ -53,3 +53,38 @@ a{color:inherit;text-decoration:none}
 .independent-card p{font-size:11px;line-height:1.9;color:var(--muted);margin:0}
 @media(max-width:850px){.independent-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.independent-grid{grid-template-columns:1fr 1fr}}
+
+
+/* Owner email administration */
+.email-admin{max-width:920px;margin:0 auto;padding:32px 20px 64px;color:var(--text);font-family:Tahoma,Arial,sans-serif}
+.email-admin-header{padding:28px 0 24px;border-bottom:1px solid var(--line);margin-bottom:22px}
+.email-back{display:inline-block;color:var(--ice);font-size:12px;margin-bottom:28px}
+.email-kicker{display:block;color:var(--gold);font:10px Arial,sans-serif;letter-spacing:2px}
+.email-admin-header h1{font-size:clamp(28px,6vw,42px);margin:12px 0}
+.email-admin-header p,.email-footnote{color:var(--muted);font-size:12px;line-height:2}
+.email-panel{border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:22px;margin:18px 0;backdrop-filter:blur(12px)}
+.email-panel h2{font-size:18px;margin:0 0 18px}
+.email-form{display:grid;gap:14px}
+.email-form>label{display:grid;gap:8px;font-size:12px;color:var(--muted)}
+.email-form input:not([type=checkbox]){width:100%;padding:13px 14px;border-radius:9px;border:1px solid var(--line);background:#0d111c;color:var(--text);font:14px Tahoma,Arial,sans-serif;outline:none}
+.email-form input:focus{border-color:var(--ice)}
+.email-form fieldset{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;gap:16px;flex-wrap:wrap}
+.email-form legend{font-size:12px;color:var(--muted);padding:0 6px}
+.email-check{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text)}
+.email-form button,.email-contact-actions button{border:0;border-radius:8px;padding:11px 15px;background:linear-gradient(110deg,#d8bd83,#b99a60);color:#17140f;font-weight:700;font-size:12px;cursor:pointer}
+.email-form button{justify-self:start;min-width:130px}
+.email-form button:disabled,.email-contact-actions button:disabled{opacity:.55;cursor:not-allowed}
+.email-contact{display:flex;justify-content:space-between;gap:16px;padding:18px 0;border-top:1px solid var(--line)}
+.email-contact-main{display:grid;gap:7px;min-width:0}
+.email-contact-main strong{font:600 13px Arial,sans-serif;overflow-wrap:anywhere}
+.email-contact-main span{font-size:12px}
+.email-contact-main small{font-size:10px;color:var(--muted);line-height:1.8}
+.email-contact-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+.email-contact-actions button{padding:9px 11px}
+.email-contact-actions .email-secondary{background:transparent;border:1px solid var(--line);color:var(--text)}
+.email-contact-actions .email-danger{background:transparent;border:1px solid rgba(255,120,120,.35);color:#ffaaaa}
+.email-notice,.email-error{padding:12px 14px;border-radius:9px;font-size:12px;line-height:1.9;margin:12px 0}
+.email-notice{background:rgba(100,190,150,.1);border:1px solid rgba(100,190,150,.25);color:#a9e6c9}
+.email-error{background:rgba(220,100,100,.1);border:1px solid rgba(220,100,100,.25);color:#ffb7b7}
+.email-footnote{margin:18px 2px}
+@media(max-width:620px){.email-admin{padding:20px 14px 44px}.email-panel{padding:16px}.email-contact{flex-direction:column}.email-contact-actions{justify-content:flex-start}.email-form fieldset{gap:12px}}
