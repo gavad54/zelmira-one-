@@ -19,7 +19,7 @@ export function safeEqualText(a: string, b: string): boolean {
 }
 export async function requestFingerprint(scope: string, identity: string): Promise<string> {
   const h = await headers();
-  const forwarded = h.get("x-forwarded-for")?.split(",").map(value => value.trim()).filter(Boolean).at(-1) ?? "unknown";
+  const forwardedValues = h.get("x-forwarded-for")?.split(",").map(value => value.trim()).filter(Boolean) ?? [];\n  const forwarded = forwardedValues[forwardedValues.length - 1] ?? "unknown";
   return sha256(scope + ":" + identity.toLowerCase() + ":" + forwarded);
 }
 /** Persistent DB-backed limiter; each identity gets a fixed window. */
