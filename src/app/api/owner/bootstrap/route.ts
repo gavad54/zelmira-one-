@@ -17,7 +17,7 @@ export async function POST(request:Request){
   const user=await prisma.$transaction(async tx=>{
    const exists=await tx.user.count({where:{platformRole:{in:[PlatformRole.OWNER,PlatformRole.PLATFORM_ADMIN]}}});
    if(exists>0)throw new Error("BOOTSTRAP_ALREADY_USED");
-   const created=await tx.user.create({data:{email,displayName:p.data.displayName,passwordHash,platformRole:PlatformRole.OWNER,emailVerifiedAt:new Date()}});
+   const created=await tx.user.create({data:{email,displayName:p.data.displayName,passwordHash,platformRole:PlatformRole.OWNER}});
    await tx.emailContact.create({data:{email,label:"ایمیل اولیه مالک",purposes:[EmailPurpose.OWNER],enabled:true}});
    await tx.auditEvent.create({data:{actorUserId:created.id,action:"owner.bootstrap_completed",resource:"User",resourceId:created.id,metadata:{method:"one_time_deployment_secret"}}});
    return created;
