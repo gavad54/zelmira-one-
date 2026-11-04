@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 type Contact = { id: string; email: string; label: string; purposes: string[]; enabled: boolean; isPrimary: boolean; verifiedAt: string | null };
 const purposes = [["OWNER","مدیریت مالک"],["SUPPORT","پشتیبانی"],["BILLING","مالی و اشتراک"],["SECURITY","امنیت"],["GENERAL","ارتباط عمومی"]] as const;
 export default function EmailSettings({ verificationToken }: { verificationToken: string | null }) {
@@ -8,7 +8,7 @@ export default function EmailSettings({ verificationToken }: { verificationToken
   const [selected,setSelected] = useState<string[]>(["OWNER"]);
   const [loading,setLoading] = useState(true); const [busy,setBusy] = useState(false);
   const [notice,setNotice] = useState(""); const [error,setError] = useState("");
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch("/api/owner/email-contacts",{cache:"no-store"});
@@ -32,7 +32,7 @@ export default function EmailSettings({ verificationToken }: { verificationToken
       if(active) await load();
     }
     void initialize(); return ()=>{active=false;};
-  },[verificationToken]);
+  },[verificationToken,load]);
   async function addContact(event:React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
     try {
@@ -47,7 +47,7 @@ export default function EmailSettings({ verificationToken }: { verificationToken
     try {
       const response=await fetch("/api/owner/email-contacts/"+contact.id,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(patch)});
       const data=await response.json();
-      if(!response.ok) throw new Error(data.error==="primary_contact_must_be_enabled_and_verified"?"ابتدا ایمیل را تأیید کنید.":"تغییرات ذخیره نشد.");
+      if(!response.ok) throw new Error(data.error==="primary_contact_must_be_enabled_and_verified"?"ابتدا ایمیل را تأیید کنید.":data.error==="last_verified_owner_contact_cannot_be_disabled_or_reassigned"?"ابتدا ایمیل جایگزین مالک را اضافه و تأیید کنید.":"تغییرات ذخیره نشد.");
       await load();
     } catch(err){setError(err instanceof Error?err.message:"خطای نامشخص");} finally{setBusy(false);}
   }
