@@ -10,7 +10,7 @@
 - PostgreSQL-backed rate limiting applies to registration, login, resend, recovery, reset and owner bootstrap.
 - Public registration remains unavailable until the first OWNER is provisioned.
 - The initial OWNER is created once through /owner/setup backed by POST /api/owner/bootstrap. The operator must set VAYRO_OWNER_BOOTSTRAP_TOKEN (minimum 32 characters) in protected hosting secrets. The authorized adult/operator enters it only on the HTTPS setup page, never in chat or Git. Remove the secret from hosting immediately after successful bootstrap.
-- Bootstrap refuses to run if an OWNER or PLATFORM_ADMIN already exists. It creates the OWNER account, an OWNER-purpose email contact and a session. The bootstrap secret authorizes the initial account; the separate contact email remains unverified until a delivery link is confirmed.
+- Bootstrap refuses to run if an OWNER or PLATFORM_ADMIN already exists. It creates the OWNER account with an unverified login email, an OWNER-purpose email contact and a temporary authenticated bootstrap session. The owner must configure a sender, send the contact verification link and confirm it. Confirmation also verifies the matching login email; only then can the owner log in normally.
 
 ## Owner email contact management
 - Recipient contacts are dynamic PostgreSQL records, not source-code constants.
