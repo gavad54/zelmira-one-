@@ -17,6 +17,8 @@ export async function POST(request: Request, context: Context) {
   const contact = await prisma.emailContact.findUnique({ where: { id: contactId } });
   if (!contact || !contact.enabled) return NextResponse.json({ error: "not_found_or_disabled" }, { status: 404 });
   if (contact.verifiedAt) return NextResponse.json({ error: "already_verified" }, { status: 409 });
+  const recent = await prisma.emailContactVerificationToken.count({ where: { contactId, createdAt: { gt: new Date(Date.now() - 60_000) } } });
+  if (recent > 0) return NextResponse.json({ error: "verification_rate_limited" }, { status: 429 });
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!appUrl) return NextResponse.json({ error: "email_service_not_configured" }, { status: 503 });
   let verificationUrl: URL;
@@ -25,7 +27,7 @@ export async function POST(request: Request, context: Context) {
   const rawToken = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(rawToken).digest("hex");
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-  verificationUrl.searchParams.set("verify", rawToken);
+  verificationUrl.hash = "verify=" + rawToken;
   try {
     await prisma.emailContactVerificationToken.create({ data: { tokenHash, contactId, expiresAt } });
     await sendTransactionalEmail({
