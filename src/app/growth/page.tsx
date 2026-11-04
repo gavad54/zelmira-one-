@@ -1,3 +1,4 @@
+import Link from "next/link";
 import "./growth.css";
 
 const steps = [
@@ -19,8 +20,8 @@ export default function GrowthPage() {
   return (
     <main className="page-shell growth-page">
       <header className="topbar">
-        <a className="brand" href="/"><span className="brand-mark">V</span><span><strong>وایرو</strong><small>VAYRO</small></span></a>
-        <a className="secondary-action" href="/">بازگشت به خانه</a>
+        <Link className="brand" href="/"><span className="brand-mark">V</span><span><strong>وایرو</strong><small>VAYRO</small></span></Link>
+        <Link className="secondary-action" href="/">بازگشت به خانه</Link>
       </header>
       <section className="growth-hero">
         <span className="eyebrow">NAMA × PAYAM</span>
