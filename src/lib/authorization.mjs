@@ -1,10 +1,12 @@
-const permissions = {
-  tenant_read: ["OWNER", "ADMIN", "MANAGER", "MEMBER", "VIEWER"],
-  tenant_manage: ["OWNER", "ADMIN"],
-  members_manage: ["OWNER", "ADMIN"],
-  billing_manage: ["OWNER"],
-  tenant_delete: ["OWNER"]
-};
+const permissions = Object.freeze({
+  tenant_read: Object.freeze(["OWNER", "ADMIN", "MANAGER", "MEMBER", "VIEWER"]),
+  tenant_manage: Object.freeze(["OWNER", "ADMIN"]),
+  members_manage: Object.freeze(["OWNER", "ADMIN"]),
+  billing_manage: Object.freeze(["OWNER"]),
+  tenant_delete: Object.freeze(["OWNER"])
+});
+
+const membershipRoles = new Set(["OWNER", "ADMIN", "MANAGER", "MEMBER", "VIEWER"]);
 
 /**
  * Evaluate a tenant permission using membership data loaded by trusted
@@ -23,17 +25,16 @@ export function authorizeTenantAction({
     typeof requestedTenantId !== "string" ||
     requestedTenantId.length === 0 ||
     !membership ||
+    typeof membership !== "object" ||
     membership.userId !== authenticatedUserId ||
     membership.tenantId !== requestedTenantId ||
-    tenantStatus !== "ACTIVE"
+    tenantStatus !== "ACTIVE" ||
+    !membershipRoles.has(membership.role) ||
+    typeof action !== "string" ||
+    !Object.hasOwn(permissions, action)
   ) {
     return false;
   }
 
-  const allowedRoles = permissions[action];
-  if (!allowedRoles || typeof membership.role !== "string") {
-    return false;
-  }
-
-  return allowedRoles.includes(membership.role);
+  return permissions[action].includes(membership.role);
 }

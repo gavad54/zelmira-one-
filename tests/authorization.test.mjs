@@ -63,17 +63,30 @@ test("restricts billing changes to tenant owners", () => {
   );
 });
 
-test("denies unknown actions and missing identity context", () => {
-  assert.equal(
-    authorizeTenantAction({ ...base, action: "make_me_admin" }),
-    false
-  );
+test("denies unknown and inherited object-property action names", () => {
+  for (const action of ["make_me_admin", "__proto__", "constructor", "toString"]) {
+    assert.equal(authorizeTenantAction({ ...base, action }), false);
+  }
+});
+
+test("denies malformed identity, membership and role values", () => {
   assert.equal(
     authorizeTenantAction({ ...base, authenticatedUserId: null }),
     false
   );
   assert.equal(
     authorizeTenantAction({ ...base, membership: null }),
+    false
+  );
+  assert.equal(
+    authorizeTenantAction({
+      ...base,
+      membership: { ...membership, role: "PLATFORM_ADMIN" }
+    }),
+    false
+  );
+  assert.equal(
+    authorizeTenantAction({ ...base, membership: "OWNER" }),
     false
   );
 });
