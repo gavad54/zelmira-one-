@@ -1,48 +1,49 @@
-# ZELMIRA ONE
+# وایرو | VAYRO
 
-**ZELMIRA SIGNATURE** — Intelligence. Without limits.
+**INTELLIGENCE. WITHOUT LIMITS.**
 
-A Persian-first, mobile-first platform shell for the ZELMIRA product ecosystem. This repository is independent from LEADORA, ARIANA, ARIA and all other product repositories.
+VAYRO is a Persian-first, mobile-first platform for discovering and coordinating independent specialist digital products. The application name shown to users is **وایرو** only.
+
+## Product family
+
+| Product | Domain |
+|---|---|
+| ARVAND | International trade, import and export |
+| CHARSU | Marketplace and commerce network |
+| GANJINEH | Digital stores and e-commerce |
+| NEGAH | Creative studio and content production |
+| SEPEHR | Cloud and digital infrastructure |
+| NAMA | Website and landing-page builder |
+| PAYAM | Marketing and customer growth |
+| DANA | AI intelligence and orchestration |
+
+Independent products retain their own identity and deployment boundaries: LEADORA (distribution and sales operations), ARIANA (accounting and ERP), ARIA (social, services and marketplace; no accounting/ERP), and ARMIN MARKET (request and supplier quotation marketplace).
 
 ## Engineering status
 
-This is the initial executable foundation, not a production release. Production deployment remains blocked until database provisioning, authentication hardening, tenant-isolation tests, backup/restore proof, security review and UAT are complete.
+This repository is an evolving application foundation, not a production release. The current work establishes the VAYRO brand, responsive product directory and product boundaries. Authentication, authorization, tenant isolation, licensing, operational product integrations, billing, audit workflows, backup/restore proof, security review and UAT remain release gates.
 
 ## Stack
 
-- Next.js App Router + React + TypeScript
-- PostgreSQL + Prisma
-- Zod for input validation
-- GitHub Actions for CI
-- Railway deployment target (provisioning currently blocked by workspace resource limits)
+- Next.js App Router, React and TypeScript
+- PostgreSQL and Prisma
+- Zod input validation
+- GitHub Actions CI
+- Railway is the intended hosting target, subject to workspace resource availability
 
 ## Local development
 
 1. Install Node.js 22 or later and PostgreSQL 16 or later.
-2. Copy `.env.example` to `.env` and set a private `DATABASE_URL`.
+2. Copy `.env.example` to `.env` and configure a private `DATABASE_URL`.
 3. Run `npm install`.
 4. Run `npm run db:generate`.
-5. Run `npm run dev` and open http://localhost:3000.
+5. Run `npm run dev`.
 
 ## Commands
 
-- `npm run dev` — local development
-- `npm run lint` — ESLint
-- `npm run typecheck` — TypeScript check
-- `npm run build` — production build
-- `npm run db:generate` — Prisma client generation
-- `npm run db:validate` — Prisma schema validation
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+- `npm run db:validate`
 
-## Product boundaries
-
-- ZELMIRA ONE is the central access, governance and orchestration experience.
-- LEADORA remains the distribution and sales operations product.
-- ARIANA remains the accounting and ERP product.
-- ARIA is a social, services and marketplace product and must not contain accounting/ERP functionality.
-- Product data stores are not merged by default. Integrations require versioned APIs, scoped authorization and audit records.
-
-## Security baseline
-
-Never commit secrets, production credentials, signing keys, customer data or database backups. Production secrets belong in the hosting provider's protected secret store. Do not expose internal health details publicly.
-
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/RELEASE-GATES.md](docs/RELEASE-GATES.md) and [docs/PRODUCT-BOUNDARIES.md](docs/PRODUCT-BOUNDARIES.md).
+Never commit secrets, production credentials, signing keys, customer data or backups.
