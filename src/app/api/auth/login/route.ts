@@ -13,7 +13,7 @@ export async function POST(request:Request){
  const user=await prisma.user.findUnique({where:{email}});
  const valid=user?await verifyPassword(p.data.password,user.passwordHash):false;
  if(!user||!valid||user.disabledAt)return noStoreJson({error:"invalid_credentials"},401);
- if(!user.emailVerifiedAt)return noStoreJson({error:"email_verification_required"},403);
+ if(!user.emailVerifiedAt)return noStoreJson({error:"invalid_credentials"},401);
  await issueSession(user.id);
  await prisma.auditEvent.create({data:{actorUserId:user.id,action:"auth.login",resource:"User",resourceId:user.id}});
  return noStoreJson({authenticated:true,user:{id:user.id,email:user.email,displayName:user.displayName,platformRole:user.platformRole}});
