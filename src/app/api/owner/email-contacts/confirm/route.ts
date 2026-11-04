@@ -14,7 +14,11 @@ export async function POST(request: Request) {
       const consumed = await tx.emailContactVerificationToken.updateMany({ where: { id: record.id, consumedAt: null, expiresAt: { gt: new Date() } }, data: { consumedAt: new Date() } });
       if (consumed.count !== 1) return false;
       await tx.emailContact.update({ where: { id: record.contactId }, data: { verifiedAt: new Date() } });
-      await tx.auditEvent.create({ data: { action: "email_contact.verified", resource: "EmailContact", resourceId: record.contactId, metadata: { verification: "email_link" } } });
+      const account = await tx.user.findUnique({ where: { email: record.contact.email }, select: { id: true, emailVerifiedAt: true } });
+      if (account && !account.emailVerifiedAt) {
+        await tx.user.update({ where: { id: account.id }, data: { emailVerifiedAt: new Date() } });
+      }
+      await tx.auditEvent.create({ data: { actorUserId: account?.id, action: "email_contact.verified", resource: "EmailContact", resourceId: record.contactId, metadata: { verification: "email_link", accountEmailMatched: Boolean(account) } } });
       return true;
     });
     if (!verified) return NextResponse.json({ error: "invalid_or_expired_token" }, { status: 400 });
