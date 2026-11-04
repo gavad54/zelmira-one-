@@ -1,8 +1,8 @@
-# Architecture — ZELMIRA ONE
+# Architecture — VAYRO ONE
 
 ## Purpose
 
-ZELMIRA ONE is the platform shell and governance plane for the ZELMIRA ecosystem. It provides identity, tenant membership, product discovery, licensing, auditability and later controlled AI orchestration.
+VAYRO ONE is the platform shell and governance plane for the VAYRO ecosystem. It provides identity, tenant membership, product discovery, licensing, auditability and later controlled AI orchestration.
 
 ## Initial deployment topology
 
