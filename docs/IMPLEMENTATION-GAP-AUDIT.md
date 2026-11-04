@@ -1,68 +1,58 @@
 # VAYRO Implementation Gap Audit
 
-**Application name:** وایرو (VAYRO)  
-**Audit scope:** repository state on `brand/vayro-name-only`  
 **Audit date:** 2026-11-04  
-**Status:** engineering baseline review; not a security certification or production-readiness approval.
+**Audited ref:** `brand/vayro-name-only`  
+**Audited commit before this documentation update:** `d9e2a9e80c02bdecaca0a49b13e5df44861153d4`  
+**Status:** engineering foundation only — NOT RELEASED. This is not a security certification.
 
-## Verified repository baseline
+## Verified current baseline
 
-- Next.js App Router, React, TypeScript and Prisma are configured.
-- PostgreSQL is the configured database provider.
-- The package name is `vayro`.
-- The homepage is a product catalogue and brand landing page. Product cards do not yet prove operational integrations.
-- The Prisma schema contains preliminary User, Tenant, Membership, Session, Product, License and AuditEvent models.
-- The CI workflow runs Prisma generation/validation, lint, typecheck and a production build on pull requests to `main`.
-- At the time of this audit update, the current working branch is 24 commits ahead of `main`; the changes are not merged. Recheck the PR comparison before relying on this count.
-- CI run #24 (`41884990571`) for commit `b34d330bafa854b7313efd8bcbdedcdd61f94822` completed successfully. Its `validate` job passed dependency installation, Prisma generation, Prisma schema validation, lint, TypeScript check and production build.
-- The dependency installation still uses `npm install`; no committed lockfile was found, so dependency resolution is not yet deterministic. The Docker build also uses `npm install`.
-- The source tree currently exposes only one API route (`/api/health`); it is a liveness endpoint only and does not verify database connectivity or external dependencies.
-- No automated test directory or test script is present in the inspected repository tree/package scripts. The current green CI therefore proves lint, typecheck, Prisma schema validation and compilation/build only; it does not prove application workflows or security behavior.
-- No authentication, registration, password-reset, MFA, owner-recovery or tenant-scoped application API implementation was found in the inspected source tree. The Prisma models are schema foundations, not working identity or authorization flows.
-- No Prisma migration directory was present in the inspected tree. A production database migration path is therefore not established by the current repository snapshot.
+- Next.js App Router, React, TypeScript, PostgreSQL and Prisma are configured.
+- The public homepage is a product-family catalogue; it is not an operational SaaS control plane.
+- The Prisma schema defines preliminary `User`, `Tenant`, `Membership`, `Session`, `Product`, `License` and `AuditEvent` models.
+- A readiness endpoint checks PostgreSQL connectivity; the separate health endpoint is a liveness check.
+- A server-side authorization policy primitive exists in `src/lib/authorization.mjs`. It is covered by six Node tests, but it is not yet connected to authenticated API handlers or a verified session/membership lookup.
+- GitHub Actions run `41889484300` for commit `d9e2a9e80c02bdecaca0a49b13e5df44861153d4` completed successfully. Its single validation job passed dependency installation, automated tests, Prisma client generation, Prisma schema validation, ESLint, TypeScript checking and the Next.js production build.
+- The test suite currently exercises authorization-policy decisions only. It does not prove real authentication, database authorization, tenant isolation, abuse controls or business workflows.
+- `package.json` dependencies and development dependencies match the base branch package manifest; the VAYRO branch adds the `test` script and changes the package name to `vayro`.
+- No `package-lock.json` is present. CI and Docker use `npm install`, so dependency resolution is not yet locked and reproducible.
+- The source tree does not contain operational login/registration/recovery endpoints or authenticated tenant-scoped business APIs.
+- No Prisma migration directory is present in the audited tree.
+- The eight named VAYRO products are catalogue/roadmap entries, not verified working integrations.
+- Railway provisioning previously failed because the account/workspace reached its free-plan resource limit. No VAYRO production deployment is evidenced by this repository audit.
 
-## Critical implementation gaps found in the current schema and application
+## Remaining critical gaps
 
-### 1. Identity and session lifecycle
-The schema has a unique email and a passwordHash field, but the repository review has not verified a complete authentication implementation, password hashing policy, email verification flow, recovery flow, MFA, session rotation, revocation, device management, or abuse throttling. Do not expose registration or login as operational until these are implemented and tested.
+### Identity and session lifecycle
+Implement and independently test secure password hashing (or a vetted identity provider), registration verification, login, recovery, session rotation/revocation, secure cookies, CSRF protections, MFA/passkeys for privileged users, abuse throttling and owner recovery. Do not enable account flows before these controls exist.
 
-### 2. Tenant isolation
-Tenant and Membership records exist, but the current schema does not yet define tenant-scoped business records for the platform's own operational workflows, nor database-level isolation controls. Every tenant-owned query and mutation must derive tenant scope from a server-verified membership, never from a client-supplied tenant identifier alone. Add negative cross-tenant tests before any customer data is accepted.
+### Tenant authorization and isolation
+Connect authorization checks to server-verified sessions and database-derived memberships. Never trust tenant IDs or role claims from request bodies. Add integration tests proving that one tenant cannot read, mutate, export or delete another tenant's records. Add tenant-scoped domain models only after the data boundaries are agreed.
 
-### 3. Authorization and owner governance
-PlatformRole and MembershipRole are useful starting points, not a complete permission system. Implement explicit server-side permission checks, least-privilege defaults, owner recovery, privileged-action step-up verification, dual-control for destructive operations, and immutable records for sensitive administration. Never grant owner authority from an email string or an unverified client claim.
+### Database lifecycle
+Create reviewed Prisma migrations, test them against an isolated PostgreSQL environment, define migration/rollback procedures and establish data-retention policy. Do not apply migrations to production without an independent backup and tested restore.
 
-### 4. Audit integrity
-AuditEvent is currently a generic event table. Define an event taxonomy, actor and tenant context, correlation IDs, redaction rules, retention policy, privileged-event alerts, and tamper-evident export/retention. Secrets, passwords, session tokens and unnecessary personal data must never enter audit metadata.
+### Audit and privileged administration
+Define event taxonomy, actor/tenant context, correlation IDs, redaction, retention, tamper-evident export and alerts. Add least-privilege platform roles, step-up authentication, dual control for destructive actions and audited support access.
 
-### 5. Licensing and revenue
-License records are not a billing ledger. Before charging customers, implement payment-provider integration, idempotent webhook handling, invoice/receipt records, refund and dispute states, tax handling by jurisdiction, reconciliation, and an auditable entitlement state machine. Keep commerce disabled until tested end-to-end.
+### Licensing and billing
+The current `License` model is not a billing ledger. Implement provider integration, idempotent webhook processing, invoices/receipts, refunds/disputes, reconciliation, tax treatment and entitlement state transitions. Keep real payments and commercial activation disabled until end-to-end tests and legal review are complete.
 
-### 6. Backup and recovery
-A backup design document is not a backup system. Implement encrypted scheduled database backups, independent storage outside the primary hosting account, retention and lifecycle controls, access logging, restore automation in an isolated environment, integrity checks, and measured RPO/RTO. A release gate requires a successful restore drill with evidence and no production data exposure.
+### Backup and disaster recovery
+The backup document is a design, not proof of an operating backup service. Configure encrypted backups to independently controlled storage, versioning/retention, key separation, monitoring and scheduled restore drills in an isolated environment. Record checksums and measured RPO/RTO.
 
-### 7. Product integrations
-The eight product entries are catalogue metadata only. Integrations must use versioned APIs, scoped service identities, signed requests where appropriate, timeouts, retries with idempotency, circuit breakers, schema validation, and per-product health monitoring. Preserve the independent data and business boundaries of LEADORA, ARIANA, ARIA and ARMIN MARKET. ARIA must never inherit accounting or ERP capabilities from ARIANA.
+### Product integrations
+Implement versioned APIs, scoped service identities, signed service-to-service requests where appropriate, schema validation, timeouts, retries/idempotency, circuit breakers and per-product health checks. Preserve independent product databases and boundaries. ARIA must not receive accounting/ERP capabilities; those remain in ARIANA.
 
-### 8. Security and privacy
-The current Next.js configuration sets several useful response headers, but this is not a complete security posture. Add a reviewed Content-Security-Policy, secure cookie policy, CSRF protections where applicable, request-size limits, rate limiting, secret rotation, dependency and container scans, threat modelling, incident response, privacy notices, data export/deletion workflows, and independent security testing.
+### Security and privacy
+Add dependency and container vulnerability scanning, secret scanning, reviewed CSP, cookie policy, CORS allowlist, rate limits, request-size limits, SSRF protections, privacy/data export/deletion workflows, incident response and independent security testing. No system should be described as absolutely secure.
 
-### 9. Accessibility and multilingual UX
-The existing landing page is Persian-first and responsive, but there is no verified end-to-end accessibility or multilingual workflow. Add WCAG 2.2 AA-oriented keyboard, contrast, screen-reader, reduced-motion, scalable-text, voice-input/output, localization and RTL/LTR tests. Voice features must be optional and have clear consent and privacy controls.
+### Operations, hosting and release
+Resolve the Railway resource provisioning limit through an authorized account/workspace owner decision, then configure production secrets and PostgreSQL. Verify production deployment commit, monitoring, rollback, external backup and restore. Complete Android/device acceptance and owner-led UAT.
 
-## Required implementation order
-
-1. Establish reproducible CI using the lockfile and deterministic dependency installation; make CI status a required merge gate.
-2. Implement identity, session lifecycle, MFA and owner recovery behind disabled-by-default routes.
-3. Implement tenant authorization and negative cross-tenant isolation tests.
-4. Implement audit event taxonomy and privileged-action controls.
-5. Implement independent encrypted backup and prove isolated restore.
-6. Implement product integration gateway and service-to-service identity.
-7. Implement licensing and billing in test mode, then reconcile provider events.
-8. Complete accessibility, localization, performance and security testing.
-9. Conduct independent review and UAT.
-10. Only then consider production deployment and commercial activation.
+### Reproducibility and CI
+Generate and commit a genuine npm lockfile using npm in a trusted development/CI environment, then change CI and Docker to `npm ci`. Do not hand-author or guess lockfile contents. Add integration/security tests and make required checks a merge gate.
 
 ## Release policy
 
-The product must remain **NOT RELEASED / COMMERCE DISABLED** until every critical gate has evidence. Do not describe a roadmap, schema model, catalogue card, mock endpoint, or design document as an implemented operational capability.
+**Current status: FOUNDATION IN PROGRESS — NOT RELEASED.** A green CI build is necessary but not sufficient. Keep customer onboarding, real payments, product activation and production data collection disabled until all critical gates have evidence and the responsible owner approves release.
