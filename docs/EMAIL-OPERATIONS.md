@@ -56,3 +56,6 @@ Implement the provider behind sendTransactionalEmail in src/lib/email-provider.t
 - Resend's shared onboarding@resend.dev sender is test-only and can deliver only to the email address associated with the Resend account. It is not a production sender for arbitrary VAYRO users.
 - A Gmail address is a recipient/contact, not a sender domain. Do not attempt to send as gmail.com.
 - Production account verification and password recovery for arbitrary users require a verified sender identity and a provider API key configured as protected server-side secrets.
+
+- No-domain test option: Resend's shared test sender may be used only for the exact inbox attached to the Resend account. Configure EMAIL_FROM=onboarding@resend.dev and EMAIL_TEST_RECIPIENT to that same account inbox. The adapter enforces this recipient allowlist server-side. This is only an owner-mailbox integration test, not customer email delivery.
+- A provider API key and account setup are still required even for this limited test. An authorized adult/account owner must configure protected hosting secrets; no credentials should be sent through chat or committed.
