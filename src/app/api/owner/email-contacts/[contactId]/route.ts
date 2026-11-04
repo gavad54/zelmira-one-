@@ -31,10 +31,21 @@ export async function PATCH(request: Request, context: Context) {
   const current = await prisma.emailContact.findUnique({ where: { id: contactId } });
   if (!current) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (parsed.data.isPrimary === true && (!current.enabled || !current.verifiedAt)) return NextResponse.json({ error: "primary_contact_must_be_enabled_and_verified" }, { status: 409 });
+  const remainsOwnerContact = parsed.data.enabled !== false && !(parsed.data.purposes && !parsed.data.purposes.includes(EmailPurpose.OWNER)) && current.enabled && Boolean(current.verifiedAt) && current.purposes.includes(EmailPurpose.OWNER);
+  if (!remainsOwnerContact && current.enabled && current.verifiedAt && current.purposes.includes(EmailPurpose.OWNER)) {
+    const count = await prisma.emailContact.count({ where: { id: { not: contactId }, enabled: true, verifiedAt: { not: null }, purposes: { has: EmailPurpose.OWNER } } });
+    if (count === 0) return NextResponse.json({ error: "last_verified_owner_contact_cannot_be_disabled_or_reassigned" }, { status: 409 });
+  }
   try {
     const updated = await prisma.$transaction(async tx => {
       if (parsed.data.isPrimary === true) await tx.emailContact.updateMany({ where: { isPrimary: true, id: { not: contactId } }, data: { isPrimary: false } });
-      const contact = await tx.emailContact.update({ where: { id: contactId }, data: parsed.data, select: { id: true, email: true, label: true, purposes: true, enabled: true, isPrimary: true, verifiedAt: true, updatedAt: true } });
+      const shouldPromoteReplacement = current.isPrimary && parsed.data.enabled === false;
+      const updateData = shouldPromoteReplacement ? { ...parsed.data, isPrimary: false } : parsed.data;
+      const contact = await tx.emailContact.update({ where: { id: contactId }, data: updateData, select: { id: true, email: true, label: true, purposes: true, enabled: true, isPrimary: true, verifiedAt: true, updatedAt: true } });
+      if (shouldPromoteReplacement) {
+        const replacement = await tx.emailContact.findFirst({ where: { enabled: true, verifiedAt: { not: null }, id: { not: contactId } }, orderBy: { createdAt: "asc" }, select: { id: true } });
+        if (replacement) await tx.emailContact.update({ where: { id: replacement.id }, data: { isPrimary: true } });
+      }
       await tx.auditEvent.create({ data: { actorUserId: actorId, action: "email_contact.updated", resource: "EmailContact", resourceId: contactId, metadata: { changedFields: Object.keys(parsed.data) } } });
       return contact;
     });
