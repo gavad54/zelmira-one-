@@ -9,7 +9,8 @@ export async function POST(request:Request){
  const p=z.object({email:z.string().trim().email().max(254)}).safeParse(await request.json().catch(()=>null));
  if(!p.success)return noStoreJson({error:"invalid_input"},400);
  const email=p.data.email.toLowerCase();
- const limits=await Promise.all([allowAttempt(await requestFingerprint("forgot-password",email),3,3600000),allowAttempt(await requestFingerprint("forgot-password-ip","all"),10,3600000)]);\n if(limits.some(x=>!x))return noStoreJson({accepted:true},202);
+ const limits=await Promise.all([allowAttempt(await requestFingerprint("forgot-password",email),3,3600000),allowAttempt(await requestFingerprint("forgot-password-ip","all"),10,3600000)]);
+ if(limits.some(x=>!x))return noStoreJson({accepted:true},202);
  const u=await prisma.user.findUnique({where:{email}});
  if(u&&u.emailVerifiedAt&&!u.disabledAt){try{const token=await createActionToken(u.id,AuthTokenPurpose.PASSWORD_RESET,1800000);await sendActionEmail(email,"بازیابی رمز وایرو",actionUrl("/reset-password",token),"درخواست بازیابی رمز ثبت شده است. اعتبار پیوند ۳۰ دقیقه است.");}catch{/* Generic response avoids account enumeration. */}}
  return noStoreJson({accepted:true},202);
