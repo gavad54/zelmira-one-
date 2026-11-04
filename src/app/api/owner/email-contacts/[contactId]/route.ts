@@ -30,7 +30,7 @@ export async function PATCH(request: Request, context: Context) {
   if (!parsed.success) return NextResponse.json({ error: "invalid_input" }, { status: 400 });
   const current = await prisma.emailContact.findUnique({ where: { id: contactId } });
   if (!current) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  if (parsed.data.isPrimary === true && (!current.enabled || !current.verifiedAt)) return NextResponse.json({ error: "primary_contact_must_be_enabled_and_verified" }, { status: 409 });
+  if (parsed.data.isPrimary === true && (parsed.data.enabled === false || !current.enabled || !current.verifiedAt)) return NextResponse.json({ error: "primary_contact_must_be_enabled_and_verified" }, { status: 409 });
   const remainsOwnerContact = parsed.data.enabled !== false && !(parsed.data.purposes && !parsed.data.purposes.includes(EmailPurpose.OWNER)) && current.enabled && Boolean(current.verifiedAt) && current.purposes.includes(EmailPurpose.OWNER);
   if (!remainsOwnerContact && current.enabled && current.verifiedAt && current.purposes.includes(EmailPurpose.OWNER)) {
     const count = await prisma.emailContact.count({ where: { id: { not: contactId }, enabled: true, verifiedAt: { not: null }, purposes: { has: EmailPurpose.OWNER } } });
