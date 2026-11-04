@@ -8,6 +8,8 @@ export async function POST(request:Request){
  if(!isSameOriginRequest(request)) return noStoreJson({error:"invalid_origin"},403);
  const p=z.object({email:z.string().trim().email().max(254),displayName:z.string().trim().min(2).max(80),password:z.string().min(12).max(128)}).strict().safeParse(await request.json().catch(()=>null));
  if(!p.success) return noStoreJson({error:"invalid_input"},400);
+ const platformOwnerCount=await prisma.user.count({where:{platformRole:{in:["OWNER","PLATFORM_ADMIN"]}}});
+ if(platformOwnerCount===0)return noStoreJson({error:"owner_setup_required"},503);
  const email=p.data.email.toLowerCase();
  const limits=await Promise.all([allowAttempt(await requestFingerprint("register-ip","all"),10,3600000),allowAttempt(await requestFingerprint("register-email",email),4,3600000)]);
  if(limits.some(x=>!x)) return noStoreJson({error:"try_again_later"},429);
