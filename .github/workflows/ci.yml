@@ -16,6 +16,22 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: vayro_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d vayro_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/vayro_ci?schema=public
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,14 +41,16 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
-      - name: Run automated tests
+      - name: Run unit tests
         run: npm test
       - name: Generate Prisma client
         run: npx prisma generate
       - name: Validate Prisma schema
         run: npx prisma validate
-        env:
-          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      - name: Prepare isolated PostgreSQL schema
+        run: npx prisma db push --skip-generate
+      - name: Run PostgreSQL authorization integration tests
+        run: npm run test:integration
       - name: Lint
         run: npm run lint
       - name: Typecheck
@@ -40,5 +58,4 @@ jobs:
       - name: Production build
         run: npm run build
         env:
-          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
           NEXT_PUBLIC_APP_URL: http://localhost:3000
