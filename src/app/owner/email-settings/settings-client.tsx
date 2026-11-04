@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 type Contact = { id: string; email: string; label: string; purposes: string[]; enabled: boolean; isPrimary: boolean; verifiedAt: string | null };
 const purposes = [["OWNER","مدیریت مالک"],["SUPPORT","پشتیبانی"],["BILLING","مالی و اشتراک"],["SECURITY","امنیت"],["GENERAL","ارتباط عمومی"]] as const;
@@ -81,7 +82,7 @@ export default function EmailSettings({ verificationToken }: { verificationToken
     } catch(err){setError(err instanceof Error?err.message:"خطای نامشخص");} finally{setBusy(false);}
   }
   return <main className="email-admin">
-    <header className="email-admin-header"><a href="/" className="email-back">← بازگشت به وایرو</a><span className="email-kicker">VAYRO CONTROL CENTER</span><h1>مدیریت ایمیل‌ها</h1><p>افزودن، تأیید، دسته‌بندی و حذف ایمیل‌های مدیریتی و ارتباطی.</p></header>
+    <header className="email-admin-header"><Link href="/" className="email-back">← بازگشت به وایرو</Link><span className="email-kicker">VAYRO CONTROL CENTER</span><h1>مدیریت ایمیل‌ها</h1><p>افزودن، تأیید، دسته‌بندی و حذف ایمیل‌های مدیریتی و ارتباطی.</p></header>
     {notice&&<div className="email-notice" role="status">{notice}</div>}{pendingToken&&<div className="email-notice" role="group"><p>برای تکمیل تأیید، دکمه زیر را انتخاب کنید.</p><button type="button" disabled={busy} onClick={()=>void confirmVerification()}>تأیید نشانی ایمیل</button></div>}{error&&<div className="email-error" role="alert">{error}</div>}
     <section className="email-panel"><h2>افزودن ایمیل جدید</h2><form onSubmit={addContact} className="email-form">
       <label>نشانی ایمیل<input type="email" required maxLength={254} value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@example.com" dir="ltr"/></label>
