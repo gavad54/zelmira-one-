@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "node --test",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate:deploy": "prisma migrate deploy"
