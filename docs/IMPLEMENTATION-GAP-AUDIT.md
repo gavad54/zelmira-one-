@@ -13,8 +13,10 @@
 - The homepage is a product catalogue and brand landing page. Product cards do not yet prove operational integrations.
 - The Prisma schema contains preliminary User, Tenant, Membership, Session, Product, License and AuditEvent models.
 - The CI workflow runs Prisma generation/validation, lint, typecheck and a production build on pull requests to `main`.
-- The current working branch is 18 commits ahead of `main`; the changes are not merged.
-- No workflow run was returned for the inspected base commit. A successful build must not be inferred from an empty workflow result.
+- The current working branch is 22 commits ahead of `main`; the changes are not merged.
+- CI run #23 for commit `e9d2bd915684411e460c7c8dae0b83be89d37497` completed successfully: dependency installation, Prisma generation/validation, lint, TypeScript check and production build all passed.
+- The dependency installation still uses `npm install`; no committed lockfile was found, so dependency resolution is not yet deterministic.
+- `/api/health` is a liveness endpoint only. It does not verify database connectivity or external dependencies.
 
 ## Critical implementation gaps found in the current schema and application
 
@@ -40,7 +42,7 @@ A backup design document is not a backup system. Implement encrypted scheduled d
 The eight product entries are catalogue metadata only. Integrations must use versioned APIs, scoped service identities, signed requests where appropriate, timeouts, retries with idempotency, circuit breakers, schema validation, and per-product health monitoring. Preserve the independent data and business boundaries of LEADORA, ARIANA, ARIA and ARMIN MARKET. ARIA must never inherit accounting or ERP capabilities from ARIANA.
 
 ### 8. Security and privacy
-The current Next.js configuration sets several useful response headers, but this is not a complete security posture. Add a reviewed Content-Security-Policy, secure cookie policy, CSRF protections where applicable, request-size limits, rate limiting, secret rotation, dependency and container scanning, threat modelling, incident response, privacy notices, data export/deletion workflows, and independent security testing.
+The current Next.js configuration sets several useful response headers, but this is not a complete security posture. Add a reviewed Content-Security-Policy, secure cookie policy, CSRF protections where applicable, request-size limits, rate limiting, secret rotation, dependency and container scans, threat modelling, incident response, privacy notices, data export/deletion workflows, and independent security testing.
 
 ### 9. Accessibility and multilingual UX
 The existing landing page is Persian-first and responsive, but there is no verified end-to-end accessibility or multilingual workflow. Add WCAG 2.2 AA-oriented keyboard, contrast, screen-reader, reduced-motion, scalable-text, voice-input/output, localization and RTL/LTR tests. Voice features must be optional and have clear consent and privacy controls.
