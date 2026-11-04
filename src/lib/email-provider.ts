@@ -56,13 +56,13 @@ async function sendWithGmail(message: TransactionalEmail): Promise<void> {
   const tokenData = await tokenResponse.json() as { access_token?: string };
   if (!tokenData.access_token) throw new Error("Gmail authorization response was incomplete");
 
-  const profileResponse = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/profile", {
+  const profileResponse = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
     headers: { Authorization: "Bearer " + tokenData.access_token },
     signal: AbortSignal.timeout(10000)
   });
   if (!profileResponse.ok) throw new Error("Gmail sender profile could not be verified");
-  const profile = await profileResponse.json() as { emailAddress?: string };
-  if (!profile.emailAddress || profile.emailAddress.toLowerCase() !== sender) {
+  const profile = await profileResponse.json() as { email?: string };
+  if (!profile.email || profile.email.toLowerCase() !== sender) {
     throw new Error("Configured Gmail sender does not match the authorized mailbox");
   }
 
