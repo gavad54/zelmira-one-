@@ -35,6 +35,14 @@ enum ProductStatus {
   RETIRED
 }
 
+enum EmailPurpose {
+  OWNER
+  SUPPORT
+  BILLING
+  SECURITY
+  GENERAL
+}
+
 model User {
   id             String       @id @default(cuid())
   email          String       @unique
@@ -125,4 +133,31 @@ model AuditEvent {
 
   @@index([tenantId, createdAt])
   @@index([actorUserId, createdAt])
+}
+
+model EmailContact {
+  id          String        @id @default(cuid())
+  email       String        @unique
+  label       String
+  purposes    EmailPurpose[]
+  enabled     Boolean       @default(true)
+  isPrimary   Boolean       @default(false)
+  verifiedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  verificationTokens EmailContactVerificationToken[]
+
+  @@index([enabled, isPrimary])
+}
+
+model EmailContactVerificationToken {
+  id         String      @id @default(cuid())
+  tokenHash  String      @unique
+  contactId  String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime    @default(now())
+  contact    EmailContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([contactId, expiresAt])
 }
