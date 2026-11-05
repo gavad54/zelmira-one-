@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import {FormEvent,useState} from "react";
 export default function OwnerSetupPage(){
  const [bootstrapToken,setBootstrapToken]=useState("");
@@ -28,5 +29,5 @@ export default function OwnerSetupPage(){
  <label>نام نمایشی<input required minLength={2} maxLength={80} value={displayName} onChange={e=>setDisplayName(e.target.value)}/></label>
  <label>رمز عبور (حداقل ۱۲ نویسه)<input type="password" required minLength={12} maxLength={128} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)}/></label>
  <button disabled={busy}>{busy?"در حال راه‌اندازی...":"ایجاد حساب مالک"}</button>
- </form><p role="status">{message}</p><a href="/">بازگشت به صفحه اصلی</a></section></main>;
+ </form><p role="status">{message}</p><Link href="/">بازگشت به صفحه اصلی</Link></section></main>;
 }
