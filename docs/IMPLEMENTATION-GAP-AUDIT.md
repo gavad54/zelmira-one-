@@ -2,8 +2,16 @@
 
 **Audit date:** 2026-11-05  
 **Audited ref:** `brand/vayro-name-only`  
-**Audited commit:** `a0169251d369ee5c49ed25ba2e414b54c227a8a5`  
+**Latest engineering snapshot:** `26ba7fada04503ae31e96b67c2f2cb293e9bd05c`  
 **Status:** engineering foundation in progress — NOT RELEASED. This is not a security certification.
+
+## Latest engineering changes
+
+- Added a restrictive baseline Content Security Policy (`object-src`, `base-uri`, `frame-ancestors`, `form-action`) without prematurely constraining Next.js inline runtime assets.
+- Added production-only HSTS, disabled DNS prefetch and legacy cross-domain policy, and limited microphone permission to the first-party origin while keeping camera and geolocation disabled.
+- Corrected architecture and README descriptions to distinguish implemented authentication/tenant-authorization foundations from incomplete production workflows.
+- Refreshed release-gate evidence and kept the reproducible dependency lockfile as an explicit open blocker.
+- CI and CodeQL have been triggered for the latest commit; their results are pending at this snapshot.
 
 ## Verified repository and CI state
 
