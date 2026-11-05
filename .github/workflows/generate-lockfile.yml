@@ -34,12 +34,13 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Commit generated lockfile
         run: |
-          if git diff --quiet -- package-lock.json; then
-            echo "No package-lock.json changes were generated."
-            exit 1
+          test -s package-lock.json
+          git add package-lock.json
+          if git diff --cached --quiet; then
+            echo "The generated lockfile is unchanged; no commit is necessary."
+            exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
           git commit -m "build: add npm v3 lockfile"
           git push origin HEAD:brand/vayro-name-only
