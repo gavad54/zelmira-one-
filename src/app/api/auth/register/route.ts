@@ -17,7 +17,7 @@ export async function POST(request:Request){
   const user=await prisma.user.create({data:{email,displayName:p.data.displayName,passwordHash:await hashPassword(p.data.password)}});
   const token=await createActionToken(user.id,AuthTokenPurpose.EMAIL_VERIFY,86400000);
   await prisma.auditEvent.create({data:{actorUserId:user.id,action:"auth.registered",resource:"User",resourceId:user.id}});
-  try{await sendActionEmail(email,"تأیید ایمیل وایرو",actionUrl("/verify-email",token),"برای فعال‌سازی حساب، ایمیل خود را تأیید کنید. اعتبار پیوند ۲۴ ساعت است.");return noStoreJson({created:true,verificationEmailSent:true},201);}
-  catch{return noStoreJson({created:true,verificationEmailSent:false,code:"EMAIL_DELIVERY_UNAVAILABLE"},202);}
+  try{await sendActionEmail(email,"تأیید ایمیل وایرو",actionUrl("/verify-email",token),"برای فعال‌سازی حساب، ایمیل خود را تأیید کنید. اعتبار پیوند ۲۴ ساعت است.");return noStoreJson({accepted:true},202);}
+  catch{return noStoreJson({accepted:true},202);}
  }catch(e){if(typeof e==="object"&&e!==null&&"code" in e&&e.code==="P2002")return noStoreJson({accepted:true},202);return noStoreJson({error:"registration_failed"},500);}
 }
