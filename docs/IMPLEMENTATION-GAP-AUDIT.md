@@ -2,16 +2,18 @@
 
 **Audit date:** 2026-11-05  
 **Audited ref:** `brand/vayro-name-only`  
-**Latest engineering snapshot:** `26ba7fada04503ae31e96b67c2f2cb293e9bd05c`  
-**Status:** engineering foundation in progress — NOT RELEASED. This is not a security certification.
+**Latest verified lockfile commit:** `dc82d1293d2f710e9192288f82d78b30395ed6fb`  
+**Status:** engineering foundation in progress — NOT RELEASED. The reproducible npm dependency gate is closed; this is not a security certification.
 
 ## Latest engineering changes
 
 - Added a restrictive baseline Content Security Policy (`object-src`, `base-uri`, `frame-ancestors`, `form-action`) without prematurely constraining Next.js inline runtime assets.
 - Added production-only HSTS, disabled DNS prefetch and legacy cross-domain policy, and limited microphone permission to the first-party origin while keeping camera and geolocation disabled.
 - Corrected architecture and README descriptions to distinguish implemented authentication/tenant-authorization foundations from incomplete production workflows.
-- Refreshed release-gate evidence and kept the reproducible dependency lockfile as an explicit open blocker.
-- CI and CodeQL have been triggered for the latest commit; their results are pending at this snapshot.
+- Generated and committed a genuine npm v3 `package-lock.json` using Node.js 22.23.4 / npm 10.9.9.
+- Verified a clean `npm ci --ignore-scripts --no-audit --no-fund` installation in GitHub Actions before committing the lockfile.
+- Switched the CI workflow and Docker dependency stage to `npm ci` against the committed lockfile.
+- The lockfile-generation workflow completed successfully: [run 41965701570](https://github.com/gavad54/zelmira-one-/actions/runs/41965701570).
 
 ## Verified repository and CI state
 
@@ -20,7 +22,7 @@
 - CodeQL run [41963128402](https://github.com/gavad54/zelmira-one-/actions/runs/41963128402) completed successfully on the same commit.
 - The codebase includes Next.js App Router, React, TypeScript, PostgreSQL and Prisma; auth pages/API routes, password/session/token helpers, owner bootstrap and email-provider adapters; Prisma schema and migration files; health/readiness routes; product-family catalogue; architecture, security, backup, release and product-boundary documentation.
 - The eight specialist product entries are catalogue/roadmap items, not evidence that those eight products are operational integrations.
-- A repository tree inspection found no committed `package-lock.json`. CI/Docker reproducible dependency installation is therefore still an open task; do not fabricate a lockfile.
+- `package-lock.json` is committed (npm lockfileVersion 3; 5,932 lines) and matches the root package metadata. The generated lock was validated by a clean `npm ci` before commit.
 - The Prisma migration files exist in the branch, but no production migration has been run or independently approved.
 - Email adapters exist in code, but no verified production sender or OAuth credentials have been configured or tested. No secrets are stored in the repository.
 - The repository is an application foundation, not a complete production SaaS control plane. Passing CI does not prove production security, operational readiness or customer usability.
@@ -35,7 +37,7 @@
 ## Remaining critical gaps
 
 ### Reproducible builds
-Generate a real npm lockfile in a trusted npm environment and switch CI and Docker from `npm install` to `npm ci`. Re-run the complete pipeline on the resulting commit.
+The lockfile generation task is complete: npm 10 generated the v3 lockfile from `package.json`; a clean `npm ci` completed before commit; CI and Docker now use `npm ci`. The full PR validation pipeline on the latest owner-authored documentation commit must still complete successfully to close the end-to-end CI gate.
 
 ### Identity, sessions and owner recovery
 The branch contains auth flows and security primitives. Still require focused endpoint-level tests and review for password policy, session lifecycle/revocation, cookie flags, CSRF/origin handling, rate limits, token one-time use/expiry, email enumeration resistance, owner bootstrap removal, MFA/passkeys for privileged users and recovery. Do not treat the existence of routes as proof of end-to-end verified identity.
