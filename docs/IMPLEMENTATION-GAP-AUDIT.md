@@ -1,58 +1,61 @@
 # VAYRO Implementation Gap Audit
 
-**Audit date:** 2026-11-04  
+**Audit date:** 2026-11-05  
 **Audited ref:** `brand/vayro-name-only`  
-**Current audited commit:** `fa994aab7076d0e0203d77e04a091803c338df9d`  
-**Status:** engineering foundation only — NOT RELEASED. This is not a security certification.
+**Audited commit:** `a0169251d369ee5c49ed25ba2e414b54c227a8a5`  
+**Status:** engineering foundation in progress — NOT RELEASED. This is not a security certification.
 
-## Verified current baseline
+## Verified repository and CI state
 
-- Next.js App Router, React, TypeScript, PostgreSQL and Prisma are configured.
-- The public homepage is a product-family catalogue; it is not an operational SaaS control plane.
-- Prisma defines preliminary `User`, `Tenant`, `Membership`, `Session`, `Product`, `License` and `AuditEvent` models.
-- `/api/health` is a liveness check; `/api/ready` checks PostgreSQL connectivity.
-- A server-side authorization policy primitive exists, and `authorizeTenantRequest` now loads session, user, membership and tenant state from Prisma. A protected access-check route is present.
-- Unit tests cover authorization decisions and mocked database failure paths. CI and CodeQL both passed on `fa994aab7076d0e0203d77e04a091803c338df9d` (runs [41894315041](https://github.com/gavad54/zelmira-one-/actions/runs/41894315041) and [41894314890](https://github.com/gavad54/zelmira-one-/actions/runs/41894314890)).
-- The PostgreSQL integration test is being added in this change; until its CI run passes, real database authorization is not considered verified.
-- There is no session issuance/login, registration, email verification, recovery, rotation or revocation workflow. The protected endpoint will deny requests until a trusted session-creation flow exists.
-- No `package-lock.json` is committed. CI and Docker still use `npm install`; dependency resolution is not yet reproducible.
-- `.env.example` contains placeholders only. No production secrets or provider configuration are present.
-- No Prisma migration directory is present. The integration test may use `prisma db push` only against a disposable CI database; this is not a production migration plan.
-- The eight VAYRO products are catalogue/roadmap entries, not verified working integrations.
-- Railway currently lists only ARIA Web and LEADORA in the available personal workspace; no VAYRO project or deployment is present. Provisioning previously hit the free-plan resource limit.
+- The pull request is [PR #2](https://github.com/gavad54/zelmira-one-/pull/2), titled “Rebrand application as VAYRO and establish product family”. It is open, draft, and unmerged. Its base branch `main` remains at `b8bafd001aba1021e58c50fbea861906f329c52e`.
+- On audited commit `a0169251d369ee5c49ed25ba2e414b54c227a8a5`, VAYRO CI run [41963128369](https://github.com/gavad54/zelmira-one-/actions/runs/41963128369) completed successfully. Its steps passed: dependency installation, unit tests, Prisma client generation, Prisma schema validation, disposable PostgreSQL schema preparation, PostgreSQL authorization integration tests, lint, TypeScript typecheck and production build.
+- CodeQL run [41963128402](https://github.com/gavad54/zelmira-one-/actions/runs/41963128402) completed successfully on the same commit.
+- The codebase includes Next.js App Router, React, TypeScript, PostgreSQL and Prisma; auth pages/API routes, password/session/token helpers, owner bootstrap and email-provider adapters; Prisma schema and migration files; health/readiness routes; product-family catalogue; architecture, security, backup, release and product-boundary documentation.
+- The eight specialist product entries are catalogue/roadmap items, not evidence that those eight products are operational integrations.
+- A repository tree inspection found no committed `package-lock.json`. CI/Docker reproducible dependency installation is therefore still an open task; do not fabricate a lockfile.
+- The Prisma migration files exist in the branch, but no production migration has been run or independently approved.
+- Email adapters exist in code, but no verified production sender or OAuth credentials have been configured or tested. No secrets are stored in the repository.
+- The repository is an application foundation, not a complete production SaaS control plane. Passing CI does not prove production security, operational readiness or customer usability.
+
+## Verified external infrastructure state
+
+- The connected Railway account currently exposes only `ARIA Web` and `LEADORA`; no VAYRO Railway project or deployment is present.
+- Do not deploy VAYRO into either existing project. A separate VAYRO project/environment and its database must be provisioned by an authorized account owner.
+- No independent off-provider backup and isolated restore evidence has been supplied or verified.
+- No production deployment commit, Android device acceptance, owner UAT or public commercial release has been verified.
 
 ## Remaining critical gaps
 
-### Identity and session lifecycle
-Implement and independently test secure password hashing or a vetted identity provider, registration verification, login, recovery, session rotation/revocation, secure HttpOnly/Secure/SameSite cookies, CSRF protection, rate limiting, MFA/passkeys for privileged users and owner recovery. Do not enable account flows before these controls exist.
+### Reproducible builds
+Generate a real npm lockfile in a trusted npm environment and switch CI and Docker from `npm install` to `npm ci`. Re-run the complete pipeline on the resulting commit.
 
-### Tenant authorization and isolation
-Complete PostgreSQL integration coverage for cross-tenant read/write/export/delete on every domain API. The current access-check endpoint is a proof seam, not a complete tenant data API. Never trust tenant IDs or role claims from request bodies.
+### Identity, sessions and owner recovery
+The branch contains auth flows and security primitives. Still require focused endpoint-level tests and review for password policy, session lifecycle/revocation, cookie flags, CSRF/origin handling, rate limits, token one-time use/expiry, email enumeration resistance, owner bootstrap removal, MFA/passkeys for privileged users and recovery. Do not treat the existence of routes as proof of end-to-end verified identity.
+
+### Tenant isolation
+The PostgreSQL integration test passes for the tested authorization scenarios. Extend coverage to every tenant-owned read/write/export/delete endpoint and negative cross-tenant cases. Never trust tenant IDs or roles supplied by the browser.
 
 ### Database lifecycle
-Create reviewed Prisma migrations, test them against isolated PostgreSQL, define rollback procedures and retention policy. Do not apply migrations to production without independent backup and tested restore.
+Review migrations, test forward/rollback paths in isolated environments and document schema compatibility. No production migration before an independent backup and tested restore.
 
 ### Audit and privileged administration
-Define event taxonomy, actor/tenant context, correlation IDs, redaction, retention, tamper-evident export and alerts. Add least-privilege platform roles, step-up authentication, dual control for destructive actions and audited support access.
+Verify complete audit coverage, actor/tenant/correlation context, redaction, retention, tamper resistance, least-privilege platform roles, step-up authentication and dual control for destructive operations.
 
 ### Licensing and billing
-The current `License` model is not a billing ledger. Implement provider integration, idempotent webhooks, invoices/receipts, refunds/disputes, reconciliation, tax treatment and entitlement state transitions. Keep real payments and commercial activation disabled until end-to-end tests and legal review are complete.
+A license model is not a complete billing ledger. Implement idempotent provider webhooks, invoice/receipt records, refunds/disputes, reconciliation, tax handling and entitlement state transitions. Keep real payments and commercial activation disabled until end-to-end tests and legal review pass.
 
 ### Backup and disaster recovery
-The backup document is a design, not proof of an operating backup service. Configure encrypted backups to independently controlled storage, versioning/retention, key separation, monitoring and scheduled restore drills in an isolated environment. Record checksums and measured RPO/RTO.
+The backup document is a design, not proof of an operating backup service. Configure encrypted backups to independently controlled storage, versioning/retention, key separation, monitoring and scheduled isolated restore drills. Record checksums and measured RPO/RTO.
 
 ### Product integrations
 Implement versioned APIs, scoped service identities, signed service-to-service requests where appropriate, schema validation, timeouts, retries/idempotency, circuit breakers and per-product health checks. Preserve independent product databases and boundaries. ARIA must not receive accounting/ERP capabilities; those remain in ARIANA.
 
 ### Security and privacy
-Add dependency and container vulnerability scanning, secret scanning, reviewed CSP, cookie policy, CORS allowlist, rate limits, request-size limits, SSRF protections, privacy export/deletion workflows, incident response and independent security testing. No system should be described as absolutely secure.
+Complete dependency/container/secret scanning, CSP and security-header review, CORS allowlist, request-size/rate controls, SSRF protections, privacy export/deletion, incident response and independent security testing. Never claim absolute security.
 
-### Operations, hosting and release
-Resolve the Railway resource provisioning limit through an authorized account/workspace owner decision, then configure production secrets and PostgreSQL. Verify production deployment commit, monitoring, rollback, external backup and restore. Complete Android/device acceptance and owner-led UAT.
-
-### Reproducibility and CI
-Generate and commit a genuine npm lockfile using npm in a trusted development/CI environment, then change CI and Docker to `npm ci`. Do not hand-author or guess lockfile contents. Add integration/security tests and make required checks a merge gate.
+### Hosting, mobile and release
+Provision a separate VAYRO Railway project and PostgreSQL through an authorized owner; configure protected secrets; verify deployment commit, monitoring and rollback; complete Android/device acceptance and owner-led UAT. Record explicit release approval.
 
 ## Release policy
 
-**Current state: FOUNDATION IN PROGRESS — NOT RELEASED.** A green CI build is necessary but not sufficient. Keep customer onboarding, real payments, product activation and production data collection disabled until all critical gates have evidence and the responsible owner approves release.
+**Current state: FOUNDATION IN PROGRESS — NOT RELEASED.** Keep customer onboarding, real payments, product activation and production data collection disabled until all critical gates have evidence and the responsible owner approves release.
