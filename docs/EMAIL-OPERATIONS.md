@@ -30,9 +30,9 @@ Set EMAIL_PROVIDER=gmail and configure these protected server variables:
 - GMAIL_REFRESH_TOKEN
 - GMAIL_SENDER_EMAIL
 
-An authorized adult mailbox owner/operator must create a Google Cloud OAuth client, enable Gmail API and complete the OAuth grant with the narrow scopes https://www.googleapis.com/auth/gmail.send, openid and email. The adapter refreshes access tokens server-side, checks the authorized mailbox identity through Google's OpenID userinfo endpoint, then sends via Gmail API. It does not use or store a Gmail password or app password.
+An authorized adult mailbox owner/operator must create a Google Cloud project and OAuth client, enable Gmail API and complete the OAuth grant with the narrow scopes https://www.googleapis.com/auth/gmail.send, openid and email. The adapter refreshes access tokens server-side, checks the authorized mailbox identity through Google's OpenID userinfo endpoint, then sends via Gmail API. It does not use or store a Gmail password or app password. Google classifies gmail.send as a sensitive scope; a public production app generally needs OAuth verification before broad public use. Google recommends separate Cloud projects for testing and production. A project left in Testing has a limited tester audience and refresh-token lifetime, so it is not a durable production configuration. The authorized operator must review current Google verification requirements, publish the required app branding/privacy information and verify domain ownership where required before public launch.
 
-This option works without owning a domain and can use the owner's Gmail address as sender. Consumer Gmail has sending and account limits; use it for an initial low-volume system, not bulk campaigns. Do not send OAuth client secrets or refresh tokens through chat or commit them.
+This option does not require a custom email-sending domain and can use the owner's Gmail address as sender. That does not waive Google's OAuth production verification, app-homepage, privacy-policy or domain-ownership requirements where they apply. Consumer Gmail has sending and account limits; use it only for low-volume transactional messages, not bulk campaigns. Do not send OAuth client secrets or refresh tokens through chat or commit them.
 
 ### Resend
 Set EMAIL_PROVIDER=resend, EMAIL_API_KEY and EMAIL_FROM. For the shared onboarding@resend.dev test sender, also set EMAIL_TEST_RECIPIENT to the exact verified inbox attached to the Resend account. The adapter enforces this recipient allowlist. Test mode is not a production sender for arbitrary users.
@@ -42,8 +42,9 @@ All delivery calls go through sendTransactionalEmail in src/lib/email-provider.t
 
 ## Environment and release gates
 - NEXT_PUBLIC_APP_URL must be the canonical app URL and HTTPS in production.
-- No Gmail OAuth credentials, Resend API key, provider account, live mailbox verification or email delivery have been configured by this repository change.
-- The Gmail API code path is implemented but cannot send until an authorized adult configures OAuth credentials in protected hosting secrets.
+- The Gmail API and Resend adapters are implemented, but no provider account, OAuth grant, live mailbox verification or delivery test has been completed.
+- No VAYRO Railway project currently exists in the connected workspace, so there is no VAYRO runtime in which to store protected email variables. Do not put VAYRO credentials into ARIA or LEADORA.
+- Gmail credentials must be configured by the authorized adult mailbox owner in a dedicated VAYRO production host after that host exists. Google OAuth verification for the sensitive gmail.send scope must be assessed before public production use.
 - Prisma schema includes AuthActionToken and AuthRateLimit; migration 20261104190000_auth_foundation creates those tables and enum.
 - CI schema validation uses an isolated PostgreSQL database. It does not prove a migration has been safely applied to production.
 - Apply migrations only after an independent backup and restore proof. Do not run prisma db push on the live database.
