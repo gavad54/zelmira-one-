@@ -7,10 +7,9 @@ import { authorizeOwnerSession } from "@/lib/owner-session.mjs";
 import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-const purposeValues = Object.values(EmailPurpose);
 const updateSchema = z.object({
   label: z.string().trim().min(2).max(60).optional(),
-  purposes: z.array(z.enum(purposeValues as [string, ...string[]])).min(1).max(5).optional(),
+  purposes: z.array(z.nativeEnum(EmailPurpose)).min(1).max(5).optional(),
   enabled: z.boolean().optional(),
   isPrimary: z.boolean().optional()
 }).strict().refine(value => Object.keys(value).length > 0);
