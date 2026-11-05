@@ -21,15 +21,17 @@ Independent products retain their own identity and deployment boundaries: LEADOR
 
 ## Engineering status
 
-This repository is an evolving application foundation, not a production release. The current work establishes the VAYRO brand, responsive product directory and product boundaries. Authentication, authorization, tenant isolation, licensing, operational product integrations, billing, audit workflows, backup/restore proof, security review and UAT remain release gates.
+This repository contains a working engineering foundation: public product directory, authentication routes and primitives, owner bootstrap, initial tenant authorization, PostgreSQL/Prisma schema, audit foundations, health/readiness checks and automated CI. These are not a production release or a security certification.
+
+Production email, complete endpoint-level authorization coverage, full tenant-scoped product workflows, MFA, licensing/billing operations, independent backup/restore, dedicated hosting, mobile acceptance, owner UAT and explicit release approval remain open gates. Customer onboarding, real payments and production data collection must remain disabled until those gates are evidenced.
 
 ## Stack
 
 - Next.js App Router, React and TypeScript
 - PostgreSQL and Prisma
 - Zod input validation
-- GitHub Actions CI
-- Railway is the intended hosting target, subject to workspace resource availability
+- GitHub Actions CI and CodeQL
+- Railway is the intended hosting target; a separate VAYRO project and database are not yet provisioned.
 
 ## Local development
 
@@ -41,6 +43,8 @@ This repository is an evolving application foundation, not a production release.
 
 ## Commands
 
+- `npm test`
+- `npm run test:integration`
 - `npm run lint`
 - `npm run typecheck`
 - `npm run build`
