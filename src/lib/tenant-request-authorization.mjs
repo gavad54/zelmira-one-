@@ -19,8 +19,7 @@ export async function authorizeTenantRequest({
 }) {
   if (
     typeof sessionToken !== "string" ||
-    sessionToken.length < 32 ||
-    sessionToken.length > 4096 ||
+    !/^[a-f0-9]{64}$/.test(sessionToken) ||
     typeof tenantId !== "string" ||
     tenantId.length === 0 ||
     typeof action !== "string" ||
