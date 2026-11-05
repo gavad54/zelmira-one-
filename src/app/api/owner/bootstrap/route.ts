@@ -9,9 +9,9 @@ export async function POST(request:Request){
  if(!isSameOriginRequest(request))return noStoreJson({error:"invalid_origin"},403);
  const p=z.object({bootstrapToken:z.string().min(32).max(512),email:z.string().trim().email().max(254),displayName:z.string().trim().min(2).max(80),password:z.string().min(12).max(128)}).strict().safeParse(await request.json().catch(()=>null));
  if(!p.success)return noStoreJson({error:"invalid_input"},400);
+ if(!await allowAttempt(await requestFingerprint("owner-bootstrap","initial"),5,3600000))return noStoreJson({error:"try_again_later"},429);
  const expected=process.env.VAYRO_OWNER_BOOTSTRAP_TOKEN;
  if(!expected||expected.length<32||!safeEqualText(p.data.bootstrapToken,expected))return noStoreJson({error:"bootstrap_unavailable"},403);
- if(!await allowAttempt(await requestFingerprint("owner-bootstrap","initial"),3,3600000))return noStoreJson({error:"try_again_later"},429);
  try{
   const email=p.data.email.toLowerCase(),passwordHash=await hashPassword(p.data.password);
   const user=await prisma.$transaction(async tx=>{
