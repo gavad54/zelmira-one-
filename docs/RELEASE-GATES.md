@@ -18,7 +18,7 @@ The application must not be described as production-ready until every applicable
 - [ ] Database: migrations reviewed and forward/rollback tested in isolated non-production environments.
 - [ ] Backup: encrypted backup stored outside the hosting provider and independently controlled.
 - [ ] Restore: independent restore completed in an isolated environment, with checksum and measured RPO/RTO evidence.
-- [ ] Email: production sender configured by the authorized mailbox owner and end-to-end delivery/verification tested; no credentials in Git or chat.
+- [ ] Email: dedicated VAYRO hosting environment exists; authorized adult mailbox owner configures Gmail OAuth or an approved transactional provider in protected runtime secrets; provider identity is verified; test delivery, verification and password-recovery emails pass end-to-end. For public Gmail API use, assess and complete Google's sensitive `gmail.send` OAuth verification and production requirements. No credentials in Git or chat.
 - [ ] Licensing/billing: idempotent payment webhooks, invoice/refund/reconciliation and entitlement transitions tested; legal review completed before activation.
 - [ ] Product integrations: versioned contracts, scoped service identities, health checks, failure handling and product-boundary tests verified.
 - [ ] Hosting: separate VAYRO Railway project, database, protected variables, monitoring and rollback configured by an authorized owner.
