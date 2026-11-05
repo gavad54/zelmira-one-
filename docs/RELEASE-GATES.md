@@ -1,11 +1,12 @@
-# Release gates
+# VAYRO release gates
 
 The application must not be described as production-ready until every applicable gate has evidence.
 
-## Verified on audited commit
+## Latest verified repository checks
 
-- [x] VAYRO CI passed on `a0169251d369ee5c49ed25ba2e414b54c227a8a5`: [run 41963128369](https://github.com/gavad54/zelmira-one-/actions/runs/41963128369). Unit tests, Prisma generation/validation, disposable PostgreSQL authorization integration tests, lint, typecheck and production build all passed.
-- [x] CodeQL passed on the same commit: [run 41963128402](https://github.com/gavad54/zelmira-one-/actions/runs/41963128402).
+- [x] VAYRO CI passed on commit `fbe8da07f43096d081c92ad997c107bac7eaf82f`: [run 41964005603](https://github.com/gavad54/zelmira-one-/actions/runs/41964005603). The workflow includes unit tests, Prisma generation/validation, disposable PostgreSQL authorization integration tests, lint, TypeScript typecheck and production build.
+- [x] CodeQL passed on the same commit: [run 41964005454](https://github.com/gavad54/zelmira-one-/actions/runs/41964005454).
+- [x] PR #2 remains open, draft and unmerged. Passing CI is not production approval.
 
 ## Outstanding release gates
 
