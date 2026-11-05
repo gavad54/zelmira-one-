@@ -1,0 +1,45 @@
+name: Generate npm lockfile
+
+on:
+  push:
+    branches:
+      - brand/vayro-name-only
+    paths:
+      - .github/workflows/generate-lockfile.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vayro-lockfile-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: brand/vayro-name-only
+          persist-credentials: true
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate npm v3 lockfile from package.json
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund --lockfile-version=3
+      - name: Verify clean reproducible install
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Commit generated lockfile
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "No package-lock.json changes were generated."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "build: add npm v3 lockfile"
+          git push origin HEAD:brand/vayro-name-only
