@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isSameOriginRequest } from "@/lib/auth-core.mjs";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
+  if (!isSameOriginRequest(request)) return NextResponse.json({ error: "invalid_origin" }, { status: 403, headers: { "Cache-Control": "no-store" } });
   const body = await request.json().catch(() => null) as { token?: unknown } | null;
   if (!body || typeof body.token !== "string" || !/^[a-f0-9]{64}$/.test(body.token)) return NextResponse.json({ error: "invalid_or_expired_token" }, { status: 400 });
   const tokenHash = createHash("sha256").update(body.token).digest("hex");
