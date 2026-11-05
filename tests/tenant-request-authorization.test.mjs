@@ -68,6 +68,16 @@ test("denies missing, malformed and unknown session tokens without querying memb
   }
 });
 
+test("rejects non-canonical session tokens before database lookup", async () => {
+  const db = database({ session: activeSession, membership: activeMembership });
+  const result = await authorizeTenantRequest({
+    sessionToken: "z".repeat(64), tenantId: "tenant-a", action: "tenant_read", db, now
+  });
+  assert.equal(result.authorized, false);
+  assert.equal(db.calls.session.length, 0);
+  assert.equal(db.calls.membership.length, 0);
+});
+
 test("denies unknown sessions", async () => {
   const db = database();
   const result = await authorizeTenantRequest({
