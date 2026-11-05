@@ -109,3 +109,40 @@ a{color:inherit;text-decoration:none}
 .home-auth-nav a{font-size:11px;color:var(--muted);padding:10px 13px;border:1px solid var(--line);border-radius:8px}
 .home-auth-nav a:last-child{color:#17140f;background:linear-gradient(110deg,#d8bd83,#b99a60);border-color:transparent;font-weight:700}
 @media(max-width:520px){.home-auth-nav{gap:6px}.home-auth-nav a{font-size:10px;padding:8px 9px}}
+
+
+/* Functional workspace management */
+.workspace-page{max-width:980px;min-height:100svh;margin:auto;padding:0 22px 60px;color:var(--text);font-family:Tahoma,Arial,sans-serif}
+.workspace-header{height:78px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.workspace-brand{display:flex;align-items:center;gap:12px;font:700 13px Arial,sans-serif;letter-spacing:2px;color:var(--gold)}
+.workspace-brand span{width:38px;height:38px;display:grid;place-items:center;border:1px solid rgba(216,189,131,.55);border-radius:12px;font:700 22px Georgia,serif}
+.workspace-home{font-size:12px;color:var(--ice)}
+.workspace-intro{padding:54px 0 28px}
+.workspace-kicker{font:10px Arial,sans-serif;letter-spacing:2px;color:var(--gold)}
+.workspace-intro h1{font-size:clamp(28px,5vw,42px);margin:14px 0}
+.workspace-intro p,.workspace-footnote{max-width:680px;color:var(--muted);font-size:13px;line-height:2}
+.workspace-panel,.workspace-list{padding:24px;border:1px solid var(--line);border-radius:16px;background:var(--panel);margin:18px 0}
+.workspace-panel h2,.workspace-list h2{font-size:17px;margin:0 0 20px}
+.workspace-form{display:grid;gap:10px}
+.workspace-form label{font-size:12px;color:var(--muted)}
+.workspace-form-row{display:flex;gap:10px}
+.workspace-form input{flex:1;min-width:0;padding:13px;border:1px solid var(--line);border-radius:9px;background:#0d111c;color:var(--text);font:14px Tahoma,Arial,sans-serif}
+.workspace-form button,.workspace-refresh{border:0;border-radius:9px;padding:12px 18px;background:linear-gradient(110deg,#d8bd83,#b99a60);color:#17140f;font-weight:700;font-size:12px;cursor:pointer}
+.workspace-form button:disabled,.workspace-refresh:disabled{opacity:.55;cursor:not-allowed}
+.workspace-list-heading{display:flex;align-items:center;justify-content:space-between}
+.workspace-list-heading h2{margin:0}
+.workspace-refresh{padding:9px 12px}
+.workspace-cards{display:grid;gap:10px;margin-top:18px}
+.workspace-card{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px;border:1px solid var(--line);border-radius:11px;background:rgba(10,14,23,.45)}
+.workspace-card h3{font-size:14px;margin:0 0 7px}
+.workspace-card p{font:10px Arial,sans-serif;color:var(--muted);margin:0}
+.workspace-meta{display:flex;gap:7px;flex-wrap:wrap}
+.workspace-meta span{font-size:10px;color:var(--ice);border:1px solid var(--line);padding:6px 9px;border-radius:20px}
+.workspace-empty{padding:28px 10px;text-align:center;border:1px dashed var(--line);border-radius:11px}
+.workspace-empty strong{font-size:13px}
+.workspace-empty p,.workspace-muted{font-size:12px;color:var(--muted);line-height:2}
+.workspace-notice,.workspace-error{padding:12px;border-radius:9px;font-size:12px;line-height:1.9;margin:14px 0 0}
+.workspace-notice{color:#a9e6c9;background:rgba(100,190,150,.1);border:1px solid rgba(100,190,150,.25)}
+.workspace-error{color:#ffb7b7;background:rgba(220,100,100,.1);border:1px solid rgba(220,100,100,.25)}
+.workspace-footnote{font-size:11px;margin-top:22px}
+@media(max-width:560px){.workspace-page{padding:0 15px 40px}.workspace-intro{padding-top:38px}.workspace-panel,.workspace-list{padding:17px}.workspace-form-row{flex-direction:column}.workspace-form button{min-height:44px}.workspace-card{align-items:flex-start;flex-direction:column}}
