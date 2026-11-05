@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { authorizeTenantRequest } from "../src/lib/tenant-request-authorization.mjs";
 
-const token = "test-session-token-with-at-least-thirty-two-characters";
+const token = "ab".repeat(32);
 const tokenHash = createHash("sha256").update(token).digest("hex");
 const now = new Date("2026-11-04T12:00:00.000Z");
 
