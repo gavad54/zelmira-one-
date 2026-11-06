@@ -49,19 +49,19 @@ enum AuthTokenPurpose {
 }
 
 model User {
-  id             String       @id @default(cuid())
-  email          String       @unique
-  passwordHash   String
-  displayName    String
-  platformRole   PlatformRole @default(USER)
+  id              String       @id @default(cuid())
+  email           String       @unique
+  passwordHash    String
+  displayName     String
+  platformRole    PlatformRole @default(USER)
   emailVerifiedAt DateTime?
-  disabledAt     DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  memberships    Membership[]
-  sessions       Session[]
-  auditEvents    AuditEvent[] @relation("AuditActor")
-  authTokens     AuthActionToken[]
+  disabledAt      DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  memberships     Membership[]
+  sessions        Session[]
+  auditEvents     AuditEvent[] @relation("AuditActor")
+  authTokens      AuthActionToken[]
 }
 
 model Tenant {
@@ -123,6 +123,7 @@ model License {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@index([tenantId, active])
+  @@index([productId])
   @@unique([tenantId, productId])
 }
 
@@ -142,15 +143,15 @@ model AuditEvent {
 }
 
 model EmailContact {
-  id          String        @id @default(cuid())
-  email       String        @unique
-  label       String
-  purposes    EmailPurpose[]
-  enabled     Boolean       @default(true)
-  isPrimary   Boolean       @default(false)
-  verifiedAt  DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id                 String                          @id @default(cuid())
+  email              String                          @unique
+  label              String
+  purposes           EmailPurpose[]
+  enabled            Boolean                         @default(true)
+  isPrimary          Boolean                         @default(false)
+  verifiedAt         DateTime?
+  createdAt          DateTime                        @default(now())
+  updatedAt          DateTime                        @updatedAt
   verificationTokens EmailContactVerificationToken[]
 
   @@index([enabled, isPrimary])
