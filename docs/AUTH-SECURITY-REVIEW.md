@@ -33,10 +33,10 @@
 
 ## Release-blocking verification work
 
-1. Add endpoint-level tests for every authentication route, including malformed JSON, wrong origin, expired/reused tokens, disabled users, unverified users, and unexpected database/email-provider failures.
+1. Endpoint-level coverage now includes cross-origin rejection across eight mutation routes, malformed login JSON, absent/malformed session cookies, idempotent logout with cookie expiry, and (added in commit `3c918ae`) a valid HTTP session returned by `/api/auth/me` followed by HTTP logout revocation and post-logout denial. The latter commit's CI is still pending at this review point. Still add HTTP tests for expired/reused tokens, disabled/unverified users and unexpected database/email-provider failures.
 2. Verify one-time owner bootstrap under concurrent requests and confirm the bootstrap secret is removed from protected hosting configuration immediately after successful bootstrap.
 3. Review trusted-proxy configuration for `x-forwarded-for`. The current fingerprint helper uses the last forwarded address; this must be validated against the actual Railway/proxy topology and spoofing behavior.
-4. Verify cookie behavior, session expiry, revocation, logout and disabled-account handling through HTTP integration tests.
+4. Verify secure-cookie behavior in HTTPS production and add HTTP coverage for expired sessions and disabled-account handling; valid-session lookup, logout revocation and post-logout denial are covered by the newly added test pending CI.
 5. Verify CSRF behavior with Origin and Sec-Fetch-Site combinations in supported browsers.
 6. Review CSP against the actual Next.js production output. The current policy does not define a complete `default-src` / `script-src` policy; do not claim strict CSP enforcement until a compatible policy is tested.
 7. Add endpoint-level authorization and tenant-isolation tests for every tenant-owned read, write, export and delete operation.
