@@ -94,3 +94,31 @@ test("login endpoint rejects malformed JSON over HTTP", async () => {
   assert.equal(response.status, 400);
   assert.equal((await response.json()).error, "invalid_credentials");
 });
+
+
+test("session identity endpoint denies absent and malformed cookies without exposing user data", async () => {
+  const absent = await fetch(`${origin}/api/auth/me`);
+  assert.equal(absent.status, 401);
+  assert.deepEqual(await absent.json(), { authenticated: false });
+  assert.match(absent.headers.get("cache-control") ?? "", /no-store/);
+
+  const malformed = await fetch(`${origin}/api/auth/me`, {
+    headers: { Cookie: "vayro_session=not-a-valid-session-token" }
+  });
+  assert.equal(malformed.status, 401);
+  assert.deepEqual(await malformed.json(), { authenticated: false });
+});
+
+test("logout is idempotent without a session and expires the session cookie", async () => {
+  const response = await fetch(`${origin}/api/auth/logout`, {
+    method: "POST",
+    headers: { Origin: origin }
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { authenticated: false });
+  const cookie = response.headers.get("set-cookie") ?? "";
+  assert.match(cookie, /vayro_session=/);
+  assert.match(cookie, /Expires=Thu, 01 Jan 1970/i);
+  assert.match(cookie, /HttpOnly/i);
+  assert.match(cookie, /SameSite=Lax/i);
+});
