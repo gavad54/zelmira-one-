@@ -85,9 +85,8 @@ test("login endpoint rejects malformed JSON over HTTP", async () => {
   const response = await fetch(`${origin}/api/auth/login`, {
     method: "POST",
     headers: {
-      Origin: origin,
-      Host: `127.0.0.1:${port}`,
-      "Sec-Fetch-Site": "same-origin",
+      Origin: `http://localhost:${port}`,
+      Host: `localhost:${port}`,
       "Content-Type": "application/json"
     },
     body: "{malformed"
