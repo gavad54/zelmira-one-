@@ -4,10 +4,10 @@ The application must not be described as production-ready until every applicable
 
 ## Latest verified repository checks
 
-- [x] VAYRO CI passed on latest verified PR head commit `a36b18445c827ee6848ec1e90b2c6f1b37c57c7f`: [run 42183399055](https://github.com/gavad54/zelmira-one-/actions/runs/42183399055). All steps passed: locked dependency installation, unit tests, Prisma generation/schema validation, isolated PostgreSQL role setup, real Prisma migration deployment to disposable CI PostgreSQL, lint, TypeScript typecheck, production build and production HTTP integration tests.
-- [x] CodeQL passed on the same commit: [run 42183392286](https://github.com/gavad54/zelmira-one-/actions/runs/42183392286). The workflow completed with conclusion `success`.
-- [x] Push-triggered CodeQL [run 42183392286](https://github.com/gavad54/zelmira-one-/actions/runs/42183392286) passed on this exact commit. The pull-request CodeQL run is still in progress at the time of this update.
-- [x] All 10 production HTTP integration tests passed on this commit, including a valid authenticated session returned by `/api/auth/me`, HTTP logout revocation in PostgreSQL, and denial after logout.
+- [x] VAYRO CI passed on latest verified PR head commit `c0d4c9ab83d591b107a9ebbdcf600768fc124e57`: [run 42183968046](https://github.com/gavad54/zelmira-one-/actions/runs/42183968046). All steps passed: locked dependency installation, unit tests, Prisma generation/schema validation, isolated PostgreSQL role setup, real Prisma migration deployment to disposable CI PostgreSQL, lint, TypeScript typecheck, production build and production HTTP integration tests.
+- [x] CodeQL passed on the same commit: [run 42183968071](https://github.com/gavad54/zelmira-one-/actions/runs/42183968071). The workflow completed with conclusion `success`.
+- [x] Both PR-triggered and push-triggered CI/CodeQL workflows completed successfully on this exact commit.
+- [x] All 11 production HTTP integration tests passed on this commit, including a valid authenticated session returned by `/api/auth/me`, HTTP logout revocation in PostgreSQL, denial after logout, and tenant HTTP API creation/list/workspace/cross-tenant authorization.
 - [x] Authentication origin-guard unit tests cover cross-site Fetch Metadata, same-origin metadata, opaque/malformed Origin and scheme/port mismatch.
 - [x] Password-reset persistence integration test covers one-time token consumption, password hash update, session revocation and audit persistence inside a Prisma transaction. This is a database-transaction test, not an HTTP endpoint test.
 - [x] Tenant workspace summary service tests cover authorized reads, cross-tenant denial, inactive tenant handling and database failure behavior.
@@ -34,10 +34,18 @@ The application must not be described as production-ready until every applicable
 - [ ] Production: active deployment commit matches the approved release commit.
 - [ ] Governance: privacy/legal review and explicit owner release approval recorded.
 
+## Live database verification (read-only)
+
+- Supabase VAYRO-CORE is active and healthy on PostgreSQL 17 in eu-central-1; 11 tables exist and each currently reports zero rows.
+- RLS is enabled on all 11 tables. There are no policies and no table grants for anon, authenticated or service_role; the security advisor reports 11 informational RLS-without-policy findings.
+- The inspected postgres role and service_role have BYPASSRLS. Runtime database credentials were not inspectable; verify that only a protected server-side credential is used and never expose it to a browser.
+- No Prisma/Supabase migration history table exists. Live schema was directly provisioned and is not baselined. Do not run migrations against this live database before schema/catalog reconciliation and an independently verified backup/restore.
+- Inspection was read-only; no database mutation was performed.
+
 ## Deployment safety status
 
 **DEPLOYMENT BLOCKED — NOT RELEASED.**
 
-Latest source revision with verified CI and push-triggered CodeQL at audit time: `a36b18445c827ee6848ec1e90b2c6f1b37c57c7f` (PR CI run 42183399055; push CodeQL run 42183392286). PR-triggered CodeQL run 42183398945 also completed successfully. The checks validate repository code and isolated CI infrastructure only; they do not prove an external production database, email delivery, Android device run, backup/restore, or live hosting.
+Latest source revision with verified CI and CodeQL at audit time: `c0d4c9ab83d591b107a9ebbdcf600768fc124e57` (PR CI run 42183968046; PR CodeQL run 42183968071). The checks validate repository code and isolated CI infrastructure only; they do not prove an external production database, email delivery, Android device run, backup/restore, or live hosting.
 
 The repository checks above are verified. They do not establish that a production database, independent backup/restore, production hosting, Android device run, UAT or release approval exists. No production migration, deployment, public release or connection to ARIA data is authorized by this checklist.
