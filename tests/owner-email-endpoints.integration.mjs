@@ -7,8 +7,7 @@ import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
 const port = 43180;
-const origin = `http://127.0.0.1:${port}`;
-const requestOrigin = `http://localhost:${port}`;
+const origin = `http://localhost:${port}`;
 let server;
 let serverError = "";
 
@@ -86,7 +85,7 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
     const created = await fetch(`${origin}/api/owner/email-contacts`, {
       method: "POST",
       headers: {
-        Origin: requestOrigin,
+        Origin: origin,
         Host: `localhost:${port}`,
         Cookie: cookie,
         "Content-Type": "application/json"
@@ -112,7 +111,7 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
     const verify = () => fetch(`${origin}/api/owner/email-contacts/${contactId}/verify`, {
       method: "POST",
       headers: {
-        Origin: requestOrigin,
+        Origin: origin,
         Host: `localhost:${port}`,
         Cookie: cookie
       }
@@ -128,7 +127,7 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
     const updated = await fetch(`${origin}/api/owner/email-contacts/${contactId}`, {
       method: "PATCH",
       headers: {
-        Origin: requestOrigin,
+        Origin: origin,
         Host: `localhost:${port}`,
         Cookie: cookie,
         "Content-Type": "application/json"
@@ -141,7 +140,7 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
     const deleted = await fetch(`${origin}/api/owner/email-contacts/${contactId}`, {
       method: "DELETE",
       headers: {
-        Origin: requestOrigin,
+        Origin: origin,
         Host: `localhost:${port}`,
         Cookie: cookie
       }
