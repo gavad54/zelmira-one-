@@ -108,6 +108,8 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
     assert.equal(list.status, 200);
     assert.ok((await list.json()).contacts.some(contact => contact.id === contactId));
 
+    const userLimitKey = createHash("sha256").update("owner-email-verify-user:" + userId).digest("hex");
+    const contactLimitKey = createHash("sha256").update("owner-email-verify-contact:" + userId + ":" + contactId).digest("hex");
     const verify = () => fetch(`${origin}/api/owner/email-contacts/${contactId}/verify`, {
       method: "POST",
       headers: {
@@ -121,8 +123,15 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
     assert.equal(firstVerify.status, 503, "delivery must fail closed when no email provider is configured");
     assert.equal(await db.emailContactVerificationToken.count({ where: { contactId } }), 0, "failed delivery must remove the unused token");
 
+    const firstContactLimit = await db.authRateLimit.findUnique({ where: { keyHash: contactLimitKey } });
+    const firstUserLimit = await db.authRateLimit.findUnique({ where: { keyHash: userLimitKey } });
+    assert.equal(firstContactLimit?.count, 1, "first verification request must persist the contact throttle");
+    assert.equal(firstUserLimit?.count, 1, "first verification request must persist the owner throttle");
+
     const secondVerify = await verify();
-    assert.equal(secondVerify.status, 429, "the atomic contact throttle must reject a repeated request");
+    const secondBody = await secondVerify.clone().json().catch(() => ({}));
+    const secondContactLimit = await db.authRateLimit.findUnique({ where: { keyHash: contactLimitKey } });
+    assert.equal(secondVerify.status, 429, `the atomic contact throttle must reject a repeated request; body=${JSON.stringify(secondBody)}; persistedCount=${secondContactLimit?.count ?? "missing"}`);
 
     const updated = await fetch(`${origin}/api/owner/email-contacts/${contactId}`, {
       method: "PATCH",
