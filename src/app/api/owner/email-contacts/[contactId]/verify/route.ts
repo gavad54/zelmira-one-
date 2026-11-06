@@ -18,6 +18,14 @@ export async function POST(request: Request, context: Context) {
   const contact = await prisma.emailContact.findUnique({ where: { id: contactId } });
   if (!contact || !contact.enabled) return NextResponse.json({ error: "not_found_or_disabled" }, { status: 404 });
   if (contact.verifiedAt) return NextResponse.json({ error: "already_verified" }, { status: 409 });
+  // Apply limits before checking email configuration so failed delivery attempts are also throttled.
+  // Atomic database-backed limits prevent parallel requests from bypassing a count-then-create check.
+  const limits = await Promise.all([
+    allowAttempt(sha256("owner-email-verify-user:" + owner.userId), 10, 60 * 60 * 1000),
+    allowAttempt(sha256("owner-email-verify-contact:" + owner.userId + ":" + contactId), 1, 60 * 1000)
+  ]);
+  if (limits.some(allowed => !allowed)) return NextResponse.json({ error: "verification_rate_limited" }, { status: 429 });
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!appUrl) return NextResponse.json({ error: "email_service_not_configured" }, { status: 503 });
   let verificationUrl: URL;
@@ -25,12 +33,6 @@ export async function POST(request: Request, context: Context) {
     verificationUrl = new URL("/owner/email-settings", appUrl);
     if (process.env.NODE_ENV === "production" && verificationUrl.protocol !== "https:") return NextResponse.json({ error: "email_service_not_configured" }, { status: 503 });
   } catch { return NextResponse.json({ error: "email_service_not_configured" }, { status: 503 }); }
-  // Atomic database-backed limits prevent parallel requests from bypassing a count-then-create check.
-  const limits = await Promise.all([
-    allowAttempt(sha256("owner-email-verify-user:" + owner.userId), 10, 60 * 60 * 1000),
-    allowAttempt(sha256("owner-email-verify-contact:" + owner.userId + ":" + contactId), 1, 60 * 1000)
-  ]);
-  if (limits.some(allowed => !allowed)) return NextResponse.json({ error: "verification_rate_limited" }, { status: 429 });
   const rawToken = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(rawToken).digest("hex");
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
