@@ -5,18 +5,20 @@ The application must not be described as production-ready until every applicable
 ## Repository verification
 
 - PR #2 targets `main`, remains open and draft, and is not merged.
-- Current branch and PR head: `4103a532abaa738e563a6489a5e9927693716491`.
-- This exact head passed VAYRO CI (push run 42192087791; pull_request run 42192080255) and CodeQL (push run 42192087652; pull_request run 42192080295).
-- The verified CI log for this exact head records 32/32 unit tests and 12/12 PostgreSQL/production HTTP integration tests passing, plus Prisma generation/schema validation, isolated PostgreSQL migration deployment, lint, typecheck and production build.
+- Current branch and PR head: `94932a6aa83e43c6b705d2d32cbc48c4e4350193`.
+- This exact head passed VAYRO CI (push run 42193672217) and CodeQL (push run 42193672246). Duplicate runs 42193663666 (CI) and 42193663604 (CodeQL) also completed successfully.
+- The CI job on this exact head passed unit tests, Prisma client generation/schema validation, least-privilege role setup in isolated PostgreSQL, real Prisma migration history in isolated PostgreSQL, lint, typecheck, production build, and PostgreSQL/production HTTP integration tests.
+- Earlier verified CI evidence on `4103a532abaa738e563a6489a5e9927693716491` recorded 32/32 unit tests and 12/12 PostgreSQL/production HTTP integration tests passing.
 - CI success on a disposable test database does not prove production DB readiness or release readiness.
 
 ## Dependency security — OPEN
 
-- Latest lockfile audit on this exact head reported **6 moderate-severity vulnerabilities**, with no High or Critical findings reported in that run.
+- The audit on the current head reported **6 moderate-severity findings**, with no High or Critical findings reported in that run.
 - The audit step is configured with `continue-on-error: true`; green CI therefore does **not** mean the dependency-security gate passed.
-- The remaining report includes `minimatch` in the `@typescript-eslint/typescript-estree` dependency chain (GHSA-g3hv-75wg-m249).
+- The remaining finding is `minimatch` in the `@typescript-eslint/typescript-estree` dependency chain (GHSA-g3hv-75wg-m249 / CVE-2026-118764). The lockfile resolves `minimatch@10.2.6`; the advisory identifies versions before 11.0.1 as affected.
+- The upstream `typescript-eslint` issue #13125 is still open. Its report says this consumer uses the basic `minimatch(filePath, pattern, { dot: true })` call retained by v11, but the upstream dependency range still requests `^10.2.2`. A targeted v11 override and regenerated lockfile require compatibility validation in this repository before adoption.
+- Do not use `npm audit fix --force`, blindly override all minimatch copies, suppress advisories, or weaken CI assertions.
 - Earlier audit on the prior lockfile reported 11 vulnerabilities (7 moderate, 4 high). This is an improvement, not closure.
-- Resolve or formally assess remaining advisories and make the release gate enforceable. Do not use `npm audit fix --force`, suppress advisories, or weaken CI assertions.
 
 ## Outstanding release gates
 
@@ -53,6 +55,6 @@ There is no verified VAYRO production hosting deployment, Android application/re
 
 **ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
 
-Latest PR head: `4103a532abaa738e563a6489a5e9927693716491`. CI and CodeQL passed on this exact head; dependency-security and all other release gates remain open.
+Latest PR head: `94932a6aa83e43c6b705d2d32cbc48c4e4350193`. CI and CodeQL passed on this exact head; dependency-security and all other release gates remain open.
 
 Do not merge, deploy, migrate production data or publish without the required gates and explicit owner approval.
