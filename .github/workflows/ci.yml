@@ -2,7 +2,7 @@ name: VAYRO CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, brand/vayro-name-only]
   pull_request:
     branches: [main]
 
