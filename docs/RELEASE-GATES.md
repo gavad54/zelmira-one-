@@ -5,15 +5,14 @@ The application must not be described as production-ready until every applicable
 ## Repository verification
 
 - PR #2 targets `main`, remains open and draft, and is not merged.
-- Current branch and PR head: `387403f745da7503ab0a77573c7b2017ae1b589f`.
-- The immediately preceding code-bearing/documentation head `1366e95341b28428f7ba518192f76b614aac439d` passed VAYRO CI on push (run 42190991422) and pull_request (run 42190996346), and CodeQL on push (run 42190991262) and pull_request (run 42190996348).
-- The verified CI log for `1366e953...` records 32/32 unit tests and 12/12 PostgreSQL/production HTTP integration tests passing, plus Prisma generation/schema validation, isolated PostgreSQL migration deployment, lint, typecheck and production build.
-- The current documentation-only head `387403f...` has new CI and CodeQL runs queued/in progress (runs 42192017006 and 42192016961; duplicate PR-event runs 42192023418 and 42192023422). Do not mark this head green until those exact runs complete successfully.
+- Current branch and PR head: `4103a532abaa738e563a6489a5e9927693716491`.
+- This exact head passed VAYRO CI (push run 42192087791; pull_request run 42192080255) and CodeQL (push run 42192087652; pull_request run 42192080295).
+- The verified CI log for this exact head records 32/32 unit tests and 12/12 PostgreSQL/production HTTP integration tests passing, plus Prisma generation/schema validation, isolated PostgreSQL migration deployment, lint, typecheck and production build.
 - CI success on a disposable test database does not prove production DB readiness or release readiness.
 
 ## Dependency security — OPEN
 
-- Latest lockfile audit on the prior verified CI run reported **6 moderate-severity vulnerabilities**, with no High or Critical findings reported in that run.
+- Latest lockfile audit on this exact head reported **6 moderate-severity vulnerabilities**, with no High or Critical findings reported in that run.
 - The audit step is configured with `continue-on-error: true`; green CI therefore does **not** mean the dependency-security gate passed.
 - The remaining report includes `minimatch` in the `@typescript-eslint/typescript-estree` dependency chain (GHSA-g3hv-75wg-m249).
 - Earlier audit on the prior lockfile reported 11 vulnerabilities (7 moderate, 4 high). This is an improvement, not closure.
@@ -54,6 +53,6 @@ There is no verified VAYRO production hosting deployment, Android application/re
 
 **ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
 
-Latest PR head: `387403f745da7503ab0a77573c7b2017ae1b589f`. CI and CodeQL on this exact head are pending verification at the time this document was corrected.
+Latest PR head: `4103a532abaa738e563a6489a5e9927693716491`. CI and CodeQL passed on this exact head; dependency-security and all other release gates remain open.
 
 Do not merge, deploy, migrate production data or publish without the required gates and explicit owner approval.
