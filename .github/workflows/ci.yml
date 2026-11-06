@@ -42,6 +42,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Audit locked dependency tree
+        run: npm audit --audit-level=high
       - name: Run unit tests
         run: npm test
       - name: Generate Prisma client
