@@ -52,8 +52,6 @@ jobs:
         run: psql "postgresql://ci:ci@localhost:5432/vayro_ci" -v ON_ERROR_STOP=1 -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN;'
       - name: Apply real Prisma migration history
         run: npx prisma migrate deploy
-      - name: Run PostgreSQL authorization integration tests
-        run: npm run test:integration
       - name: Lint
         run: npm run lint
       - name: Typecheck
@@ -62,3 +60,5 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_APP_URL: http://localhost:3000
+      - name: Run PostgreSQL and production HTTP integration tests
+        run: npm run test:integration
