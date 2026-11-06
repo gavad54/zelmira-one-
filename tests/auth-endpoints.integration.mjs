@@ -84,7 +84,12 @@ test("authentication mutation endpoints reject cross-origin requests", async () 
 test("login endpoint rejects malformed JSON over HTTP", async () => {
   const response = await fetch(`${origin}/api/auth/login`, {
     method: "POST",
-    headers: { Origin: origin, "Content-Type": "application/json" },
+    headers: {
+      Origin: origin,
+      Host: `127.0.0.1:${port}`,
+      "Sec-Fetch-Site": "same-origin",
+      "Content-Type": "application/json"
+    },
     body: "{malformed"
   });
   assert.equal(response.status, 400);
