@@ -47,11 +47,8 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
   const suffix = randomUUID();
   const token = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(token).digest("hex");
-  const userLimitHash = createHash("sha256").update("owner-email-verify-user:" + "OWNER_ID_PLACEHOLDER").digest("hex");
   let userId;
   let contactId;
-  let userLimitKey;
-  let contactLimitKey;
 
   try {
     await db.$connect();
@@ -68,7 +65,6 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
       }
     });
     userId = user.id;
-    userLimitKey = createHash("sha256").update("owner-email-verify-user:" + userId).digest("hex");
 
     await db.session.create({
       data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
