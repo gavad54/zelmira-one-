@@ -192,3 +192,145 @@ test("valid session is returned by /me and revoked by HTTP logout", async () => 
     await db.$disconnect();
   }
 });
+
+
+test("tenant HTTP APIs enforce authentication, verified email, membership and cross-tenant isolation", async () => {
+  const db = new PrismaClient();
+  const suffix = randomUUID();
+  const token = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  let userId;
+  let tenantBId;
+  let createdTenantId;
+
+  try {
+    await db.$connect();
+
+    const unauthenticatedList = await fetch(`${origin}/api/tenants`);
+    assert.equal(unauthenticatedList.status, 401);
+
+    const unauthenticatedCreate = await fetch(`${origin}/api/tenants`, {
+      method: "POST",
+      headers: { Origin: origin, "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Unauthorized Tenant" })
+    });
+    assert.equal(unauthenticatedCreate.status, 401);
+
+    const user = await db.user.create({
+      data: {
+        email: `tenant-http-${suffix}@example.invalid`,
+        passwordHash: "integration-test-only-hash",
+        displayName: "Tenant HTTP Test"
+      }
+    });
+    userId = user.id;
+
+    await db.session.create({
+      data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+    });
+    const cookie = `vayro_session=${token}`;
+
+    const unverifiedList = await fetch(`${origin}/api/tenants`, {
+      headers: { Cookie: cookie }
+    });
+    assert.equal(unverifiedList.status, 403);
+    assert.deepEqual(await unverifiedList.json(), { error: "email_verification_required" });
+
+    await db.user.update({
+      where: { id: userId },
+      data: { emailVerifiedAt: new Date() }
+    });
+
+    const invalidCreate = await fetch(`${origin}/api/tenants`, {
+      method: "POST",
+      headers: {
+        Origin: origin,
+        Host: `127.0.0.1:${port}`,
+        Cookie: cookie,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ name: "Valid Tenant", role: "OWNER" })
+    });
+    assert.equal(invalidCreate.status, 400);
+
+    const create = await fetch(`${origin}/api/tenants`, {
+      method: "POST",
+      headers: {
+        Origin: origin,
+        Host: `127.0.0.1:${port}`,
+        Cookie: cookie,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ name: "Tenant HTTP Test Workspace" })
+    });
+    assert.equal(create.status, 201);
+    const created = await create.json();
+    assert.equal(created.tenant.name, "Tenant HTTP Test Workspace");
+    assert.equal(created.tenant.role, "OWNER");
+    createdTenantId = created.tenant.id;
+
+    const audit = await db.auditEvent.findFirst({
+      where: {
+        actorUserId: userId,
+        tenantId: createdTenantId,
+        action: "tenant.created"
+      }
+    });
+    assert.ok(audit, "tenant creation must write an owner audit event");
+
+    const list = await fetch(`${origin}/api/tenants`, {
+      headers: { Cookie: cookie }
+    });
+    assert.equal(list.status, 200);
+    const listed = await list.json();
+    assert.deepEqual(listed.tenants.map(tenant => tenant.id), [createdTenantId]);
+
+    const workspace = await fetch(`${origin}/api/tenants/${createdTenantId}`, {
+      headers: { Cookie: cookie }
+    });
+    assert.equal(workspace.status, 200);
+    const workspaceBody = await workspace.json();
+    assert.equal(workspaceBody.tenant.id, createdTenantId);
+    assert.equal(workspaceBody.role, "OWNER");
+
+    const tenantB = await db.tenant.create({
+      data: { name: "Unrelated Tenant", slug: `unrelated-${suffix}` }
+    });
+    tenantBId = tenantB.id;
+
+    const crossTenantWorkspace = await fetch(`${origin}/api/tenants/${tenantBId}`, {
+      headers: { Cookie: cookie }
+    });
+    assert.equal(crossTenantWorkspace.status, 401);
+
+    const ownAccess = await fetch(`${origin}/api/tenants/${createdTenantId}/access`, {
+      headers: { Cookie: cookie }
+    });
+    assert.equal(ownAccess.status, 200);
+    assert.deepEqual(await ownAccess.json(), {
+      tenantId: createdTenantId,
+      role: "OWNER",
+      access: "granted"
+    });
+
+    const crossTenantAccess = await fetch(`${origin}/api/tenants/${tenantBId}/access`, {
+      headers: { Cookie: cookie }
+    });
+    assert.equal(crossTenantAccess.status, 401);
+  } finally {
+    if (userId) {
+      await db.auditEvent.deleteMany({ where: { actorUserId: userId } });
+      await db.session.deleteMany({ where: { userId } });
+    }
+    if (createdTenantId || tenantBId) {
+      await db.membership.deleteMany({
+        where: { tenantId: { in: [createdTenantId, tenantBId].filter(Boolean) } }
+      });
+      await db.tenant.deleteMany({
+        where: { id: { in: [createdTenantId, tenantBId].filter(Boolean) } }
+      });
+    }
+    if (userId) await db.user.deleteMany({ where: { id: userId } });
+    await db.$disconnect();
+  }
+});
