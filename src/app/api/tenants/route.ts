@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { isSameOriginRequest } from "@/lib/auth-core.mjs";
 import { allowAttempt, currentSession, noStoreJson, requestFingerprint } from "@/lib/auth-service";
+import { createTenantWithOwnerAudit, listActiveTenants } from "@/lib/tenant-service.mjs";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -19,20 +20,8 @@ export async function GET() {
       return noStoreJson({ error: "email_verification_required" }, 403);
     }
 
-    const memberships = await prisma.membership.findMany({
-      where: { userId: session.user.id, tenant: { status: "ACTIVE" } },
-      orderBy: { createdAt: "asc" },
-      select: {
-        role: true,
-        tenant: {
-          select: { id: true, name: true, slug: true, status: true, createdAt: true }
-        }
-      }
-    });
-
-    return noStoreJson({
-      tenants: memberships.map(({ role, tenant }) => ({ ...tenant, role }))
-    });
+    const tenants = await listActiveTenants({ db: prisma, userId: session.user.id });
+    return noStoreJson({ tenants });
   } catch {
     return noStoreJson({ error: "tenant_list_unavailable" }, 503);
   }
@@ -60,32 +49,14 @@ export async function POST(request: Request) {
     );
     if (!allowed) return noStoreJson({ error: "try_again_later" }, 429);
 
-    const tenant = await prisma.$transaction(async (tx) => {
-      const created = await tx.tenant.create({
-        data: {
-          name: parsed.data.name,
-          slug: "vayro-" + randomBytes(8).toString("hex"),
-          memberships: {
-            create: { userId: session.user.id, role: "OWNER" }
-          }
-        },
-        select: { id: true, name: true, slug: true, status: true, createdAt: true }
-      });
-
-      await tx.auditEvent.create({
-        data: {
-          actorUserId: session.user.id,
-          tenantId: created.id,
-          action: "tenant.created",
-          resource: "Tenant",
-          resourceId: created.id
-        }
-      });
-
-      return created;
+    const tenant = await createTenantWithOwnerAudit({
+      db: prisma,
+      userId: session.user.id,
+      name: parsed.data.name,
+      slug: "vayro-" + randomBytes(8).toString("hex")
     });
 
-    return noStoreJson({ tenant: { ...tenant, role: "OWNER" } }, 201);
+    return noStoreJson({ tenant }, 201);
   } catch {
     return noStoreJson({ error: "tenant_creation_failed" }, 503);
   }
