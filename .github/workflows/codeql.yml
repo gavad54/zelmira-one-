@@ -2,7 +2,7 @@ name: CodeQL Security Analysis
 
 on:
   push:
-    branches: [main]
+    branches: [main, brand/vayro-name-only]
   pull_request:
     branches: [main]
   schedule:
