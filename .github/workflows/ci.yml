@@ -48,8 +48,10 @@ jobs:
         run: npx prisma generate
       - name: Validate Prisma schema
         run: npx prisma validate
-      - name: Prepare isolated PostgreSQL schema
-        run: npx prisma db push --skip-generate
+      - name: Prepare least-privilege roles in isolated PostgreSQL
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN;'
+      - name: Apply real Prisma migration history
+        run: npx prisma migrate deploy
       - name: Run PostgreSQL authorization integration tests
         run: npm run test:integration
       - name: Lint
