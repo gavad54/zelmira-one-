@@ -112,7 +112,10 @@ test("session identity endpoint denies absent and malformed cookies without expo
 test("logout is idempotent without a session and expires the session cookie", async () => {
   const response = await fetch(`${origin}/api/auth/logout`, {
     method: "POST",
-    headers: { Origin: origin }
+    headers: {
+      Origin: `http://localhost:${port}`,
+      Host: `localhost:${port}`
+    }
   });
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { authenticated: false });
