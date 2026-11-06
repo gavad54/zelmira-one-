@@ -211,7 +211,7 @@ test("tenant HTTP APIs enforce authentication, verified email, membership and cr
 
     const unauthenticatedCreate = await fetch(`${origin}/api/tenants`, {
       method: "POST",
-      headers: { Origin: origin, "Content-Type": "application/json" },
+      headers: { Origin: `http://localhost:${port}`, "Content-Type": "application/json" },
       body: JSON.stringify({ name: "Unauthorized Tenant" })
     });
     assert.equal(unauthenticatedCreate.status, 401);
@@ -244,8 +244,8 @@ test("tenant HTTP APIs enforce authentication, verified email, membership and cr
     const invalidCreate = await fetch(`${origin}/api/tenants`, {
       method: "POST",
       headers: {
-        Origin: origin,
-        Host: `127.0.0.1:${port}`,
+        Origin: `http://localhost:${port}`,
+        Host: `localhost:${port}`,
         Cookie: cookie,
         "Content-Type": "application/json"
       },
@@ -256,8 +256,8 @@ test("tenant HTTP APIs enforce authentication, verified email, membership and cr
     const create = await fetch(`${origin}/api/tenants`, {
       method: "POST",
       headers: {
-        Origin: origin,
-        Host: `127.0.0.1:${port}`,
+        Origin: `http://localhost:${port}`,
+        Host: `localhost:${port}`,
         Cookie: cookie,
         "Content-Type": "application/json"
       },
