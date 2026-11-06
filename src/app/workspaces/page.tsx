@@ -110,6 +110,7 @@ export default function WorkspacesPage() {
             <article className="workspace-card" key={item.id}>
               <div><h3>{item.name}</h3><p>{item.slug}</p></div>
               <div className="workspace-meta"><span>{item.role === "OWNER" ? "مالک" : item.role}</span><span>{item.status === "ACTIVE" ? "فعال" : item.status}</span></div>
+              <Link className="workspace-open-link" href={`/workspaces/${encodeURIComponent(item.id)}`}>ورود به فضای کاری ←</Link>
             </article>
           ))}</div>
         }
