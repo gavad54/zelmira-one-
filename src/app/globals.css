@@ -146,3 +146,24 @@ a{color:inherit;text-decoration:none}
 .workspace-error{color:#ffb7b7;background:rgba(220,100,100,.1);border:1px solid rgba(220,100,100,.25)}
 .workspace-footnote{font-size:11px;margin-top:22px}
 @media(max-width:560px){.workspace-page{padding:0 15px 40px}.workspace-intro{padding-top:38px}.workspace-panel,.workspace-list{padding:17px}.workspace-form-row{flex-direction:column}.workspace-form button{min-height:44px}.workspace-card{align-items:flex-start;flex-direction:column}}
+
+
+/* Tenant workspace dashboard */
+.workspace-open-link{display:inline-flex;align-items:center;gap:7px;margin-top:12px;color:var(--gold);font-size:11px;font-weight:700}
+.workspace-open-link:focus-visible,.workspace-detail-state a:focus-visible,.workspace-detail-state button:focus-visible{outline:2px solid var(--ice);outline-offset:3px}
+.workspace-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0 20px}
+.workspace-summary-card{display:grid;gap:12px;padding:20px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.workspace-summary-card span{font-size:11px;color:var(--muted)}
+.workspace-summary-card strong{font-size:24px;color:var(--gold)}
+.workspace-info-panel{margin-top:18px}
+.workspace-info-list{display:grid;gap:12px;margin:0}
+.workspace-info-list>div{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.workspace-info-list>div:last-child{border-bottom:0;padding-bottom:0}
+.workspace-info-list dt{font-size:12px;color:var(--muted)}
+.workspace-info-list dd{margin:0;font-size:12px;overflow-wrap:anywhere}
+.workspace-detail-state{display:grid;justify-items:start;gap:14px;margin:70px auto;padding:26px;max-width:620px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+.workspace-detail-state h1{font-size:22px;margin:0}
+.workspace-detail-state p{font-size:13px;line-height:2;color:var(--muted)}
+.workspace-detail-state button{border:0;border-radius:9px;padding:12px 18px;background:linear-gradient(110deg,#d8bd83,#b99a60);color:#17140f;font-weight:700;cursor:pointer}
+.workspace-detail-state a{font-size:12px;color:var(--ice)}
+@media(max-width:560px){.workspace-summary-grid{grid-template-columns:1fr}.workspace-summary-card{padding:15px}.workspace-info-list>div{align-items:flex-start;flex-direction:column;gap:6px}.workspace-list-heading{align-items:flex-start;flex-direction:column;gap:12px}}
