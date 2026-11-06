@@ -1,4 +1,6 @@
 import test, { before, after } from "node:test";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { PrismaClient } from "@prisma/client";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
@@ -124,4 +126,69 @@ test("logout is idempotent without a session and expires the session cookie", as
   assert.match(cookie, /Expires=Thu, 01 Jan 1970/i);
   assert.match(cookie, /HttpOnly/i);
   assert.match(cookie, /SameSite=Lax/i);
+});
+
+
+test("valid session is returned by /me and revoked by HTTP logout", async () => {
+  const db = new PrismaClient();
+  const suffix = randomUUID();
+  const token = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  let userId;
+
+  try {
+    await db.$connect();
+    const user = await db.user.create({
+      data: {
+        email: `http-session-${suffix}@example.invalid`,
+        passwordHash: "integration-test-only-hash",
+        displayName: "HTTP Session Test",
+        emailVerifiedAt: new Date()
+      }
+    });
+    userId = user.id;
+    const session = await db.session.create({
+      data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+    });
+
+    const me = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${token}` }
+    });
+    assert.equal(me.status, 200);
+    const identity = await me.json();
+    assert.equal(identity.authenticated, true);
+    assert.equal(identity.user.id, userId);
+    assert.equal(identity.user.email, user.email);
+    assert.match(me.headers.get("cache-control") ?? "", /no-store/);
+
+    const logout = await fetch(`${origin}/api/auth/logout`, {
+      method: "POST",
+      headers: {
+        Origin: `http://localhost:${port}`,
+        Host: `localhost:${port}`,
+        Cookie: `vayro_session=${token}`
+      }
+    });
+    assert.equal(logout.status, 200);
+    assert.deepEqual(await logout.json(), { authenticated: false });
+    assert.equal(await db.session.count({ where: { id: session.id } }), 0);
+    const clearedCookie = logout.headers.get("set-cookie") ?? "";
+    assert.match(clearedCookie, /vayro_session=/);
+    assert.match(clearedCookie, /Expires=Thu, 01 Jan 1970/i);
+    assert.match(clearedCookie, /HttpOnly/i);
+    assert.match(clearedCookie, /SameSite=Lax/i);
+
+    const afterLogout = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${token}` }
+    });
+    assert.equal(afterLogout.status, 401);
+    assert.deepEqual(await afterLogout.json(), { authenticated: false });
+  } finally {
+    if (userId) {
+      await db.auditEvent.deleteMany({ where: { actorUserId: userId } });
+      await db.session.deleteMany({ where: { userId } });
+      await db.user.deleteMany({ where: { id: userId } });
+    }
+    await db.$disconnect();
+  }
 });
