@@ -4,8 +4,13 @@ The application must not be described as production-ready until every applicable
 
 ## Latest verified repository checks
 
-- [x] VAYRO CI passed on PR head `199015bdad6390ce678e339b94520faafae1368b`: [PR run 42190190559](https://github.com/gavad54/zelmira-one-/actions/runs/42190190559) and [push run 42190187148](https://github.com/gavad54/zelmira-one-/actions/runs/42190187148).
-- [x] CodeQL passed on the same commit: [PR run 42190190515](https://github.com/gavad54/zelmira-one-/actions/runs/42190190515) and [push run 42190187144](https://github.com/gavad54/zelmira-one-/actions/runs/42190187144).
+- [x] Latest branch/PR head rechecked: `1366e95341b28428f7ba518192f76b614aac439d` on `brand/vayro-name-only`; PR #2 is still open, draft and unmerged.
+- [x] The latest head's VAYRO CI passed on both push and pull_request events: [push run 42190991422](https://github.com/gavad54/zelmira-one-/actions/runs/42190991422), [PR run 42190996346](https://github.com/gavad54/zelmira-one-/actions/runs/42190996346).
+- [x] The latest head's CodeQL passed on both events: [push run 42190991262](https://github.com/gavad54/zelmira-one-/actions/runs/42190991262), [PR run 42190996348](https://github.com/gavad54/zelmira-one-/actions/runs/42190996348).
+- [x] Exact latest CI log confirms 32/32 unit tests and 12/12 PostgreSQL/production HTTP integration tests passed (0 failures); Prisma generation/schema validation, isolated PostgreSQL migration deployment, lint, typecheck and production build also passed.
+
+- [x] VAYRO CI passed on PR head `1366e95341b28428f7ba518192f76b614aac439d`: [PR run 42190996346](https://github.com/gavad54/zelmira-one-/actions/runs/42190190559) and [push run 42190991422](https://github.com/gavad54/zelmira-one-/actions/runs/42190187148).
+- [x] CodeQL passed on the same commit: [PR run 42190996348](https://github.com/gavad54/zelmira-one-/actions/runs/42190190515) and [push run 42190991262](https://github.com/gavad54/zelmira-one-/actions/runs/42190187144).
 - [x] CI completed locked dependency installation, 32 unit tests, Prisma client generation and schema validation, least-privilege role preparation in disposable PostgreSQL, real Prisma migration deployment to disposable CI PostgreSQL, lint, TypeScript typecheck, production build, and 12 PostgreSQL/production HTTP integration tests. All 32 unit tests and all 12 integration tests passed.
 - [x] CodeQL JavaScript/TypeScript analysis completed successfully.
 - [x] The generated lockfile contains `deepmerge-ts 8.0.2` and `postcss 8.5.32`.
@@ -54,6 +59,6 @@ There is no verified VAYRO production hosting deployment, Android application/re
 
 **ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
 
-Latest verified PR head at the time of this record: `199015bdad6390ce678e339b94520faafae1368b` (VAYRO CI run 42190190559; CodeQL run 42190190515). The next documentation commit will require its own CI/CodeQL verification.
+Latest verified PR head at the time of this record: `1366e95341b28428f7ba518192f76b614aac439d` (VAYRO CI run 42190190559; CodeQL run 42190190515). The next documentation commit will require its own CI/CodeQL verification.
 
 Passing repository checks validate code and disposable CI infrastructure only. They do not prove production hosting, production database readiness, email delivery, Android device execution, independent backup/restore, UAT or release approval. Do not merge, deploy, migrate production data or publish without the required gates and explicit owner approval.
