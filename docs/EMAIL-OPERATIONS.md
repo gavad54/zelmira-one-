@@ -45,7 +45,7 @@ All delivery calls go through sendTransactionalEmail in src/lib/email-provider.t
 - The Gmail API and Resend adapters are implemented, but no provider account, OAuth grant, live mailbox verification or delivery test has been completed.
 - No VAYRO Railway project currently exists in the connected workspace, so there is no VAYRO runtime in which to store protected email variables. Do not put VAYRO credentials into ARIA or LEADORA.
 - Gmail credentials must be configured by the authorized adult mailbox owner in a dedicated VAYRO production host after that host exists. Google OAuth verification for the sensitive gmail.send scope must be assessed before public production use.
-- Prisma schema includes AuthActionToken and AuthRateLimit; migration 20261104190000_auth_foundation creates those tables and enum.
+- Prisma schema includes AuthActionToken and AuthRateLimit. The branch currently contains the consolidated migration `20261106055500_init_vayro_core`; the separately provisioned Supabase schema has not been baselined into Prisma migration history. Do not run `prisma migrate deploy` against the live VAYRO database until a catalog/schema/migration reconciliation and an isolated restore/forward test are approved.
 - CI schema validation uses an isolated PostgreSQL database. It does not prove a migration has been safely applied to production.
 - Apply migrations only after an independent backup and restore proof. Do not run prisma db push on the live database.
 - Keep public release blocked until fresh CI passes, auth flows are tested end-to-end, Gmail/provider delivery is verified, owner bootstrap is completed by the authorized operator, and backup/restore and UAT gates pass.
