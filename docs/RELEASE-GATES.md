@@ -38,6 +38,6 @@ The application must not be described as production-ready until every applicable
 
 **DEPLOYMENT BLOCKED — NOT RELEASED.**
 
-Latest source revision with verified CI and push-triggered CodeQL at audit time: `a36b18445c827ee6848ec1e90b2c6f1b37c57c7f` (PR CI run 42183399055; push CodeQL run 42183392286). PR-triggered CodeQL run 42183398945 is still in progress. The checks validate repository code and isolated CI infrastructure only; they do not prove an external production database, email delivery, Android device run, backup/restore, or live hosting.
+Latest source revision with verified CI and push-triggered CodeQL at audit time: `a36b18445c827ee6848ec1e90b2c6f1b37c57c7f` (PR CI run 42183399055; push CodeQL run 42183392286). PR-triggered CodeQL run 42183398945 also completed successfully. The checks validate repository code and isolated CI infrastructure only; they do not prove an external production database, email delivery, Android device run, backup/restore, or live hosting.
 
 The repository checks above are verified. They do not establish that a production database, independent backup/restore, production hosting, Android device run, UAT or release approval exists. No production migration, deployment, public release or connection to ARIA data is authorized by this checklist.
