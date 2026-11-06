@@ -120,12 +120,18 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
     });
 
     const firstVerify = await verify();
+    const firstVerifyBody = await firstVerify.clone().json().catch(() => ({}));
     assert.equal(firstVerify.status, 503, "delivery must fail closed when no email provider is configured");
     assert.equal(await db.emailContactVerificationToken.count({ where: { contactId } }), 0, "failed delivery must remove the unused token");
 
     const firstContactLimit = await db.authRateLimit.findUnique({ where: { keyHash: contactLimitKey } });
     const firstUserLimit = await db.authRateLimit.findUnique({ where: { keyHash: userLimitKey } });
-    assert.equal(firstContactLimit?.count, 1, "first verification request must persist the contact throttle");
+    const recentRateLimits = await db.authRateLimit.findMany({
+      orderBy: { windowStartedAt: "desc" },
+      take: 20,
+      select: { keyHash: true, count: true, windowStartedAt: true }
+    });
+    assert.equal(firstContactLimit?.count, 1, `first verification request must persist the contact throttle; body=${JSON.stringify(firstVerifyBody)}; matchingRows=${JSON.stringify([firstContactLimit, firstUserLimit])}; recentRateLimits=${JSON.stringify(recentRateLimits)}`);
     assert.equal(firstUserLimit?.count, 1, "first verification request must persist the owner throttle");
 
     const secondVerify = await verify();
