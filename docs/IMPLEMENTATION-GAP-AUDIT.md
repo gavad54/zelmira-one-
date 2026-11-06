@@ -2,7 +2,7 @@
 
 **Audit date:** 2026-11-06  
 **Audited ref:** `brand/vayro-name-only`  
-**Latest verified source commit at audit time:** `a36b18445c827ee6848ec1e90b2c6f1b37c57c7f`  
+**Latest verified source commit at audit time:** `c0d4c9ab83d591b107a9ebbdcf600768fc124e57`  
 **Status:** engineering foundation in progress — NOT RELEASED. The reproducible npm dependency gate is closed; this is not a security certification.
 
 ## Latest engineering changes
@@ -18,11 +18,11 @@
 ## Verified repository and CI state
 
 - The pull request is [PR #2](https://github.com/gavad54/zelmira-one-/pull/2), titled “Rebrand application as VAYRO and establish product family”. It is open, draft, and unmerged. Its base branch `main` remains at `b8bafd001aba1021e58c50fbea861906f329c52e`.
-- On latest verified commit `a36b18445c827ee6848ec1e90b2c6f1b37c57c7f`, VAYRO CI run [42183399055](https://github.com/gavad54/zelmira-one-/actions/runs/42183399055) completed successfully. Its steps passed: locked dependency installation, unit tests, Prisma client generation, Prisma schema validation, disposable PostgreSQL role preparation, real Prisma migration deployment to isolated PostgreSQL, lint, TypeScript typecheck, production build and production HTTP integration tests.
-- Pull-request CodeQL run [42183398945](https://github.com/gavad54/zelmira-one-/actions/runs/42183398945) completed successfully on the same commit.
-- The PR-triggered validation run is the authoritative verified CI result recorded here; the separate push-triggered CI run [42183392243](https://github.com/gavad54/zelmira-one-/actions/runs/42183392243) was still in progress when checked and is not counted as passed.
-- The production HTTP integration suite passed 10/10 tests: public homepage/account links, liveness/readiness, cross-origin rejection on eight auth mutation routes, malformed login JSON, absent/malformed `/api/auth/me` cookies with no-store behavior, idempotent logout/cookie expiry, valid-session lookup, HTTP logout revocation and post-logout denial, password-reset token single-use/session revocation transaction tests, and PostgreSQL-backed tenant/role authorization.
-- Production HTTP integration tests verify the public VAYRO homepage and account-entry links, liveness/readiness separation, cross-origin rejection across eight authentication mutation routes, malformed JSON handling for login, absent/malformed `/api/auth/me` cookies, idempotent logout with cookie expiry, valid-session lookup, HTTP session revocation and post-logout denial. The 10/10 integration suite also includes password-reset transaction and PostgreSQL tenant/role authorization tests. These checks do not yet cover every authentication lifecycle or tenant API scenario.
+- On latest verified commit `c0d4c9ab83d591b107a9ebbdcf600768fc124e57`, VAYRO CI run [42183968046](https://github.com/gavad54/zelmira-one-/actions/runs/42183968046) completed successfully. Its steps passed: locked dependency installation, unit tests, Prisma client generation, Prisma schema validation, disposable PostgreSQL role preparation, real Prisma migration deployment to isolated PostgreSQL, lint, TypeScript typecheck, production build and production HTTP integration tests.
+- Pull-request CodeQL run [42183968071](https://github.com/gavad54/zelmira-one-/actions/runs/42183968071) completed successfully on the same commit.
+- Both PR-triggered and push-triggered CI/CodeQL workflows completed successfully on the current audited commit.
+- The production HTTP integration suite passed 11/11 tests: public homepage/account links, liveness/readiness, cross-origin rejection on eight auth mutation routes, malformed login JSON, absent/malformed `/api/auth/me` cookies with no-store behavior, idempotent logout/cookie expiry, valid-session lookup, HTTP logout revocation and post-logout denial, password-reset token single-use/session revocation transaction tests, and PostgreSQL-backed tenant/role authorization.
+- Production HTTP integration tests verify the public VAYRO homepage and account-entry links, liveness/readiness separation, cross-origin rejection across eight authentication mutation routes, malformed JSON handling for login, absent/malformed `/api/auth/me` cookies, idempotent logout with cookie expiry, valid-session lookup, HTTP session revocation and post-logout denial. The 11/11 integration suite also includes tenant HTTP API authorization and cross-tenant denial, password-reset transaction and PostgreSQL tenant/role authorization tests. These checks do not yet cover every authentication lifecycle or tenant API scenario.
 - The codebase includes Next.js App Router, React, TypeScript, PostgreSQL and Prisma; auth pages/API routes, password/session/token helpers, owner bootstrap and email-provider adapters; Prisma schema and migration files; health/readiness routes; product-family catalogue; architecture, security, backup, release and product-boundary documentation.
 - The eight specialist product entries are catalogue/roadmap items, not evidence that those eight products are operational integrations.
 - `package-lock.json` is committed (npm lockfileVersion 3; 5,932 lines) and matches the root package metadata. The generated lock was validated by a clean `npm ci` before commit.
@@ -37,10 +37,20 @@
 - No independent off-provider backup and isolated restore evidence has been supplied or verified.
 - No production deployment commit, Android device acceptance, owner UAT or public commercial release has been verified.
 
+## Live VAYRO-CORE database inspection (read-only, 2026-11-06)
+
+- Supabase project VAYRO-CORE (wdqhdnhpgxhmmfeyxwxr) is ACTIVE_HEALTHY, PostgreSQL 17, region eu-central-1.
+- Eleven expected application tables were found; all have RLS enabled and all eleven reported zero rows at inspection time.
+- anon, authenticated and service_role have no table grants in public; pg_policies returned no policies. The security advisor reports 11 informational rls_enabled_no_policy findings. This matches the server-only direct-database design only if the deployed application uses a tightly restricted server credential and browser roles remain unprivileged. The actual application runtime credential could not be inspected.
+- The postgres role used for inspection is a login role with BYPASSRLS; service_role also has BYPASSRLS but no table grants. Never expose either credential to clients.
+- No _prisma_migrations or schema_migrations table was found and Supabase reports no recorded migrations. The live schema was provisioned directly and is not baselined to the repository migration. Do not run prisma migrate deploy against this database until catalog-to-schema reconciliation, independent backup/restore proof and a controlled baseline plan are complete.
+- Ten performance advisor notices concern unused indexes. With an empty database and no representative workload, these are not grounds for index removal.
+- No DDL, data writes, grants or policy changes were made during this inspection.
+
 ## Remaining critical gaps
 
 ### Reproducible builds
-The lockfile generation task is complete: npm 10 generated the v3 lockfile from `package.json`; a clean `npm ci` completed before commit; CI and Docker now use `npm ci`. The full PR validation pipeline passed on `a36b18445c827ee6848ec1e90b2c6f1b37c57c7f`, including isolated migration deployment and production HTTP integration tests. Re-run checks after subsequent source changes.
+The lockfile generation task is complete: npm 10 generated the v3 lockfile from `package.json`; a clean `npm ci` completed before commit; CI and Docker now use `npm ci`. The full PR validation pipeline passed on `c0d4c9ab83d591b107a9ebbdcf600768fc124e57`, including isolated migration deployment and 11 production HTTP integration tests. Re-run checks after subsequent source changes.
 
 ### Identity, sessions and owner recovery
 The branch contains auth flows and security primitives. Still require focused endpoint-level tests and review for password policy, session lifecycle/revocation, cookie flags, CSRF/origin handling, rate limits, token one-time use/expiry, email enumeration resistance, owner bootstrap removal, MFA/passkeys for privileged users and recovery. Do not treat the existence of routes as proof of end-to-end verified identity.
