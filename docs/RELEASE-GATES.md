@@ -5,9 +5,10 @@ The application must not be described as production-ready until every applicable
 ## Repository verification
 
 - PR #2 targets `main`, remains open and draft, and is not merged.
-- Current branch and PR head: `94932a6aa83e43c6b705d2d32cbc48c4e4350193`.
-- This exact head passed VAYRO CI (push run 42193672217) and CodeQL (push run 42193672246). Duplicate runs 42193663666 (CI) and 42193663604 (CodeQL) also completed successfully.
-- The CI job on this exact head passed unit tests, Prisma client generation/schema validation, least-privilege role setup in isolated PostgreSQL, real Prisma migration history in isolated PostgreSQL, lint, typecheck, production build, and PostgreSQL/production HTTP integration tests.
+- Current branch and PR head: `c811b2b620dbca68c714ab038291ada42a099fd3`.
+- This exact head passed VAYRO CI (PR run 42194051921) and CodeQL (PR run 42194051963), both completed successfully on 2026-11-06.
+- The CI job on this exact head passed locked dependency installation, unit tests, Prisma client generation/schema validation, least-privilege role setup in isolated PostgreSQL, real Prisma migration history in isolated PostgreSQL, lint, typecheck, production build, and PostgreSQL/production HTTP integration tests.
+- The dependency-audit step itself reported 6 moderate findings and is explicitly configured with `continue-on-error: true`; its green step/job status is not a passed dependency-security gate.
 - Earlier verified CI evidence on `4103a532abaa738e563a6489a5e9927693716491` recorded 32/32 unit tests and 12/12 PostgreSQL/production HTTP integration tests passing.
 - CI success on a disposable test database does not prove production DB readiness or release readiness.
 
@@ -55,6 +56,6 @@ There is no verified VAYRO production hosting deployment, Android application/re
 
 **ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
 
-Latest PR head: `94932a6aa83e43c6b705d2d32cbc48c4e4350193`. CI and CodeQL passed on this exact head; dependency-security and all other release gates remain open.
+Latest PR head: `c811b2b620dbca68c714ab038291ada42a099fd3`. CI and CodeQL passed on this exact head; dependency-security and all other release gates remain open.
 
 Do not merge, deploy, migrate production data or publish without the required gates and explicit owner approval.
