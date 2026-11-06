@@ -1,6 +1,7 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
 const port = 43179;
@@ -11,9 +12,10 @@ let serverError = "";
 before(async () => {
   server = spawn(
     process.execPath,
-    ["node_modules/next/dist/bin/next", "start", "--hostname", "127.0.0.1", "--port", String(port)],
+    ["server.js"],
     {
-      env: { ...process.env, NODE_ENV: "production", NEXT_PUBLIC_APP_URL: origin },
+      env: { ...process.env, NODE_ENV: "production", PORT: String(port), HOSTNAME: "127.0.0.1", NEXT_PUBLIC_APP_URL: origin },
+      cwd: join(process.cwd(), ".next/standalone"),
       stdio: ["ignore", "ignore", "pipe"]
     }
   );
