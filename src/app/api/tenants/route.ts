@@ -12,49 +12,59 @@ const createTenantInput = z.object({
 }).strict();
 
 export async function GET() {
-  const session = await currentSession();
-  if (!session) return noStoreJson({ error: "unauthorized" }, 401);
-  if (!session.user.emailVerifiedAt) return noStoreJson({ error: "email_verification_required" }, 403);
-
-  const memberships = await prisma.membership.findMany({
-    where: { userId: session.user.id, tenant: { status: "ACTIVE" } },
-    orderBy: { createdAt: "asc" },
-    select: {
-      role: true,
-      tenant: { select: { id: true, name: true, slug: true, status: true, createdAt: true } }
+  try {
+    const session = await currentSession();
+    if (!session) return noStoreJson({ error: "unauthorized" }, 401);
+    if (!session.user.emailVerifiedAt) {
+      return noStoreJson({ error: "email_verification_required" }, 403);
     }
-  });
 
-  return noStoreJson({
-    tenants: memberships.map(({ role, tenant }) => ({ ...tenant, role }))
-  });
+    const memberships = await prisma.membership.findMany({
+      where: { userId: session.user.id, tenant: { status: "ACTIVE" } },
+      orderBy: { createdAt: "asc" },
+      select: {
+        role: true,
+        tenant: {
+          select: { id: true, name: true, slug: true, status: true, createdAt: true }
+        }
+      }
+    });
+
+    return noStoreJson({
+      tenants: memberships.map(({ role, tenant }) => ({ ...tenant, role }))
+    });
+  } catch {
+    return noStoreJson({ error: "tenant_list_unavailable" }, 503);
+  }
 }
 
 export async function POST(request: Request) {
-  if (!isSameOriginRequest(request)) return noStoreJson({ error: "invalid_origin" }, 403);
-
-  const session = await currentSession();
-  if (!session) return noStoreJson({ error: "unauthorized" }, 401);
-  if (!session.user.emailVerifiedAt) return noStoreJson({ error: "email_verification_required" }, 403);
-
-  const parsed = createTenantInput.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return noStoreJson({ error: "invalid_input" }, 400);
-
-  const allowed = await allowAttempt(
-    await requestFingerprint("tenant-create", session.user.id),
-    5,
-    60 * 60 * 1000
-  );
-  if (!allowed) return noStoreJson({ error: "try_again_later" }, 429);
-
-  const slug = "vayro-" + randomBytes(8).toString("hex");
+  if (!isSameOriginRequest(request)) {
+    return noStoreJson({ error: "invalid_origin" }, 403);
+  }
 
   try {
+    const session = await currentSession();
+    if (!session) return noStoreJson({ error: "unauthorized" }, 401);
+    if (!session.user.emailVerifiedAt) {
+      return noStoreJson({ error: "email_verification_required" }, 403);
+    }
+
+    const parsed = createTenantInput.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) return noStoreJson({ error: "invalid_input" }, 400);
+
+    const allowed = await allowAttempt(
+      await requestFingerprint("tenant-create", session.user.id),
+      5,
+      60 * 60 * 1000
+    );
+    if (!allowed) return noStoreJson({ error: "try_again_later" }, 429);
+
     const tenant = await prisma.$transaction(async (tx) => {
       const created = await tx.tenant.create({
         data: {
           name: parsed.data.name,
-          slug,
+          slug: "vayro-" + randomBytes(8).toString("hex"),
           memberships: {
             create: { userId: session.user.id, role: "OWNER" }
           }
@@ -77,6 +87,6 @@ export async function POST(request: Request) {
 
     return noStoreJson({ tenant: { ...tenant, role: "OWNER" } }, 201);
   } catch {
-    return noStoreJson({ error: "tenant_creation_failed" }, 500);
+    return noStoreJson({ error: "tenant_creation_failed" }, 503);
   }
 }
