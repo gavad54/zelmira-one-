@@ -6,6 +6,7 @@ on:
       - brand/vayro-name-only
     paths:
       - .github/workflows/generate-lockfile.yml
+      - package.json
 
 permissions:
   contents: write
