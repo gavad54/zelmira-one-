@@ -4,8 +4,8 @@ The application must not be described as production-ready until every applicable
 
 ## Latest verified repository checks
 
-- [x] VAYRO CI passed on PR head commit `63e1607a09edf9b3e4d360a0a3f303cb631970`: [run 42169645670](https://github.com/gavad54/zelmira-one-/actions/runs/42169645670). Verified job steps: locked dependency installation, unit tests, Prisma generation/schema validation, isolated PostgreSQL schema setup, authorization integration tests, lint, TypeScript typecheck and production build.
-- [x] CodeQL passed on the same PR head commit: [run 42169645710](https://github.com/gavad54/zelmira-one-/actions/runs/42169645710). Both workflow jobs completed with conclusion `success`.
+- [x] VAYRO CI passed on PR head commit `bfa5a69385a5271f817eb0adf4867a47ca210902`: [run 42171651845](https://github.com/gavad54/zelmira-one-/actions/runs/42171651845). Verified job steps: locked dependency installation, unit tests, Prisma generation/schema validation, isolated PostgreSQL schema setup, authorization integration tests, lint, TypeScript typecheck and production build.
+- [x] CodeQL passed on the same PR head commit: [run 42171651838](https://github.com/gavad54/zelmira-one-/actions/runs/42171651838). Both workflow jobs completed with conclusion `success`.
 - [x] Authentication origin-guard unit tests cover cross-site Fetch Metadata, same-origin metadata, opaque/malformed Origin and scheme/port mismatch.
 - [x] Password-reset persistence integration test covers one-time token consumption, password hash update, session revocation and audit persistence inside a Prisma transaction. This is a database-transaction test, not an HTTP endpoint test.
 - [x] Tenant workspace summary service tests cover authorized reads, cross-tenant denial, inactive tenant handling and database failure behavior.
@@ -36,6 +36,6 @@ The application must not be described as production-ready until every applicable
 
 **DEPLOYMENT BLOCKED — NOT RELEASED.**
 
-Latest source revision with verified CI and CodeQL: `63e1607a09edf9b3e4d360a0a3f303cb631970`. The checks validate repository code and isolated CI infrastructure only; they do not prove an external production database, email delivery, Android device run, backup/restore, or live hosting.
+Latest source revision with verified CI and CodeQL: `bfa5a69385a5271f817eb0adf4867a47ca210902` (CI run 42171651845; CodeQL run 42171651838). The checks validate repository code and isolated CI infrastructure only; they do not prove an external production database, email delivery, Android device run, backup/restore, or live hosting.
 
 The repository checks above are verified. They do not establish that a production database, independent backup/restore, production hosting, Android device run, UAT or release approval exists. No production migration, deployment, public release or connection to ARIA data is authorized by this checklist.
