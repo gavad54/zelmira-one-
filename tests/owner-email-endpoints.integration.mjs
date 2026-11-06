@@ -109,7 +109,6 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
     assert.equal(list.status, 200);
     assert.ok((await list.json()).contacts.some(contact => contact.id === contactId));
 
-    const contactLimitHash = createHash("sha256").update("owner-email-verify-contact:" + userId + ":" + contactId).digest("hex");
     const verify = () => fetch(`${origin}/api/owner/email-contacts/${contactId}/verify`, {
       method: "POST",
       headers: {
