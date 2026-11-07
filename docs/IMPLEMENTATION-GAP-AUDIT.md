@@ -158,3 +158,17 @@ This update supersedes earlier statements above where they conflict.
 **Still blocked:** privileged-user MFA, trusted ingress/client-IP handling, end-to-end email delivery and owner bootstrap recovery, runtime Prisma least-privilege identity, live schema/migration baseline, independent backup/restore, billing and entitlement lifecycle, operational product integrations and DANA boundaries, Android signed build/device UAT, dedicated VAYRO hosting, accessibility/privacy/legal review and owner UAT.
 
 **Release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Verification addendum — 2026-11-07 (trusted-proxy rate-limit hardening)
+
+- Verified source head: `bf015e124b8cd8b0a13ac5f4623691b9d2f9edfe` on `brand/vayro-name-only`.
+- PR CI [42405241708](https://github.com/gavad54/zelmira-one-/actions/runs/42405241708) and push CI [42405237548](https://github.com/gavad54/zelmira-one-/actions/runs/42405237548) completed successfully on this exact head.
+- Exact push CI logs: dependency audit **0 vulnerabilities**; unit tests **43/43 passed**; PostgreSQL and production HTTP integration tests **15/15 passed**; Prisma client generation/schema validation; isolated PostgreSQL role preparation and migration deployment; lint; TypeScript typecheck; production build all passed.
+- CodeQL PR [42405241674](https://github.com/gavad54/zelmira-one-/actions/runs/42405241674) and push [42405237546](https://github.com/gavad54/zelmira-one-/actions/runs/42405237546) completed successfully. Lockfile validation [42405241709](https://github.com/gavad54/zelmira-one-/actions/runs/42405241709) passed.
+- Added tests for trusted proxy chain parsing. The tests first failed on the missing production helper, then passed after implementation and TypeScript declaration were added.
+- IP-based limits now use the first untrusted address from the right only when `TRUSTED_PROXY_HOPS` matches the verified ingress topology. Until the actual host/proxy chain is selected and verified, IP-only limits are skipped. Account/email/token-specific limits remain active and are no longer partitioned by source IP.
+- `TRUSTED_PROXY_HOPS` remains unset in the example environment. Do not configure it until the hosting provider's exact `X-Forwarded-For` behavior and trusted-hop count are verified.
+- No production database, grants, policies, secrets, DNS, hosting, deployment, or other product repositories were changed.
+
+**Release posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**

@@ -73,3 +73,11 @@ This document records source-level observations and required verification. It do
 ## Trusted proxy and IP rate-limit boundary
 
 IP-based throttling must not trust an arbitrary `X-Forwarded-For` value. The application now uses the first untrusted address from the right only when `TRUSTED_PROXY_HOPS` is explicitly configured to match the verified ingress chain. Until the hosting topology is selected and verified, IP-only throttles are skipped; account/email/token limits remain active. Do not set this variable by guesswork. Verify the host header behavior and proxy-hop count before enabling IP throttling in production.
+
+
+## Verification update — trusted proxy rate-limit hardening (2026-11-07)
+
+- Source head `bf015e124b8cd8b0a13ac5f4623691b9d2f9edfe` passed PR CI [42405241708](https://github.com/gavad54/zelmira-one-/actions/runs/42405241708), push CI [42405237548](https://github.com/gavad54/zelmira-one-/actions/runs/42405237548), PR CodeQL [42405241674](https://github.com/gavad54/zelmira-one-/actions/runs/42405241674), and push CodeQL [42405237546](https://github.com/gavad54/zelmira-one-/actions/runs/42405237546).
+- Unit tests: 43 passed / 0 failed. PostgreSQL and production HTTP integration tests: 15 passed / 0 failed. The enforced npm audit reported 0 vulnerabilities; lint, typecheck, Prisma migration in isolated PostgreSQL and production build passed.
+- IP-only throttling now requires an explicit `TRUSTED_PROXY_HOPS` setting and parses the first untrusted hop from the right. Until the real ingress chain is verified, IP-only throttles are skipped; account/email/token-specific throttles remain active. The variable is intentionally unset in the example environment.
+- This change does not verify any live hosting proxy configuration and does not close production security review, MFA, tenant authorization coverage, or release gates.
