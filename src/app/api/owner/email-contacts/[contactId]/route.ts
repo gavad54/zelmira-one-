@@ -5,6 +5,7 @@ import { EmailPurpose } from "@prisma/client";
 import { isSameOriginRequest } from "@/lib/auth-core.mjs";
 import { authorizeOwnerSession } from "@/lib/owner-session.mjs";
 import { prisma } from "@/lib/prisma";
+import { allowAttempt, sha256 } from "@/lib/auth-service";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const updateSchema = z.object({
@@ -24,6 +25,9 @@ export async function PATCH(request: Request, context: Context) {
   const actorId = await ownerId();
   if (!actorId) return unauthorized();
   if (!isSameOriginRequest(request)) return NextResponse.json({ error: "invalid_origin" }, { status: 403 });
+  if (!await allowAttempt(sha256("owner-email-contact-update:" + actorId), 10, 60 * 60 * 1000)) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429, headers: { "Cache-Control": "no-store", "Retry-After": "3600" } });
+  }
   const { contactId } = await context.params;
   const parsed = updateSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "invalid_input" }, { status: 400 });
@@ -59,6 +63,9 @@ export async function DELETE(request: Request, context: Context) {
   const actorId = await ownerId();
   if (!actorId) return unauthorized();
   if (!isSameOriginRequest(request)) return NextResponse.json({ error: "invalid_origin" }, { status: 403 });
+  if (!await allowAttempt(sha256("owner-email-contact-update:" + actorId), 10, 60 * 60 * 1000)) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429, headers: { "Cache-Control": "no-store", "Retry-After": "3600" } });
+  }
   const { contactId } = await context.params;
   const current = await prisma.emailContact.findUnique({ where: { id: contactId } });
   if (!current) return NextResponse.json({ error: "not_found" }, { status: 404 });
