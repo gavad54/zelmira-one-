@@ -9,10 +9,21 @@ function makeDb(session) {
 test("owner session accepts only active, unexpired OWNER sessions", async () => {
   const session = {
     expiresAt: new Date(Date.now() + 60_000),
-    user: { id: "owner-1", platformRole: "OWNER", disabledAt: null }
+    user: { id: "owner-1", platformRole: "OWNER", emailVerifiedAt: new Date(), disabledAt: null }
   };
   const result = await authorizeOwnerSession({ sessionToken: "a".repeat(64), db: makeDb(session) });
   assert.deepEqual(result, { authorized: true, userId: "owner-1" });
+});
+
+test("owner session rejects unverified owner accounts", async () => {
+  const unverified = {
+    expiresAt: new Date(Date.now() + 60_000),
+    user: { id: "owner-1", platformRole: "OWNER", emailVerifiedAt: null, disabledAt: null }
+  };
+  assert.deepEqual(
+    await authorizeOwnerSession({ sessionToken: "a".repeat(64), db: makeDb(unverified) }),
+    { authorized: false }
+  );
 });
 
 test("owner session rejects non-owner, disabled and expired accounts", async () => {
