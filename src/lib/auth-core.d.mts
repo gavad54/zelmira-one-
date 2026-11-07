@@ -3,3 +3,5 @@ export function verifyPassword(password: string, encodedHash: string): Promise<b
 export function createSessionToken(): string;
 export function hashSessionToken(token: string): string;
 export function isSameOriginRequest(request: Request): boolean;
+
+export function getTrustedClientAddress(forwardedFor: string | null, trustedProxyHops: number): string | null;
