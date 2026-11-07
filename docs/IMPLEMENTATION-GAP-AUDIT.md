@@ -83,3 +83,16 @@ Provision a separate VAYRO Railway project and PostgreSQL through an authorized 
 ## Release policy
 
 **Current state: FOUNDATION IN PROGRESS — NOT RELEASED.** Keep customer onboarding, real payments, product activation and production data collection disabled until all critical gates have evidence and the responsible owner approves release.
+
+
+## Verification update — 2026-11-07
+
+This addendum supersedes older commit and dependency-audit status statements above where they conflict.
+
+- PR #2 remains open, Draft and unmerged. The latest source-and-configuration head before this documentation refresh was `def0069fd81b66e030aab9f73725cfd021c771db`.
+- On that exact head, PR-triggered VAYRO CI run [42328951513](https://github.com/gavad54/zelmira-one-/actions/runs/42328951513) and CodeQL run [42328951531](https://github.com/gavad54/zelmira-one-/actions/runs/42328951531) both completed successfully. The CI job passed locked install, enforced npm audit, unit tests, Prisma generation/validation, isolated PostgreSQL role setup and migration, lint, typecheck, production build and production HTTP/PostgreSQL integration tests.
+- The enforced `npm audit --audit-level=moderate` step reported **0 vulnerabilities** on that exact head. The targeted `@typescript-eslint/typescript-estree` override resolves its nested `minimatch` to 11.0.5; the separate top-level minimatch 3.1.5 remains outside that affected dependency path.
+- The earlier lockfile-generation workflow completed successfully at [run 42328888392](https://github.com/gavad54/zelmira-one-/actions/runs/42328888392). An intermediate CI attempt against the package metadata before the generated lockfile landed failed as expected due to the temporary package/lock mismatch; the corrected head subsequently passed the complete CI and CodeQL workflows.
+- Build logs on the passing head still reported a CSS Autoprefixer warning for `align-items: end` in `src/app/globals.css`. A focused compatibility correction to `align-items: flex-end` was committed as `f909025ab407a8dde5de484c04cac86a3adc1a5e`. Its fresh CI and CodeQL runs [42329383225](https://github.com/gavad54/zelmira-one-/actions/runs/42329383225) and [42329383315](https://github.com/gavad54/zelmira-one-/actions/runs/42329383315) were still pending when this addendum was authored; do not treat the CSS warning as cleared until those runs finish and their logs are inspected.
+- A clean dependency audit and green CI do not close the remaining authentication/MFA, full tenant API coverage, production CSP review, database-baseline, backup/restore, hosting, email, billing, Android, UAT or owner-approval gates.
+- No production database, hosting project, ARIA/LEADORA resource, customer data, PR merge or public deployment was changed by this work.
