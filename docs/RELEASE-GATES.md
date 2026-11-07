@@ -150,3 +150,19 @@ This addendum supersedes older repository-head and CI statements above where the
 - The eight family products remain a catalogue. The owner UI explicitly states that changing a catalogue status to ACTIVE does not prove service health or public release.
 
 **Status remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Verification addendum — 2026-11-07 (deterministic integration harness)
+
+This addendum supersedes the prior repository-head statements above where they conflict.
+
+- Current verified application/test head: `b95ec76a25c4891e80d7e3384abe0cfdb479c972`. PR #2 remains open, draft and unmerged.
+- PR VAYRO CI [42355312810](https://github.com/gavad54/zelmira-one-/actions/runs/42355312810) and push VAYRO CI [42355308766](https://github.com/gavad54/zelmira-one-/actions/runs/42355308766) completed successfully on this exact head.
+- PR CodeQL [42355312887](https://github.com/gavad54/zelmira-one-/actions/runs/42355312887) and push CodeQL [42355308755](https://github.com/gavad54/zelmira-one-/actions/runs/42355308755) completed successfully. Lockfile validation [42355312852](https://github.com/gavad54/zelmira-one-/actions/runs/42355312852) also passed.
+- Blocking `npm audit --audit-level=moderate`: **0 vulnerabilities**. Unit tests: **41/41 passed**. PostgreSQL/production HTTP integration tests: **14/14 passed**. Prisma generation/schema validation and isolated PostgreSQL migration, lint, TypeScript checking and production build all passed.
+- The integration command now uses `node --test --test-concurrency=1 tests/*.integration.mjs`. The integration files share one PostgreSQL database; the owner-bootstrap test requires no existing OWNER, while the owner-email endpoint test creates a temporary OWNER. A push CI run on the preceding documentation-only head exposed a cross-file test-order race (the bootstrap test observed that temporary OWNER). Sequential file execution removes that shared-database race without weakening assertions. The owner-email integration test still sends its disable/delete HTTP requests concurrently with `Promise.all`, so the application-level concurrency invariant remains tested.
+- The owner-contact protection change remains in place: last verified OWNER contact checks run inside SERIALIZABLE transactions; serialization conflicts return 409; concurrent disable/delete tests prove one verified OWNER contact remains and that the final contact cannot be removed. The isolated PostgreSQL log can show the expected serialization-abort message from the deliberately concurrent test; the test itself passed.
+
+The current head is repository-verified only. Production email, proxy trust, MFA, live migration baseline, external backup/restore, hosting, Android, billing, operational product integrations, UAT and independent security review remain open.
+
+**Status remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
