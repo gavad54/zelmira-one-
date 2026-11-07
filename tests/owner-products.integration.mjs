@@ -46,7 +46,6 @@ test("owner product configuration writes are rate limited without weakening auth
   const suffix = randomUUID();
   const token = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(token).digest("hex");
-  const rateLimitKey = createHash("sha256").update("owner-products-update:" + "").digest("hex");
   let userId;
   let productId;
   let actualRateLimitKey;
