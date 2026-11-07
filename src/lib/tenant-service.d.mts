@@ -23,3 +23,25 @@ export function createTenantWithOwnerAudit(input: {
   createdAt: Date;
   role: "OWNER";
 }>;
+
+
+export type TenantManagementResult = {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  updatedAt: Date;
+};
+
+export function renameTenantWithOwnerAudit(input: {
+  db: unknown;
+  tenantId: string;
+  actorUserId: string;
+  name: string;
+}): Promise<TenantManagementResult | null>;
+
+export function closeTenantWithOwnerAudit(input: {
+  db: unknown;
+  tenantId: string;
+  actorUserId: string;
+}): Promise<TenantManagementResult | null>;
