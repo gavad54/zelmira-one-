@@ -210,3 +210,32 @@ This addendum supersedes older head and test-count statements above when they co
 - The CodeQL review annotations about uppercase script tags are attached to an earlier commit. Current branch source includes case-insensitive matching and an explicit uppercase-tag assertion, but current alert-record closure has not been independently confirmed. Keep it open until Code Scanning confirms closure.
 
 **Release status remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Fresh verification — 2026-11-07 (PR head `32a46f31c62076ccc64d54c13597ea6a66701b04`)
+
+- PR #2 is open, Draft and unmerged on `brand/vayro-name-only`.
+- PR CI [42386938662](https://github.com/gavad54/zelmira-one-/actions/runs/42386938662), CodeQL [42386938636](https://github.com/gavad54/zelmira-one-/actions/runs/42386938636), and lockfile validation [42386938619](https://github.com/gavad54/zelmira-one-/actions/runs/42386938619) all completed successfully on this exact head.
+- Exact PR CI logs: `npm audit --audit-level=moderate` reported **0 vulnerabilities**; unit tests **41 passed / 0 failed**; PostgreSQL and production HTTP integration tests **14 passed / 0 failed**; Prisma generation/validation, isolated PostgreSQL migration, lint, typecheck and production build passed.
+- CodeQL SARIF upload completed successfully. Two historical PR review annotations about uppercase `<SCRIPT>` matching remain visible. Current source contains case-insensitive matching and an uppercase-tag regression assertion, but the live Code Scanning alert-record state was not independently retrievable in this run; do not claim alert closure.
+- Live read-only Supabase inspection: VAYRO-CORE (`wdqhdnhpgxhmmfeyxwxr`) is `ACTIVE_HEALTHY`, PostgreSQL 17.11, eu-central-1. Eleven public application tables exist, all have RLS enabled, and all report zero rows. Supabase reports no migration history.
+- A read-only catalog query found no public-table SELECT/INSERT/UPDATE/DELETE privileges for `anon`, `authenticated` or `service_role`; `pg_policies` returned no public policies. Security Advisor reports 11 informational `rls_enabled_no_policy` notices. This can be consistent with server-only Prisma access, but only if the actual runtime credential is a tightly restricted server-only role. The runtime connection identity and effective privileges remain unverified and are a release blocker. Do not grant privileges or create policies merely to clear informational lints.
+- Performance Advisor reports ten unused indexes. The database is empty, so no index removal is justified without representative workload evidence.
+- The CI PostgreSQL log includes serialization-conflict messages from a concurrent transaction test; the integration job completed successfully and all 14 tests passed. These expected conflict messages are not a CI failure, but retry/transaction behavior should remain covered.
+- No production DDL, data writes, grants, policies, migrations, secret changes, deployments or other repository integrations were performed in this run.
+
+## Remaining release gates — reconfirmed
+
+- [ ] Verify runtime Prisma database identity and effective privileges; use a dedicated least-privilege server role, not a superuser/owner credential, and never expose DB credentials to browser code.
+- [ ] Reconcile the live schema with Prisma and migration SQL; migration history is empty. No live baseline, DDL or migration is authorized until independent backup/restore proof and an approved plan exist.
+- [ ] Verify the two historical CodeQL alert records are closed/resolved in GitHub Code Scanning; successful SARIF upload alone is insufficient.
+- [ ] Complete privileged-user MFA, owner-bootstrap secret removal, full endpoint authorization review and independent security testing.
+- [ ] Prove encrypted external backup and isolated restore with checksum and measured RPO/RTO.
+- [ ] Verify transactional email end-to-end after configuring protected runtime variables; ensure bootstrap failure recovery works as documented.
+- [ ] Complete licensing, billing, idempotent payment events, invoice/refund/reconciliation, entitlement enforcement and legal review.
+- [ ] Deliver the eight products as operational services and verify DANA tool boundaries; catalogue status is not live-service status.
+- [ ] Complete Android source/build/signing and real-device UAT.
+- [ ] Provision dedicated VAYRO hosting without reusing ARIA/LEADORA infrastructure; verify monitoring, rollback and commit parity.
+- [ ] Complete Persian RTL/mobile/accessibility review, privacy/legal review, owner UAT and explicit release approval.
+
+**Release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
