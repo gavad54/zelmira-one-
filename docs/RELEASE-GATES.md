@@ -118,3 +118,35 @@ This addendum supersedes prior repository-head and CI statements where they conf
 The successful CI logs surfaced a GitHub Actions runtime deprecation warning: `actions/checkout@v4` and `actions/setup-node@v4` currently target Node.js 20 while GitHub is forcing Node.js 24. This is not a failed check, but the workflow action versions should be reviewed and upgraded to supported Node 24-compatible releases, then revalidated. Do not change action versions without reviewing their official release/security guidance.
 
 **Current status: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Verification addendum — 2026-11-07 (owner email-contact concurrency and live DB read-only review)
+
+This addendum supersedes older repository-head and CI statements above where they conflict.
+
+- Verified application/test head: `e6eab2bcc41a61632489211befe364dabe6f51b8`. The PR remains open, draft and unmerged.
+- PR VAYRO CI [42354960852](https://github.com/gavad54/zelmira-one-/actions/runs/42354960852) and push VAYRO CI [42354955574](https://github.com/gavad54/zelmira-one-/actions/runs/42354955574) completed successfully on this exact head.
+- PR CodeQL [42354960844](https://github.com/gavad54/zelmira-one-/actions/runs/42354960844) and push CodeQL [42354955814](https://github.com/gavad54/zelmira-one-/actions/runs/42354955814) completed successfully on this exact head. Lockfile validation [42354960859](https://github.com/gavad54/zelmira-one-/actions/runs/42354960859) also passed.
+- The blocking `npm audit --audit-level=moderate` step reported **0 vulnerabilities**. The lockfile resolves `deepmerge-ts@8.0.2`, `postcss@8.5.32`, and the affected nested `@typescript-eslint/typescript-estree/minimatch@11.0.5`; the separate top-level `minimatch@3.1.5` is not reported by the current audit.
+- CI on this exact head passed **41/41 unit tests** and **14/14 PostgreSQL/production HTTP integration tests**, Prisma generation/schema validation, isolated PostgreSQL migration, lint, TypeScript checking and production build.
+- Security correction: owner email-contact PATCH and DELETE now check the last enabled, verified OWNER contact inside PostgreSQL SERIALIZABLE transactions. Serialization conflicts return HTTP 409 instead of allowing concurrent operations to remove every verified OWNER contact. The integration test concurrently disables two OWNER contacts and concurrently deletes two OWNER contacts; each race leaves exactly one verified OWNER contact, and subsequent attempts to remove the final contact are rejected. This was verified by the integration suite on the exact head above.
+- The CI PostgreSQL log records serialization-conflict messages during the deliberately concurrent test. The test passed; these messages are expected evidence that PostgreSQL aborted one conflicting transaction, not a CI failure.
+
+### Fresh read-only VAYRO-CORE inspection
+
+- Supabase project `VAYRO-CORE` (`wdqhdnhpgxhmmfeyxwxr`) reported `ACTIVE_HEALTHY`, PostgreSQL 17.11.
+- The live public schema contains 11 tables; all 11 have RLS enabled. The read-only catalog query found zero RLS policies and zero table grants to `anon`, `authenticated` or `service_role`. The table listing reported zero rows in every table.
+- Supabase migration history returned no entries. The migration baseline is therefore still absent; the repository's initial migration must not be run against this existing schema until a reviewed baseline/reconciliation is completed.
+- Security Advisor reports 11 informational `RLS enabled, no policy` findings. This matches the current server-only access design but remains dependent on strict protection and least privilege for the database connection used by the application. Performance Advisor reports 10 unused indexes; with an empty database there is no evidence to remove them.
+- This inspection used read-only project, catalog and advisor operations. No SQL writes, DDL, grants, policies, migrations or data changes were executed.
+
+### Still open — release blockers
+
+- Trusted-proxy handling for `x-forwarded-for` is not validated against a deployed VAYRO proxy topology; rate-limit identity can therefore not be considered production-hardened.
+- Privileged-user MFA, complete endpoint-level negative authorization coverage, full tenant member lifecycle and product entitlement enforcement remain incomplete.
+- Production email credentials, sender verification and end-to-end delivery are not configured or proven.
+- Independent encrypted backup and isolated restore evidence are absent; live DB migration baseline remains unresolved.
+- No VAYRO production hosting/deployment, Android project/build/signing, billing/payment lifecycle, operational product integrations, UAT, independent penetration test or owner release approval is evidenced.
+- The eight family products remain a catalogue. The owner UI explicitly states that changing a catalogue status to ACTIVE does not prove service health or public release.
+
+**Status remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
