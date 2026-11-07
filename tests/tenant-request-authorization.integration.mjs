@@ -19,7 +19,8 @@ before(async () => {
     data: {
       email: `tenant-auth-${suffix}@example.invalid`,
       passwordHash: "test-only-not-a-real-password-hash",
-      displayName: "Integration Test User"
+      displayName: "Integration Test User",
+      emailVerifiedAt: now
     }
   });
   userId = user.id;
