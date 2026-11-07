@@ -12,14 +12,12 @@ The application must not be described as production-ready until every applicable
 - Earlier verified CI evidence on `4103a532abaa738e563a6489a5e9927693716491` recorded 32/32 unit tests and 12/12 PostgreSQL/production HTTP integration tests passing.
 - CI success on a disposable test database does not prove production DB readiness or release readiness.
 
-## Dependency security — OPEN
+## Dependency security — current verified status (2026-11-07)
 
-- The audit on the current head reported **6 moderate-severity findings**, with no High or Critical findings reported in that run.
-- The audit step is configured with `continue-on-error: true`; green CI therefore does **not** mean the dependency-security gate passed.
-- The remaining finding is `minimatch` in the `@typescript-eslint/typescript-estree` dependency chain (GHSA-g3hv-75wg-m249 / CVE-2026-118764). The lockfile resolves `minimatch@10.2.6`; the advisory identifies versions before 11.0.1 as affected.
-- The upstream `typescript-eslint` issue #13125 is still open. Its report says this consumer uses the basic `minimatch(filePath, pattern, { dot: true })` call retained by v11, but the upstream dependency range still requests `^10.2.2`. A targeted v11 override and regenerated lockfile require compatibility validation in this repository before adoption.
-- Do not use `npm audit fix --force`, blindly override all minimatch copies, suppress advisories, or weaken CI assertions.
-- Earlier audit on the prior lockfile reported 11 vulnerabilities (7 moderate, 4 high). This is an improvement, not closure.
+- On source commit `55ca07919e733b9c40d013d7fa12651f3b22dee0`, PR CI [42398798971](https://github.com/gavad54/zelmira-one-/actions/runs/42398798971) completed successfully. The locked dependency audit reported **0 vulnerabilities**.
+- The previous note about six moderate `minimatch` findings and the `continue-on-error` audit step is historical evidence from an older commit; it is superseded by the current passing audit on the commit above. Keep the audit enforced at `--audit-level=moderate`.
+- CodeQL PR run [42398798972](https://github.com/gavad54/zelmira-one-/actions/runs/42398798972) and lockfile validation [42398798981](https://github.com/gavad54/zelmira-one-/actions/runs/42398798981) completed successfully on the same source commit. A successful scan does not by itself prove that every previously annotated alert record has been formally closed; verify alert disposition in GitHub Security before release.
+- Do not use `npm audit fix --force`, broad overrides, or suppressed advisories.
 
 ## Outstanding release gates
 

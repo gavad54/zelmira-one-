@@ -139,3 +139,22 @@ This update supersedes earlier statements above where they conflict.
 - [ ] Complete Persian RTL/mobile/accessibility review, privacy/legal review, owner UAT and explicit release approval.
 
 **Release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Engineering checkpoint — 2026-11-07
+
+**Verified source commit:** `55ca07919e733b9c40d013d7fa12651f3b22dee0` on `brand/vayro-name-only`. PR #2 remains open, Draft and unmerged.
+
+- CI [42398798971](https://github.com/gavad54/zelmira-one-/actions/runs/42398798971): successful on this exact source commit. Exact job logs show npm audit 0 vulnerabilities; unit tests 41/41; PostgreSQL + production HTTP integration tests 15/15; Prisma generate/validate; isolated least-privilege PostgreSQL role setup; actual Prisma migration deploy to isolated PostgreSQL; lint; typecheck; production build.
+- CodeQL [42398798972](https://github.com/gavad54/zelmira-one-/actions/runs/42398798972): successful; SARIF analysis completed.
+- Lockfile validation [42398798981](https://github.com/gavad54/zelmira-one-/actions/runs/42398798981): successful.
+- Added per-owner database-backed limits (20/hour) to owner product catalogue initialization and product configuration writes. Added an HTTP/PostgreSQL integration test proving cross-origin mutation remains rejected, the first 20 writes succeed and write 21 returns HTTP 429.
+- PostgreSQL emitted serialization-conflict log entries during concurrency tests; all 15 integration tests passed. Preserve the conflict tests and explicit 409 handling; review retry semantics before expanding concurrent mutation workflows.
+- Read-only live Supabase inspection on `VAYRO-CORE` (`wdqhdnhpgxhmmfeyxwxr`): ACTIVE_HEALTHY, PostgreSQL 17.11, eu-central-1, no recorded migrations, all 11 public application tables have RLS enabled, and the Security Advisor reports 11 informational RLS-without-policy notices. These notices are consistent with a server-only access design only if the production Prisma role is tightly restricted; actual runtime identity/privileges remain unverified. Do not create policies or grants to silence lints.
+- Do not infer a production DB baseline from isolated CI migrations. No live schema changes, grants, policies, writes, or migrations are authorized.
+- Newly reviewed risk: `requestFingerprint()` trusts the last `X-Forwarded-For` value without an explicit trusted-proxy chain contract. Before production, configure and verify the exact ingress proxy behavior or use a provider-authenticated client address. Do not switch to the first forwarded value blindly because clients may spoof it.
+- Owner product mutation throttling is implemented; the same proxy-origin review remains open for IP-based limits across auth and bootstrap endpoints.
+
+**Still blocked:** privileged-user MFA, trusted ingress/client-IP handling, end-to-end email delivery and owner bootstrap recovery, runtime Prisma least-privilege identity, live schema/migration baseline, independent backup/restore, billing and entitlement lifecycle, operational product integrations and DANA boundaries, Android signed build/device UAT, dedicated VAYRO hosting, accessibility/privacy/legal review and owner UAT.
+
+**Release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
