@@ -39,3 +39,61 @@ export async function createTenantWithOwnerAudit({ db, userId, name, slug }) {
     return { ...created, role: "OWNER" };
   });
 }
+
+
+/** Rename an active tenant and write its audit event in the same transaction. */
+export async function renameTenantWithOwnerAudit({ db, tenantId, actorUserId, name }) {
+  return db.$transaction(async tx => {
+    const updated = await tx.tenant.updateMany({
+      where: { id: tenantId, status: "ACTIVE" },
+      data: { name }
+    });
+    if (updated.count !== 1) return null;
+
+    const tenant = await tx.tenant.findUnique({
+      where: { id: tenantId },
+      select: { id: true, name: true, slug: true, status: true, updatedAt: true }
+    });
+    if (!tenant) throw new Error("TENANT_UPDATE_NOT_FOUND");
+
+    await tx.auditEvent.create({
+      data: {
+        actorUserId,
+        tenantId,
+        action: "tenant.renamed",
+        resource: "Tenant",
+        resourceId: tenantId,
+        metadata: { name }
+      }
+    });
+    return tenant;
+  });
+}
+
+/** Close an active tenant without deleting its data, preserving an audit trail. */
+export async function closeTenantWithOwnerAudit({ db, tenantId, actorUserId }) {
+  return db.$transaction(async tx => {
+    const updated = await tx.tenant.updateMany({
+      where: { id: tenantId, status: "ACTIVE" },
+      data: { status: "CLOSED" }
+    });
+    if (updated.count !== 1) return null;
+
+    const tenant = await tx.tenant.findUnique({
+      where: { id: tenantId },
+      select: { id: true, name: true, slug: true, status: true, updatedAt: true }
+    });
+    if (!tenant) throw new Error("TENANT_CLOSE_NOT_FOUND");
+
+    await tx.auditEvent.create({
+      data: {
+        actorUserId,
+        tenantId,
+        action: "tenant.closed",
+        resource: "Tenant",
+        resourceId: tenantId
+      }
+    });
+    return tenant;
+  });
+}
