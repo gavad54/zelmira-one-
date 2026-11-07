@@ -49,7 +49,7 @@ test("authorizes only a valid active session and DB-derived tenant membership", 
   });
   assert.deepEqual(db.calls.session[0], {
     where: { tokenHash },
-    include: { user: { select: { id: true, disabledAt: true } } }
+    include: { user: { select: { id: true, emailVerifiedAt: true, disabledAt: true } } }
   });
   assert.deepEqual(db.calls.membership[0], {
     where: { userId_tenantId: { userId: "user-a", tenantId: "tenant-a" } },
