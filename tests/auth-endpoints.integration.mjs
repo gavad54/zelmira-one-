@@ -460,6 +460,8 @@ test("public HTML uses a fresh per-response nonce-based CSP for scripts", async 
   assert.ok(nonceMatch, "CSP must contain a cryptographically random script nonce; received: " + csp);
   assert.match(csp, /script-src[^;]*'strict-dynamic'/);
   assert.doesNotMatch(csp, /script-src[^;]*'unsafe-inline'/);
+  assert.match(csp, /style-src[^;]*'nonce-/);
+  assert.doesNotMatch(csp, /style-src[^;]*'unsafe-inline'/);
   assert.match(csp, /default-src 'self'/);
   assert.match(csp, /object-src 'none'/);
   assert.match(csp, /base-uri 'self'/);
