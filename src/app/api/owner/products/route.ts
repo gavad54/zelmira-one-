@@ -4,7 +4,7 @@ import { ProductStatus } from "@prisma/client";
 import { isSameOriginRequest } from "@/lib/auth-core.mjs";
 import { authorizeOwnerSession } from "@/lib/owner-session.mjs";
 import { PRODUCT_CATALOG, validateProductConfiguration } from "@/lib/product-catalog.mjs";
-import { noStoreJson } from "@/lib/auth-service";
+import { allowAttempt, noStoreJson, sha256 } from "@/lib/auth-service";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -58,6 +58,9 @@ export async function POST(request: Request) {
   const actorId = await authorizedOwnerId();
   if (!actorId) return noStoreJson({ error: "unauthorized" }, 401);
   if (!isSameOriginRequest(request)) return noStoreJson({ error: "invalid_origin" }, 403);
+  if (!await allowAttempt(sha256("owner-products-initialize:" + actorId), 20, 60 * 60 * 1000)) {
+    return noStoreJson({ error: "rate_limited" }, 429);
+  }
 
   const body = z.object({ action: z.literal("initialize_catalog") }).strict()
     .safeParse(await request.json().catch(() => null));
@@ -93,6 +96,9 @@ export async function PATCH(request: Request) {
   const actorId = await authorizedOwnerId();
   if (!actorId) return noStoreJson({ error: "unauthorized" }, 401);
   if (!isSameOriginRequest(request)) return noStoreJson({ error: "invalid_origin" }, 403);
+  if (!await allowAttempt(sha256("owner-products-update:" + actorId), 20, 60 * 60 * 1000)) {
+    return noStoreJson({ error: "rate_limited" }, 429);
+  }
 
   const parsed = updateSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return noStoreJson({ error: "invalid_input" }, 400);
