@@ -5,6 +5,7 @@ import { EmailPurpose } from "@prisma/client";
 import { isSameOriginRequest } from "@/lib/auth-core.mjs";
 import { authorizeOwnerSession } from "@/lib/owner-session.mjs";
 import { prisma } from "@/lib/prisma";
+import { allowAttempt, sha256 } from "@/lib/auth-service";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const purposeValues = Object.values(EmailPurpose);
@@ -31,6 +32,9 @@ export async function POST(request: Request) {
   const actorId = await ownerId();
   if (!actorId) return unauthorized();
   if (!isSameOriginRequest(request)) return NextResponse.json({ error: "invalid_origin" }, { status: 403 });
+  if (!await allowAttempt(sha256("owner-email-contact-create:" + actorId), 10, 60 * 60 * 1000)) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429, headers: { "Cache-Control": "no-store", "Retry-After": "3600" } });
+  }
   const parsed = createSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "invalid_input", details: parsed.error.flatten() }, { status: 400 });
   try {
