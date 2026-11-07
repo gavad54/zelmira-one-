@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { listActiveTenants, createTenantWithOwnerAudit } from "../src/lib/tenant-service.mjs";
+import * as tenantService from "../src/lib/tenant-service.mjs";
+const { listActiveTenants, createTenantWithOwnerAudit } = tenantService;
 
 test("lists only active memberships for the authenticated user", async () => {
   const calls = [];
@@ -109,4 +110,126 @@ test("does not report tenant creation as successful when audit write fails", asy
     }),
     /audit unavailable/
   );
+});
+
+
+test("renames only an active tenant and records the change atomically", async () => {
+  const operations = [];
+  const renamed = {
+    id: "tenant-1",
+    name: "نام تازه",
+    slug: "vayro-one",
+    status: "ACTIVE",
+    updatedAt: new Date("2026-11-07T10:00:00.000Z")
+  };
+  const db = {
+    async $transaction(callback) {
+      return callback({
+        tenant: {
+          async updateMany(args) {
+            operations.push("tenant:update");
+            assert.deepEqual(args, {
+              where: { id: "tenant-1", status: "ACTIVE" },
+              data: { name: "نام تازه" }
+            });
+            return { count: 1 };
+          },
+          async findUnique(args) {
+            operations.push("tenant:read");
+            assert.deepEqual(args, {
+              where: { id: "tenant-1" },
+              select: { id: true, name: true, slug: true, status: true, updatedAt: true }
+            });
+            return renamed;
+          }
+        },
+        auditEvent: {
+          async create(args) {
+            operations.push("audit:create");
+            assert.deepEqual(args.data, {
+              actorUserId: "user-owner",
+              tenantId: "tenant-1",
+              action: "tenant.renamed",
+              resource: "Tenant",
+              resourceId: "tenant-1",
+              metadata: { name: "نام تازه" }
+            });
+          }
+        }
+      });
+    }
+  };
+
+  const result = await tenantService.renameTenantWithOwnerAudit({
+    db, tenantId: "tenant-1", actorUserId: "user-owner", name: "نام تازه"
+  });
+  assert.deepEqual(result, renamed);
+  assert.deepEqual(operations, ["tenant:update", "tenant:read", "audit:create"]);
+});
+
+test("does not rename or audit a tenant that is no longer active", async () => {
+  const operations = [];
+  const db = {
+    async $transaction(callback) {
+      return callback({
+        tenant: {
+          async updateMany() { operations.push("tenant:update"); return { count: 0 }; },
+          async findUnique() { operations.push("tenant:read"); return null; }
+        },
+        auditEvent: { async create() { operations.push("audit:create"); } }
+      });
+    }
+  };
+
+  const result = await tenantService.renameTenantWithOwnerAudit({
+    db, tenantId: "tenant-closed", actorUserId: "user-owner", name: "نام تازه"
+  });
+  assert.equal(result, null);
+  assert.deepEqual(operations, ["tenant:update"]);
+});
+
+test("closes a tenant without deleting it and records the closure atomically", async () => {
+  const operations = [];
+  const closed = {
+    id: "tenant-1",
+    name: "شرکت نمونه",
+    slug: "vayro-one",
+    status: "CLOSED",
+    updatedAt: new Date("2026-11-07T10:00:00.000Z")
+  };
+  const db = {
+    async $transaction(callback) {
+      return callback({
+        tenant: {
+          async updateMany(args) {
+            operations.push("tenant:close");
+            assert.deepEqual(args, {
+              where: { id: "tenant-1", status: "ACTIVE" },
+              data: { status: "CLOSED" }
+            });
+            return { count: 1 };
+          },
+          async findUnique() { operations.push("tenant:read"); return closed; }
+        },
+        auditEvent: {
+          async create(args) {
+            operations.push("audit:create");
+            assert.deepEqual(args.data, {
+              actorUserId: "user-owner",
+              tenantId: "tenant-1",
+              action: "tenant.closed",
+              resource: "Tenant",
+              resourceId: "tenant-1"
+            });
+          }
+        }
+      });
+    }
+  };
+
+  const result = await tenantService.closeTenantWithOwnerAudit({
+    db, tenantId: "tenant-1", actorUserId: "user-owner"
+  });
+  assert.deepEqual(result, closed);
+  assert.deepEqual(operations, ["tenant:close", "tenant:read", "audit:create"]);
 });
