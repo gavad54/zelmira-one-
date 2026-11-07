@@ -59,3 +59,18 @@ There is no verified VAYRO production hosting deployment, Android application/re
 Latest PR head: `c811b2b620dbca68c714ab038291ada42a099fd3`. CI and CodeQL passed on this exact head; dependency-security and all other release gates remain open.
 
 Do not merge, deploy, migrate production data or publish without the required gates and explicit owner approval.
+
+
+## Verification addendum — 2026-11-07
+
+This section supersedes older repository-head and dependency-audit statements above where they conflict.
+
+- Latest verified security/dependency source head: `def0069fd81b66e030aab9f73725cfd021c771db`.
+- PR CI [42328951513](https://github.com/gavad54/zelmira-one-/actions/runs/42328951513) and PR CodeQL [42328951531](https://github.com/gavad54/zelmira-one-/actions/runs/42328951531) completed successfully on that exact head.
+- The enforced dependency audit reported **0 vulnerabilities**. The prior six-moderate minimatch finding was addressed by a targeted override for `@typescript-eslint/typescript-estree`; its nested lockfile resolution is `minimatch@11.0.5`. Do not continue to report the old six-finding audit as current.
+- A CSS compatibility cleanup was committed afterward as `f909025ab407a8dde5de484c04cac86a3adc1a5e`; CI [42329383225](https://github.com/gavad54/zelmira-one-/actions/runs/42329383225) and CodeQL [42329383315](https://github.com/gavad54/zelmira-one-/actions/runs/42329383315) were pending at the time of this update. That newer commit is not yet a verified green release head.
+- Dependency security is therefore **verified green on def0069**, with the latest CSS-only commit awaiting verification. This does not certify the whole product or close any non-dependency production gate.
+
+All other gates remain as recorded above: production auth/MFA and endpoint authorization review, full tenant isolation, CSP and independent security review, live database reconciliation and migration safety, encrypted external backup plus isolated restore, dedicated hosting and email, billing/legal readiness, operational product integrations, Android release/device test, UAT, approved production commit and explicit owner release approval.
+
+**Current release posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
