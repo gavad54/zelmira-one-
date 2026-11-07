@@ -1,4 +1,3 @@
-import { randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 function buildContentSecurityPolicy(nonce: string): string {
@@ -24,7 +23,8 @@ function buildContentSecurityPolicy(nonce: string): string {
 }
 
 export function middleware(request: NextRequest) {
-  const nonce = randomBytes(18).toString("base64");
+  const nonceBytes = crypto.getRandomValues(new Uint8Array(18));
+  const nonce = btoa(String.fromCharCode(...nonceBytes));
   const contentSecurityPolicy = buildContentSecurityPolicy(nonce);
   const requestHeaders = new Headers(request.headers);
 
