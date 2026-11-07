@@ -457,7 +457,7 @@ test("public HTML uses a per-response nonce-based CSP for scripts", async () => 
   assert.equal(response.status, 200);
   const csp = response.headers.get("content-security-policy") ?? "";
   const nonceMatch = csp.match(/'nonce-([A-Za-z0-9+/]+=*)'/);
-  assert.ok(nonceMatch, "CSP must contain a cryptographically random script nonce");
+  assert.ok(nonceMatch, "CSP must contain a cryptographically random script nonce; received: " + csp);
   assert.match(csp, /script-src[^;]*'strict-dynamic'/);
   assert.doesNotMatch(csp, /script-src[^;]*'unsafe-inline'/);
   assert.match(csp, /default-src 'self'/);
@@ -497,8 +497,9 @@ test("owner bootstrap cannot grant owner access before email verification", asyn
       })
     });
 
-    assert.equal(response.status, 503);
-    assert.deepEqual(await response.json(), {
+    const bootstrapBody = await response.json();
+    assert.equal(response.status, 503, "unexpected bootstrap response: " + JSON.stringify(bootstrapBody));
+    assert.deepEqual(bootstrapBody, {
       created: true,
       authenticated: false,
       verification: "required",
