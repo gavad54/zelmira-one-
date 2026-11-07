@@ -485,8 +485,8 @@ test("owner bootstrap cannot grant owner access before email verification", asyn
     const response = await fetch(`${origin}/api/owner/bootstrap`, {
       method: "POST",
       headers: {
-        Origin: origin,
-        Host: `127.0.0.1:${port}`,
+        Origin: `http://localhost:${port}`,
+        Host: `localhost:${port}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -519,8 +519,8 @@ test("owner bootstrap cannot grant owner access before email verification", asyn
     const resend = await fetch(`${origin}/api/auth/resend-verification`, {
       method: "POST",
       headers: {
-        Origin: origin,
-        Host: `127.0.0.1:${port}`,
+        Origin: `http://localhost:${port}`,
+        Host: `localhost:${port}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ email })
