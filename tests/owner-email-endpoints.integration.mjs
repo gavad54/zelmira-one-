@@ -41,13 +41,14 @@ after(() => {
   if (server && server.exitCode === null) server.kill("SIGTERM");
 });
 
-test("owner email contact APIs enforce owner authorization, same-origin writes, audit and atomic verification throttling", async () => {
+test("owner email APIs enforce authorization, same-origin writes, audit, throttling and concurrent owner-contact protection", async () => {
   const db = new PrismaClient();
   const suffix = randomUUID();
   const token = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(token).digest("hex");
   let userId;
   let contactId;
+  const ownerContactIds = [];
 
   try {
     await db.$connect();
@@ -69,27 +70,23 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
       data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
     });
     const cookie = `vayro_session=${token}`;
+    const writeHeaders = {
+      Origin: origin,
+      Host: `localhost:${port}`,
+      Cookie: cookie,
+      "Content-Type": "application/json"
+    };
 
     const crossOrigin = await fetch(`${origin}/api/owner/email-contacts`, {
       method: "POST",
-      headers: {
-        Origin: "https://attacker.invalid",
-        Host: `localhost:${port}`,
-        Cookie: cookie,
-        "Content-Type": "application/json"
-      },
+      headers: { ...writeHeaders, Origin: "https://attacker.invalid" },
       body: JSON.stringify({ email: `blocked-${suffix}@example.invalid`, label: "Blocked", purposes: ["SUPPORT"] })
     });
     assert.equal(crossOrigin.status, 403);
 
     const created = await fetch(`${origin}/api/owner/email-contacts`, {
       method: "POST",
-      headers: {
-        Origin: origin,
-        Host: `localhost:${port}`,
-        Cookie: cookie,
-        "Content-Type": "application/json"
-      },
+      headers: writeHeaders,
       body: JSON.stringify({ email: `support-${suffix}@example.invalid`, label: "Support inbox", purposes: [EmailPurpose.SUPPORT] })
     });
     assert.equal(created.status, 201);
@@ -112,11 +109,7 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
     const contactLimitKey = createHash("sha256").update("owner-email-verify-contact:" + userId + ":" + contactId).digest("hex");
     const verify = () => fetch(`${origin}/api/owner/email-contacts/${contactId}/verify`, {
       method: "POST",
-      headers: {
-        Origin: origin,
-        Host: `localhost:${port}`,
-        Cookie: cookie
-      }
+      headers: { Origin: origin, Host: `localhost:${port}`, Cookie: cookie }
     });
 
     const firstVerify = await verify();
@@ -141,12 +134,7 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
 
     const updated = await fetch(`${origin}/api/owner/email-contacts/${contactId}`, {
       method: "PATCH",
-      headers: {
-        Origin: origin,
-        Host: `localhost:${port}`,
-        Cookie: cookie,
-        "Content-Type": "application/json"
-      },
+      headers: writeHeaders,
       body: JSON.stringify({ label: "Support mailbox" })
     });
     assert.equal(updated.status, 200);
@@ -155,41 +143,97 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
     for (let attempt = 0; attempt < 9; attempt += 1) {
       const repeatedUpdate = await fetch(`${origin}/api/owner/email-contacts/${contactId}`, {
         method: "PATCH",
-        headers: {
-          Origin: origin,
-          Host: `localhost:${port}`,
-          Cookie: cookie,
-          "Content-Type": "application/json"
-        },
+        headers: writeHeaders,
         body: JSON.stringify({ label: "Support mailbox " + attempt })
       });
       assert.equal(repeatedUpdate.status, 200, "the first ten owner contact updates should be allowed");
     }
     const throttledUpdate = await fetch(`${origin}/api/owner/email-contacts/${contactId}`, {
       method: "PATCH",
-      headers: {
-        Origin: origin,
-        Host: `localhost:${port}`,
-        Cookie: cookie,
-        "Content-Type": "application/json"
-      },
+      headers: writeHeaders,
       body: JSON.stringify({ label: "Support mailbox blocked" })
     });
     assert.equal(throttledUpdate.status, 429, "repeated owner contact updates must be rate limited");
 
     const deleted = await fetch(`${origin}/api/owner/email-contacts/${contactId}`, {
       method: "DELETE",
-      headers: {
-        Origin: origin,
-        Host: `localhost:${port}`,
-        Cookie: cookie
-      }
+      headers: { Origin: origin, Host: `localhost:${port}`, Cookie: cookie }
     });
     assert.equal(deleted.status, 200);
     assert.deepEqual(await deleted.json(), { deleted: true });
+
+    const ownerContactA = await db.emailContact.create({
+      data: {
+        email: `owner-a-${suffix}@example.invalid`,
+        label: "Owner A",
+        purposes: [EmailPurpose.OWNER],
+        enabled: true,
+        verifiedAt: new Date()
+      }
+    });
+    const ownerContactB = await db.emailContact.create({
+      data: {
+        email: `owner-b-${suffix}@example.invalid`,
+        label: "Owner B",
+        purposes: [EmailPurpose.OWNER],
+        enabled: true,
+        verifiedAt: new Date()
+      }
+    });
+    ownerContactIds.push(ownerContactA.id, ownerContactB.id);
+
+    const updateLimitKey = createHash("sha256").update("owner-email-contact-update:" + userId).digest("hex");
+    await db.authRateLimit.deleteMany({ where: { keyHash: updateLimitKey } });
+    const concurrentDisables = await Promise.all(ownerContactIds.map(id => fetch(`${origin}/api/owner/email-contacts/${id}`, {
+      method: "PATCH",
+      headers: writeHeaders,
+      body: JSON.stringify({ enabled: false })
+    })));
+    assert.deepEqual(concurrentDisables.map(response => response.status).sort((a, b) => a - b), [200, 409],
+      "concurrent disables must not remove every verified OWNER contact");
+    let remainingOwnerContacts = await db.emailContact.findMany({
+      where: { enabled: true, verifiedAt: { not: null }, purposes: { has: EmailPurpose.OWNER } }
+    });
+    assert.equal(remainingOwnerContacts.length, 1, "exactly one verified OWNER contact must remain after concurrent disables");
+
+    const blockedLastDisable = await fetch(`${origin}/api/owner/email-contacts/${remainingOwnerContacts[0].id}`, {
+      method: "PATCH",
+      headers: writeHeaders,
+      body: JSON.stringify({ enabled: false })
+    });
+    assert.equal(blockedLastDisable.status, 409, "the final verified OWNER contact cannot be disabled");
+
+    const ownerContactC = await db.emailContact.create({
+      data: {
+        email: `owner-c-${suffix}@example.invalid`,
+        label: "Owner C",
+        purposes: [EmailPurpose.OWNER],
+        enabled: true,
+        verifiedAt: new Date()
+      }
+    });
+    ownerContactIds.push(ownerContactC.id);
+    const concurrentDeletes = await Promise.all([remainingOwnerContacts[0].id, ownerContactC.id].map(id =>
+      fetch(`${origin}/api/owner/email-contacts/${id}`, {
+        method: "DELETE",
+        headers: { Origin: origin, Host: `localhost:${port}`, Cookie: cookie }
+      })
+    ));
+    assert.deepEqual(concurrentDeletes.map(response => response.status).sort((a, b) => a - b), [200, 409],
+      "concurrent deletes must not remove every verified OWNER contact");
+    remainingOwnerContacts = await db.emailContact.findMany({
+      where: { enabled: true, verifiedAt: { not: null }, purposes: { has: EmailPurpose.OWNER } }
+    });
+    assert.equal(remainingOwnerContacts.length, 1, "exactly one verified OWNER contact must remain after concurrent deletes");
+
+    const blockedLastDelete = await fetch(`${origin}/api/owner/email-contacts/${remainingOwnerContacts[0].id}`, {
+      method: "DELETE",
+      headers: { Origin: origin, Host: `localhost:${port}`, Cookie: cookie }
+    });
+    assert.equal(blockedLastDelete.status, 409, "the final verified OWNER contact cannot be deleted");
   } finally {
     if (contactId) await db.emailContactVerificationToken.deleteMany({ where: { contactId } });
-    if (contactId) await db.emailContact.deleteMany({ where: { id: contactId } });
+    await db.emailContact.deleteMany({ where: { id: { in: [contactId, ...ownerContactIds].filter(Boolean) } } });
     if (userId) {
       await db.auditEvent.deleteMany({ where: { actorUserId: userId } });
       await db.session.deleteMany({ where: { userId } });
