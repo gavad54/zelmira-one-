@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+// Per-request CSP nonces require dynamic rendering; static HTML cannot carry fresh nonces.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "وایرو | VAYRO",
   description: "درگاه هوشمند محصولات و خدمات مستقل وایرو",
