@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 
 type Product = {
   licenseId: string;
@@ -31,6 +31,10 @@ export default function WorkspaceDetailPage() {
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [renameName, setRenameName] = useState("");
+  const [managementBusy, setManagementBusy] = useState(false);
+  const [managementError, setManagementError] = useState("");
+  const [managementNotice, setManagementNotice] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -51,6 +55,7 @@ export default function WorkspaceDetailPage() {
         throw new Error("دریافت اطلاعات فضای کاری ممکن نشد. دوباره تلاش کنید.");
       }
       setWorkspace(data.tenant);
+      setRenameName(data.tenant.name);
       setRole(data.role);
     } catch (err) {
       setError(err instanceof Error ? err.message : "خطا در ارتباط با سرور.");
@@ -60,6 +65,71 @@ export default function WorkspaceDetailPage() {
   }, [tenantId]);
 
   useEffect(() => { void load(); }, [load]);
+
+  async function renameWorkspace(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setManagementBusy(true);
+    setManagementError("");
+    setManagementNotice("");
+    try {
+      const response = await fetch(`/api/tenants/${encodeURIComponent(tenantId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: renameName })
+      });
+      const data = await response.json();
+      if (response.status === 401) {
+        window.location.assign("/login");
+        return;
+      }
+      if (!response.ok) {
+        const messages: Record<string, string> = {
+          invalid_input: "نام سازمان باید بین ۲ تا ۱۰۰ نویسه باشد.",
+          try_again_later: "تعداد درخواست‌ها زیاد است؛ بعداً دوباره تلاش کنید.",
+          tenant_not_found: "سازمان فعال پیدا نشد."
+        };
+        throw new Error(messages[data.error] || "تغییر نام سازمان انجام نشد.");
+      }
+      setWorkspace(current => current ? { ...current, name: data.tenant.name } : current);
+      setRenameName(data.tenant.name);
+      setManagementNotice("نام سازمان با موفقیت تغییر کرد.");
+    } catch (err) {
+      setManagementError(err instanceof Error ? err.message : "خطا در تغییر نام سازمان.");
+    } finally {
+      setManagementBusy(false);
+    }
+  }
+
+  async function closeWorkspace() {
+    const confirmed = window.confirm(
+      "سازمان بسته می‌شود و اعضا دیگر به فضای کاری دسترسی نخواهند داشت. اطلاعات حذف نمی‌شود. ادامه می‌دهید؟"
+    );
+    if (!confirmed) return;
+
+    setManagementBusy(true);
+    setManagementError("");
+    setManagementNotice("");
+    try {
+      const response = await fetch(`/api/tenants/${encodeURIComponent(tenantId)}`, {
+        method: "DELETE"
+      });
+      const data = await response.json();
+      if (response.status === 401) {
+        window.location.assign("/login");
+        return;
+      }
+      if (!response.ok) {
+        throw new Error(data.error === "try_again_later"
+          ? "تعداد درخواست‌ها زیاد است؛ بعداً دوباره تلاش کنید."
+          : "بستن سازمان انجام نشد.");
+      }
+      window.location.assign("/workspaces");
+    } catch (err) {
+      setManagementError(err instanceof Error ? err.message : "خطا در بستن سازمان.");
+    } finally {
+      setManagementBusy(false);
+    }
+  }
 
   return (
     <main className="workspace-page" dir="rtl">
@@ -108,6 +178,46 @@ export default function WorkspaceDetailPage() {
               <div><dt>تاریخ ایجاد</dt><dd>{new Date(workspace.createdAt).toLocaleDateString("fa-IR")}</dd></div>
             </dl>
           </section>
+
+
+          {(role === "OWNER" || role === "ADMIN") && (
+            <section className="workspace-panel workspace-management-panel">
+              <h2>مدیریت سازمان</h2>
+              <form className="workspace-form" onSubmit={renameWorkspace}>
+                <label htmlFor="workspace-rename">تغییر نام سازمان</label>
+                <div className="workspace-form-row">
+                  <input
+                    id="workspace-rename"
+                    value={renameName}
+                    onChange={event => setRenameName(event.target.value)}
+                    minLength={2}
+                    maxLength={100}
+                    required
+                    aria-describedby="workspace-management-help"
+                  />
+                  <button type="submit" disabled={managementBusy || renameName.trim().length < 2}>
+                    {managementBusy ? "در حال ذخیره..." : "ذخیره نام"}
+                  </button>
+                </div>
+                <p id="workspace-management-help" className="workspace-muted">
+                  مالک و مدیر سازمان می‌توانند نام آن را تغییر دهند.
+                </p>
+              </form>
+              {role === "OWNER" && (
+                <div className="workspace-danger-zone">
+                  <div>
+                    <strong>بستن سازمان</strong>
+                    <p>فقط مالک می‌تواند سازمان را ببندد. اطلاعات حذف نمی‌شود، اما دسترسی اعضا متوقف خواهد شد.</p>
+                  </div>
+                  <button type="button" className="workspace-danger-button" disabled={managementBusy} onClick={() => void closeWorkspace()}>
+                    بستن سازمان
+                  </button>
+                </div>
+              )}
+              {managementNotice && <p className="workspace-notice" role="status">{managementNotice}</p>}
+              {managementError && <p className="workspace-error" role="alert">{managementError}</p>}
+            </section>
+          )}
 
           <section className="workspace-list">
             <div className="workspace-list-heading">
