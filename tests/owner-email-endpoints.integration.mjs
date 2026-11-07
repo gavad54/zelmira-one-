@@ -197,7 +197,8 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
       await db.authRateLimit.deleteMany({ where: { keyHash: { in: [
         createHash("sha256").update("owner-email-verify-user:" + userId).digest("hex"),
         ...(contactId ? [createHash("sha256").update("owner-email-verify-contact:" + userId + ":" + contactId).digest("hex")] : []),
-        createHash("sha256").update("owner-email-contact-update:" + userId).digest("hex")
+        createHash("sha256").update("owner-email-contact-update:" + userId).digest("hex"),
+        createHash("sha256").update("owner-email-contact-delete:" + userId).digest("hex")
       ] } } });
     }
     await db.$disconnect();
