@@ -1,29 +1,29 @@
-# ZELMIRA ecosystem — naming architecture
+# VAYRO ecosystem — naming architecture
 
 ## Master brand
-- **ZELMIRA** — parent brand.
-- **ZELMIRA ONE** — central platform, account, governance and product access.
+- **VAYRO / وایرو** — parent brand and central platform identity.
+- **ZELMIRA ONE** — historical project name only; do not display it in the product UI, account flows, app icon or release artifacts.
 - Brand line: **INTELLIGENCE. WITHOUT LIMITS.**
 - Persian line: **هوشمندی، بدون مرز**
-- Visual system: ZELMIRA SIGNATURE — dark luxury, restrained gold and ice-blue accents, Persian-first RTL and mobile-first layouts.
+- Visual system: VAYRO SIGNATURE — dark luxury, restrained gold and ice-blue accents, Persian-first RTL and mobile-first layouts.
 
 ## Product and service names
 
 | Domain | Recommended product name | Purpose |
 |---|---|---|
 | Central platform | ZELMIRA ONE | Identity, product directory, governance and subscriptions |
-| Shared identity and licensing | ZELMIRA CORE | Authentication, tenant boundaries, license entitlements and audit |
-| AI orchestration | ZELMIRA NEXUS | Governed AI assistant and workflow orchestration |
-| Smart landing pages | ZELMIRA PAGEFLOW | Audience-specific campaign pages and conversion analytics |
+| Shared identity and licensing | VAYRO CORE | Authentication, tenant boundaries, license entitlements and audit |
+| AI orchestration | DANA | Governed AI assistant and workflow orchestration |
+| Smart landing pages | NAMA | Audience-specific campaign pages and conversion analytics |
 | Distribution operations | LEADORA | Sales, distribution, inventory and commercial operations |
 | Accounting and ERP | ARIANA | Accounting, finance and enterprise resource planning |
 | Social and services | ARIA | Community, listings, services and marketplace; no accounting or ERP |
 | Supplier request marketplace | ARMIN MARKET | Buyer requests and supplier quotations |
-| Export and import | ZELMIRA TRADE | Export/import workflows, documentation and partner discovery |
-| Marketing campaigns | ZELMIRA REACH | Campaign planning, attribution and compliant referrals |
-| Digital storefront | ZELMIRA STORE | Software and digital product storefront |
-| Creative services | ZELMIRA STUDIO | Creative production and brand assets |
-| Cloud services | ZELMIRA CLOUD | Storage and managed workspace services |
+| Export and import | ARVAND | Export/import workflows, documentation and partner discovery |
+| Marketing campaigns | PAYAM | Campaign planning, attribution and compliant referrals |
+| Digital storefront | GANJINEH | Software and digital product storefront |
+| Creative services | NEGAH | Creative production and brand assets |
+| Cloud services | SEPEHR | Storage and managed workspace services |
 
 Existing product names LEADORA, ARIANA, ARIA and ARMIN MARKET are retained to avoid breaking recognition, repositories or customer contracts. New names are recommendations pending trademark, domain and local-language checks. No registration or availability claim is made.
 
