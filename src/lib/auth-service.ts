@@ -23,7 +23,7 @@ export async function requestFingerprint(scope: string, identity: string): Promi
   const normalizedIdentity = identity.toLowerCase();
   if (normalizedIdentity !== "all") return sha256(scope + ":identity:" + normalizedIdentity);
   const configuredHops = process.env.TRUSTED_PROXY_HOPS;
-  if (!configuredHops || !/^\\d+$/.test(configuredHops)) return null;
+  if (!configuredHops || !/^\d+$/.test(configuredHops)) return null;
   const h = await headers();
   const clientAddress = getTrustedClientAddress(h.get("x-forwarded-for"), Number(configuredHops));
   return clientAddress ? sha256(scope + ":ip:" + clientAddress) : null;
