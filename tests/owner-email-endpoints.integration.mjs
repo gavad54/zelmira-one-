@@ -49,6 +49,7 @@ test("owner email APIs enforce authorization, same-origin writes, audit, throttl
   let userId;
   let contactId;
   const ownerContactIds = [];
+  const createdContactIds = [];
 
   try {
     await db.$connect();
@@ -92,6 +93,7 @@ test("owner email APIs enforce authorization, same-origin writes, audit, throttl
     assert.equal(created.status, 201);
     const createdBody = await created.json();
     contactId = createdBody.contact.id;
+    createdContactIds.push(contactId);
     assert.equal(createdBody.verification, "required");
 
     const audit = await db.auditEvent.findFirst({
@@ -104,6 +106,33 @@ test("owner email APIs enforce authorization, same-origin writes, audit, throttl
     });
     assert.equal(list.status, 200);
     assert.ok((await list.json()).contacts.some(contact => contact.id === contactId));
+
+    const createLimitKey = createHash("sha256").update("owner-email-contact-create:" + userId).digest("hex");
+    for (let attempt = 0; attempt < 9; attempt += 1) {
+      const repeatedCreate = await fetch(origin + "/api/owner/email-contacts", {
+        method: "POST",
+        headers: writeHeaders,
+        body: JSON.stringify({
+          email: "support-" + attempt + "-" + suffix + "@example.invalid",
+          label: "Support inbox " + attempt,
+          purposes: [EmailPurpose.SUPPORT]
+        })
+      });
+      assert.equal(repeatedCreate.status, 201, "the first ten owner email-contact creations should be allowed");
+      createdContactIds.push((await repeatedCreate.json()).contact.id);
+    }
+    const throttledCreate = await fetch(origin + "/api/owner/email-contacts", {
+      method: "POST",
+      headers: writeHeaders,
+      body: JSON.stringify({
+        email: "support-blocked-" + suffix + "@example.invalid",
+        label: "Blocked support inbox",
+        purposes: [EmailPurpose.SUPPORT]
+      })
+    });
+    assert.equal(throttledCreate.status, 429, "the eleventh owner email-contact creation must be rate limited");
+    assert.equal((await db.authRateLimit.findUnique({ where: { keyHash: createLimitKey } }))?.count, 11,
+      "the owner creation throttle must count attempts atomically");
 
     const userLimitKey = createHash("sha256").update("owner-email-verify-user:" + userId).digest("hex");
     const contactLimitKey = createHash("sha256").update("owner-email-verify-contact:" + userId + ":" + contactId).digest("hex");
@@ -233,7 +262,7 @@ test("owner email APIs enforce authorization, same-origin writes, audit, throttl
     assert.equal(blockedLastDelete.status, 409, "the final verified OWNER contact cannot be deleted");
   } finally {
     if (contactId) await db.emailContactVerificationToken.deleteMany({ where: { contactId } });
-    await db.emailContact.deleteMany({ where: { id: { in: [contactId, ...ownerContactIds].filter(Boolean) } } });
+    await db.emailContact.deleteMany({ where: { id: [...createdContactIds, ...ownerContactIds].filter(Boolean) } });
     if (userId) {
       await db.auditEvent.deleteMany({ where: { actorUserId: userId } });
       await db.session.deleteMany({ where: { userId } });
@@ -241,6 +270,7 @@ test("owner email APIs enforce authorization, same-origin writes, audit, throttl
       await db.authRateLimit.deleteMany({ where: { keyHash: { in: [
         createHash("sha256").update("owner-email-verify-user:" + userId).digest("hex"),
         ...(contactId ? [createHash("sha256").update("owner-email-verify-contact:" + userId + ":" + contactId).digest("hex")] : []),
+        createHash("sha256").update("owner-email-contact-create:" + userId).digest("hex"),
         createHash("sha256").update("owner-email-contact-update:" + userId).digest("hex"),
         createHash("sha256").update("owner-email-contact-delete:" + userId).digest("hex")
       ] } } });
