@@ -152,6 +152,31 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
     assert.equal(updated.status, 200);
     assert.equal((await updated.json()).contact.label, "Support mailbox");
 
+    for (let attempt = 0; attempt < 9; attempt += 1) {
+      const repeatedUpdate = await fetch(`${origin}/api/owner/email-contacts/${contactId}`, {
+        method: "PATCH",
+        headers: {
+          Origin: origin,
+          Host: `localhost:${port}`,
+          Cookie: cookie,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ label: "Support mailbox " + attempt })
+      });
+      assert.equal(repeatedUpdate.status, 200, "the first ten owner contact updates should be allowed");
+    }
+    const throttledUpdate = await fetch(`${origin}/api/owner/email-contacts/${contactId}`, {
+      method: "PATCH",
+      headers: {
+        Origin: origin,
+        Host: `localhost:${port}`,
+        Cookie: cookie,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ label: "Support mailbox blocked" })
+    });
+    assert.equal(throttledUpdate.status, 429, "repeated owner contact updates must be rate limited");
+
     const deleted = await fetch(`${origin}/api/owner/email-contacts/${contactId}`, {
       method: "DELETE",
       headers: {
@@ -171,7 +196,8 @@ test("owner email contact APIs enforce owner authorization, same-origin writes, 
       await db.user.deleteMany({ where: { id: userId } });
       await db.authRateLimit.deleteMany({ where: { keyHash: { in: [
         createHash("sha256").update("owner-email-verify-user:" + userId).digest("hex"),
-        ...(contactId ? [createHash("sha256").update("owner-email-verify-contact:" + userId + ":" + contactId).digest("hex")] : [])
+        ...(contactId ? [createHash("sha256").update("owner-email-verify-contact:" + userId + ":" + contactId).digest("hex")] : []),
+        createHash("sha256").update("owner-email-contact-update:" + userId).digest("hex")
       ] } } });
     }
     await db.$disconnect();
