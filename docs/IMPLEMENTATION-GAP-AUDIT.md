@@ -96,3 +96,17 @@ This addendum supersedes older commit and dependency-audit status statements abo
 - Build logs on the passing head still reported a CSS Autoprefixer warning for `align-items: end` in `src/app/globals.css`. A focused compatibility correction to `align-items: flex-end` was committed as `f909025ab407a8dde5de484c04cac86a3adc1a5e`. Its fresh CI and CodeQL runs [42329383225](https://github.com/gavad54/zelmira-one-/actions/runs/42329383225) and [42329383315](https://github.com/gavad54/zelmira-one-/actions/runs/42329383315) were still pending when this addendum was authored; do not treat the CSS warning as cleared until those runs finish and their logs are inspected.
 - A clean dependency audit and green CI do not close the remaining authentication/MFA, full tenant API coverage, production CSP review, database-baseline, backup/restore, hosting, email, billing, Android, UAT or owner-approval gates.
 - No production database, hosting project, ARIA/LEADORA resource, customer data, PR merge or public deployment was changed by this work.
+
+
+## Verification update — 2026-11-07 (tenant management)
+
+This update supersedes earlier statements above where they conflict.
+
+- Latest verified code/test head before this documentation update: `0e5609e00b17c9f641d3f397bf08310526d27a03`.
+- PR CI [42330032303](https://github.com/gavad54/zelmira-one-/actions/runs/42330032303) and PR CodeQL [42330032149](https://github.com/gavad54/zelmira-one-/actions/runs/42330032149) completed successfully on that exact head.
+- CI evidence: blocking `npm audit --audit-level=moderate` reported **0 vulnerabilities**; unit tests **35 passed / 0 failed**; PostgreSQL-backed production HTTP integration tests **12 passed / 0 failed**; Prisma generation/schema validation and real migration application on isolated PostgreSQL passed; lint, typecheck, production build and integration suite passed.
+- Tenant API now supports authenticated workspace read, owner/admin rename (`PATCH /api/tenants/:tenantId`) and owner-only soft close (`DELETE /api/tenants/:tenantId`). Writes require same-origin checks, server-side session + DB membership authorization, rate limiting, and transactional audit records. Closing sets status to `CLOSED`; it does not delete the tenant or its memberships/data.
+- Added unit coverage for rename/close transaction behavior and HTTP coverage for cross-origin rejection, strict input validation, ADMIN rename permission, ADMIN close denial, OWNER close success, audit trail, data retention and closed-workspace denial.
+- The test-first run [42329712441](https://github.com/gavad54/zelmira-one-/actions/runs/42329712441) intentionally failed because the new service functions did not yet exist; after implementation and declaration fixes, the verified run above passed.
+- The latest CSS alignment correction is included in the verified head. No Android project, payment processing, invitations/member lifecycle, production hosting, production email, external backup/restore or live production DB baseline has been added by this work.
+- No production database, hosting project, ARIA/LEADORA resource, customer data, PR merge or public deployment was changed.
