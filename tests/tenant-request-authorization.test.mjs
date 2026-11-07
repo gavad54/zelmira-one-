@@ -30,7 +30,7 @@ function database({ session, membership, sessionError, membershipError } = {}) {
 
 const activeSession = {
   expiresAt: new Date("2026-11-05T12:00:00.000Z"),
-  user: { id: "user-a", disabledAt: null }
+  user: { id: "user-a", emailVerifiedAt: new Date("2026-11-01T00:00:00.000Z"), disabledAt: null }
 };
 const activeMembership = {
   userId: "user-a",
@@ -85,6 +85,17 @@ test("denies unknown sessions", async () => {
   });
   assert.equal(result.authorized, false);
   assert.equal(db.calls.session[0].where.tokenHash, tokenHash);
+});
+
+test("denies unverified users before checking tenant membership", async () => {
+  const db = database({
+    session: { ...activeSession, user: { id: "user-a", emailVerifiedAt: null, disabledAt: null } },
+    membership: activeMembership
+  });
+  assert.equal((await authorizeTenantRequest({
+    sessionToken: token, tenantId: "tenant-a", action: "tenant_read", db, now
+  })).authorized, false);
+  assert.equal(db.calls.membership.length, 0);
 });
 
 test("denies expired sessions and disabled users", async () => {
