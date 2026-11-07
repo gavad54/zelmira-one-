@@ -8,6 +8,7 @@ import { setTimeout as delay } from "node:timers/promises";
 
 const port = 43179;
 const origin = `http://127.0.0.1:${port}`;
+const bootstrapToken = randomBytes(48).toString("hex");
 let server;
 let serverError = "";
 
@@ -16,7 +17,7 @@ before(async () => {
     process.execPath,
     ["server.js"],
     {
-      env: { ...process.env, NODE_ENV: "production", PORT: String(port), HOSTNAME: "127.0.0.1", NEXT_PUBLIC_APP_URL: origin },
+      env: { ...process.env, NODE_ENV: "production", PORT: String(port), HOSTNAME: "127.0.0.1", NEXT_PUBLIC_APP_URL: origin, VAYRO_OWNER_BOOTSTRAP_TOKEN: bootstrapToken, EMAIL_PROVIDER: "disabled-for-test" },
       cwd: join(process.cwd(), ".next/standalone"),
       stdio: ["ignore", "ignore", "pipe"]
     }
@@ -465,4 +466,73 @@ test("public HTML uses a per-response nonce-based CSP for scripts", async () => 
   assert.match(csp, /frame-ancestors 'none'/);
   const html = await response.text();
   assert.match(html, new RegExp('<script[^>]+nonce="' + nonceMatch[1] + '"'));
+});
+
+
+test("owner bootstrap cannot grant owner access before email verification", async () => {
+  const db = new PrismaClient();
+  const suffix = randomUUID();
+  const email = `owner-bootstrap-${suffix}@example.invalid`;
+  let userId;
+
+  try {
+    await db.$connect();
+    const existingOwners = await db.user.count({
+      where: { platformRole: { in: ["OWNER", "PLATFORM_ADMIN"] } }
+    });
+    assert.equal(existingOwners, 0, "bootstrap integration test requires a clean owner state");
+
+    const response = await fetch(`${origin}/api/owner/bootstrap`, {
+      method: "POST",
+      headers: {
+        Origin: origin,
+        Host: `127.0.0.1:${port}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        bootstrapToken,
+        email,
+        displayName: "Initial Owner Test",
+        password: "a-strong-test-password-2026"
+      })
+    });
+
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), {
+      created: true,
+      authenticated: false,
+      verification: "required",
+      error: "verification_delivery_unavailable"
+    });
+
+    const owner = await db.user.findUnique({ where: { email } });
+    assert.ok(owner);
+    userId = owner.id;
+    assert.equal(owner.platformRole, "OWNER");
+    assert.equal(owner.emailVerifiedAt, null);
+    assert.equal(await db.session.count({ where: { userId } }), 0);
+    assert.ok(await db.authActionToken.findFirst({
+      where: { userId, purpose: "EMAIL_VERIFY", consumedAt: null }
+    }));
+
+    const resend = await fetch(`${origin}/api/auth/resend-verification`, {
+      method: "POST",
+      headers: {
+        Origin: origin,
+        Host: `127.0.0.1:${port}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email })
+    });
+    assert.equal(resend.status, 202);
+  } finally {
+    if (userId) {
+      await db.authActionToken.deleteMany({ where: { userId } });
+      await db.session.deleteMany({ where: { userId } });
+      await db.auditEvent.deleteMany({ where: { actorUserId: userId } });
+      await db.emailContact.deleteMany({ where: { email } });
+      await db.user.deleteMany({ where: { id: userId } });
+    }
+    await db.$disconnect();
+  }
 });
