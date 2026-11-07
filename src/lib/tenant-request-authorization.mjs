@@ -37,7 +37,7 @@ export async function authorizeTenantRequest({
     const tokenHash = createHash("sha256").update(sessionToken, "utf8").digest("hex");
     const session = await db.session.findUnique({
       where: { tokenHash },
-      include: { user: { select: { id: true, disabledAt: true } } }
+      include: { user: { select: { id: true, emailVerifiedAt: true, disabledAt: true } } }
     });
 
     if (
@@ -47,7 +47,7 @@ export async function authorizeTenantRequest({
       !session.user ||
       typeof session.user.id !== "string" ||
       session.user.id.length === 0 ||
-      session.user.disabledAt !== null
+      !session.user.emailVerifiedAt || session.user.disabledAt !== null
     ) {
       return denied;
     }
