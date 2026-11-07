@@ -200,6 +200,7 @@ test("tenant HTTP APIs enforce authentication, verified email, membership and cr
   const token = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(token).digest("hex");
   let userId;
+  let adminUserId;
   let tenantBId;
   let createdTenantId;
 
@@ -317,7 +318,121 @@ test("tenant HTTP APIs enforce authentication, verified email, membership and cr
       headers: { Cookie: cookie }
     });
     assert.equal(crossTenantAccess.status, 401);
+
+    const crossOriginRename = await fetch(`${origin}/api/tenants/${createdTenantId}`, {
+      method: "PATCH",
+      headers: {
+        Origin: "https://attacker.invalid",
+        "Content-Type": "application/json",
+        Cookie: cookie
+      },
+      body: JSON.stringify({ name: "تغییر غیرمجاز" })
+    });
+    assert.equal(crossOriginRename.status, 403);
+
+    const invalidRename = await fetch(`${origin}/api/tenants/${createdTenantId}`, {
+      method: "PATCH",
+      headers: {
+        Origin: `http://localhost:${port}`,
+        Host: `localhost:${port}`,
+        "Content-Type": "application/json",
+        Cookie: cookie
+      },
+      body: JSON.stringify({ name: "نام تازه", role: "OWNER" })
+    });
+    assert.equal(invalidRename.status, 400);
+
+    const admin = await db.user.create({
+      data: {
+        email: `tenant-admin-${suffix}@example.invalid`,
+        passwordHash: "integration-test-only-hash",
+        displayName: "Tenant Admin Test",
+        emailVerifiedAt: new Date()
+      }
+    });
+    adminUserId = admin.id;
+    const adminToken = randomBytes(32).toString("hex");
+    const adminTokenHash = createHash("sha256").update(adminToken).digest("hex");
+    await db.membership.create({
+      data: { userId: adminUserId, tenantId: createdTenantId, role: "ADMIN" }
+    });
+    await db.session.create({
+      data: {
+        userId: adminUserId,
+        tokenHash: adminTokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+      }
+    });
+    const adminCookie = `vayro_session=${adminToken}`;
+
+    const adminRename = await fetch(`${origin}/api/tenants/${createdTenantId}`, {
+      method: "PATCH",
+      headers: {
+        Origin: `http://localhost:${port}`,
+        Host: `localhost:${port}`,
+        "Content-Type": "application/json",
+        Cookie: adminCookie
+      },
+      body: JSON.stringify({ name: "نام سازمان توسط مدیر" })
+    });
+    assert.equal(adminRename.status, 200);
+    assert.equal((await adminRename.json()).tenant.name, "نام سازمان توسط مدیر");
+    assert.ok(await db.auditEvent.findFirst({
+      where: {
+        actorUserId: adminUserId,
+        tenantId: createdTenantId,
+        action: "tenant.renamed"
+      }
+    }));
+
+    const adminClose = await fetch(`${origin}/api/tenants/${createdTenantId}`, {
+      method: "DELETE",
+      headers: {
+        Origin: `http://localhost:${port}`,
+        Host: `localhost:${port}`,
+        Cookie: adminCookie
+      }
+    });
+    assert.equal(adminClose.status, 401);
+
+    const ownerClose = await fetch(`${origin}/api/tenants/${createdTenantId}`, {
+      method: "DELETE",
+      headers: {
+        Origin: `http://localhost:${port}`,
+        Host: `localhost:${port}`,
+        Cookie: cookie
+      }
+    });
+    assert.equal(ownerClose.status, 200);
+    const closedResponse = await ownerClose.json();
+    assert.equal(closedResponse.closed, true);
+    assert.equal(closedResponse.tenant.status, "CLOSED");
+
+    const retainedTenant = await db.tenant.findUnique({
+      where: { id: createdTenantId },
+      select: { id: true, status: true }
+    });
+    assert.deepEqual(retainedTenant, { id: createdTenantId, status: "CLOSED" });
+    assert.equal(await db.membership.count({ where: { tenantId: createdTenantId } }), 2);
+    assert.ok(await db.auditEvent.findFirst({
+      where: {
+        actorUserId: userId,
+        tenantId: createdTenantId,
+        action: "tenant.closed"
+      }
+    }));
+
+    const closedWorkspace = await fetch(`${origin}/api/tenants/${createdTenantId}`, {
+      headers: { Cookie: cookie }
+    });
+    assert.equal(closedWorkspace.status, 401);
   } finally {
+    if (adminUserId) {
+      await db.auditEvent.deleteMany({ where: { actorUserId: adminUserId } });
+      await db.session.deleteMany({ where: { userId: adminUserId } });
+      await db.membership.deleteMany({ where: { userId: adminUserId } });
+      await db.user.deleteMany({ where: { id: adminUserId } });
+    }
     if (userId) {
       await db.auditEvent.deleteMany({ where: { actorUserId: userId } });
       await db.session.deleteMany({ where: { userId } });
