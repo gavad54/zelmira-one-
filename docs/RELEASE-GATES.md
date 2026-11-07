@@ -197,3 +197,16 @@ This addendum supersedes older head and test-count statements above when they co
 - [ ] Verify production deployment commit matches approved release commit and obtain explicit owner release approval.
 
 **Current posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+## Verification addendum — 2026-11-07 (documentation commit head)
+
+- Current PR #2 head: `2cbf3a0fea8f33bad3cc169715e6fe7bedf17ec9` on `brand/vayro-name-only`; PR remains open, Draft and unmerged.
+- PR VAYRO CI [42386689242](https://github.com/gavad54/zelmira-one-/actions/runs/42386689242): **success** on this exact SHA. The job completed every step, including production build and PostgreSQL/HTTP integration tests.
+- PR CodeQL [42386689309](https://github.com/gavad54/zelmira-one-/actions/runs/42386689309): **success** on this exact SHA; SARIF upload completed.
+- PR lockfile validation [42386689282](https://github.com/gavad54/zelmira-one-/actions/runs/42386689282): **success** on this exact SHA.
+- Exact PR CI logs: dependency audit **0 vulnerabilities**; unit suite **41 passed / 0 failed**; PostgreSQL and production HTTP integration suite **14 passed / 0 failed**; production build completed successfully.
+- The only source change from the previously verified application head `be04cb0` is this release-gate documentation update. The app source and tests were not changed by this documentation commit.
+- Push-triggered duplicate CI was still running at the time of this checkpoint; PR-triggered CI, CodeQL and lockfile workflows are the authoritative completed checks listed above.
+- The CodeQL review annotations about uppercase script tags are attached to an earlier commit. Current branch source includes case-insensitive matching and an explicit uppercase-tag assertion, but current alert-record closure has not been independently confirmed. Keep it open until Code Scanning confirms closure.
+
+**Release status remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
