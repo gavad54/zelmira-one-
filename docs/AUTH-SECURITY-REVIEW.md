@@ -52,3 +52,11 @@
 ## Evidence boundary
 
 This document records source-level observations and required verification. It does not claim that endpoint tests, penetration testing, production email delivery, MFA, tenant-wide authorization coverage or production hardening have been completed.
+
+
+## Verification update — 2026-11-07
+
+- The exact source head `def0069fd81b66e030aab9f73725cfd021c771db` passed PR CI [42328951513](https://github.com/gavad54/zelmira-one-/actions/runs/42328951513) and CodeQL [42328951531](https://github.com/gavad54/zelmira-one-/actions/runs/42328951531). CI included unit tests, PostgreSQL migration/integration tests, lint, typecheck, production build and a blocking npm audit that reported 0 vulnerabilities.
+- These results establish only the checks implemented in the repository. They are not a penetration test, independent security review or production certification.
+- Still release-blocking: privileged-user MFA; production trusted-proxy validation for rate-limit identity; full expired/reused token and database/email-failure endpoint coverage; full tenant read/write/export/delete authorization coverage; complete CSP policy validated against the actual Next.js runtime; production HTTPS cookie validation; independent security review and live abuse testing.
+- The later CSS-only change and documentation refresh do not alter authentication source behavior. Their CI/CodeQL evidence must be checked on the latest branch head before treating that head as verified.
