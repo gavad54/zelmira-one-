@@ -166,3 +166,34 @@ This addendum supersedes the prior repository-head statements above where they c
 The current head is repository-verified only. Production email, proxy trust, MFA, live migration baseline, external backup/restore, hosting, Android, billing, operational product integrations, UAT and independent security review remain open.
 
 **Status remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+## Verification addendum — 2026-11-07 (current engineering run)
+
+This addendum supersedes older head and test-count statements above when they conflict.
+
+- PR #2 remains open, Draft and unmerged; branch: `brand/vayro-name-only`.
+- Verified PR head for this run: `be04cb0849ca762aee7874ceb2b621acc0de85ad`.
+- VAYRO CI run [42386324059](https://github.com/gavad54/zelmira-one-/actions/runs/42386324059): completed successfully on this head. The exact job completed locked install, enforced dependency audit, unit tests, Prisma generation/validation, isolated PostgreSQL role setup, actual Prisma migration in the disposable CI database, lint, typecheck, production build and HTTP/PostgreSQL integration tests.
+- CI log evidence on this head: `npm audit --audit-level=moderate` reported **0 vulnerabilities**; unit tests reported **41 passed, 0 failed**; PostgreSQL/production HTTP integration tests reported **14 passed, 0 failed**.
+- CodeQL run [42386324052](https://github.com/gavad54/zelmira-one-/actions/runs/42386324052): completed successfully; analysis results upload completed. A successful workflow is not, by itself, proof that the repository has zero open code-scanning alerts.
+- Lockfile validation run [42386324035](https://github.com/gavad54/zelmira-one-/actions/runs/42386324035): completed successfully, including package/lockfile synchronization and reproducible `npm ci`.
+- Two historical CodeQL review annotations remain visible on PR #2 for the `js/bad-tag-filter` finding in `tests/auth-endpoints.integration.mjs`. The current source at this head uses case-insensitive `/gi` script-tag matching and includes an explicit uppercase `<SCRIPT>` regression assertion. The available run log confirms SARIF upload, but does not expose the current open/closed status of those alert records. Keep final alert closure as an open verification item; do not dismiss or mark fixed without confirming the Code Scanning alert state.
+- Owner email-contact creation now has a DB-backed limit of 10 attempts per owner per hour, returning HTTP 429 and `Retry-After: 3600`; the integration test verifies the eleventh creation is rejected and the limiter count is 11. This change is included in this head and passed the integration suite.
+- The successful disposable CI migration is not evidence that the live VAYRO-CORE database has a registered migration baseline or is safe to migrate.
+
+## Remaining release gates — current run
+
+- [ ] Confirm the two historical CodeQL alert records are closed/resolved on the current source; verify no new open alerts after the latest SARIF upload.
+- [ ] Complete endpoint-by-endpoint authorization and abuse-control review, including owner operations, token lifecycle and all future tenant-scoped operations.
+- [ ] Add and verify privileged-user MFA and owner bootstrap-secret removal/rotation procedure.
+- [ ] Reconcile live VAYRO-CORE schema, Prisma schema and initial migration using read-only catalog inspection; do not apply DDL or baseline changes to the live database in this workflow.
+- [ ] Prove encrypted external backup and isolated restore, with checksum and RPO/RTO evidence.
+- [ ] Configure and end-to-end verify production transactional email using protected runtime secrets and an approved sender.
+- [ ] Complete product licensing, payment/webhook idempotency, invoice/refund/reconciliation and entitlement enforcement before enabling paid access.
+- [ ] Complete product integration contracts and operational health/failure behavior. The eight family products remain catalogue entries, not live services.
+- [ ] Resolve dedicated VAYRO hosting without reusing ARIA/LEADORA infrastructure or creating paid resources.
+- [ ] Implement Android project/build/release signing and real-device acceptance; no Android artifact is currently evidenced.
+- [ ] Complete accessibility, Persian RTL/mobile review, privacy/legal review and owner/representative-user UAT.
+- [ ] Verify production deployment commit matches approved release commit and obtain explicit owner release approval.
+
+**Current posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
