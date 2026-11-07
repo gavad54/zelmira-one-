@@ -60,3 +60,11 @@ This document records source-level observations and required verification. It do
 - These results establish only the checks implemented in the repository. They are not a penetration test, independent security review or production certification.
 - Still release-blocking: privileged-user MFA; production trusted-proxy validation for rate-limit identity; full expired/reused token and database/email-failure endpoint coverage; full tenant read/write/export/delete authorization coverage; complete CSP policy validated against the actual Next.js runtime; production HTTPS cookie validation; independent security review and live abuse testing.
 - The later CSS-only change and documentation refresh do not alter authentication source behavior. Their CI/CodeQL evidence must be checked on the latest branch head before treating that head as verified.
+
+
+## Tenant management authorization update — 2026-11-07
+
+- On code head `0e5609e00b17c9f641d3f397bf08310526d27a03`, PR CI [42330032303](https://github.com/gavad54/zelmira-one-/actions/runs/42330032303) and CodeQL [42330032149](https://github.com/gavad54/zelmira-one-/actions/runs/42330032149) passed.
+- HTTP integration coverage now verifies same-origin rejection, strict request-body validation, ADMIN permission to rename, ADMIN denial for tenant closure, OWNER permission to soft-close, audit persistence, data retention and denial of access to a closed workspace.
+- Tenant rename/closure uses the opaque server session, membership and role loaded from PostgreSQL. The API does not accept caller-supplied role or membership values.
+- This is automated application-level coverage, not a penetration test. Privileged MFA, trusted-proxy identity validation, complete member/role lifecycle authorization, all tenant-scoped export/delete routes, CSP policy validation, HTTPS cookie verification on the production host, independent review and live abuse testing remain open.
