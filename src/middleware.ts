@@ -4,8 +4,7 @@ function buildContentSecurityPolicy(nonce: string): string {
   const directives = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
-    // Next.js and the current UI use runtime style attributes; scripts remain nonce-bound.
-    "style-src 'self' 'unsafe-inline'",
+    `style-src 'self' 'nonce-${nonce}'`,
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
     "connect-src 'self'",
