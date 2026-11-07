@@ -85,3 +85,36 @@ All other gates remain as recorded above: production auth/MFA and endpoint autho
 - This closes only the repository checks listed above and the specific tenant rename/closure behavior. It does not close complete tenant member invitations/removal/role changes, billing, MFA, production security review, CSP runtime validation, external backup/restore, live DB migration baseline, production hosting/email, Android, UAT, legal review or owner release approval.
 
 **Release posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Verification addendum — 2026-11-07 (verified current PR head)
+
+This addendum supersedes prior repository-head and CI statements where they conflict.
+
+- Current PR #2 head: `7e9ac65e45764fad6e5ec7084f9871129d6b1b38`.
+- PR CI [42330270049](https://github.com/gavad54/zelmira-one-/actions/runs/42330270049) completed successfully on this exact head.
+- PR CodeQL [42330270038](https://github.com/gavad54/zelmira-one-/actions/runs/42330270038) completed successfully on this exact head.
+- The same head's push CI [42330266291](https://github.com/gavad54/zelmira-one-/actions/runs/42330266291) and push CodeQL [42330266327](https://github.com/gavad54/zelmira-one-/actions/runs/42330266327) also completed successfully.
+- Enforced `npm audit --audit-level=moderate`: **0 vulnerabilities**.
+- Unit tests: **35 passed, 0 failed**.
+- PostgreSQL and production HTTP integration tests: **12 passed, 0 failed**.
+- Prisma client generation, schema validation, isolated PostgreSQL least-privilege role preparation, actual Prisma migration execution in the isolated CI database, lint, TypeScript checking and production build all passed.
+- The tenant-management implementation includes DB-derived membership authorization; OWNER/ADMIN tenant rename; OWNER-only tenant soft-close; same-origin checks; rate limiting; and transactional audit events. Soft-close preserves tenant data. These checks do not yet constitute a full independent security review or complete tenant lifecycle.
+- The latest commit `7e9ac65` changes responsive tenant administration CSS only; the tested tenant service/API changes are part of its ancestry.
+
+## Remaining release blockers — reconfirmed
+
+- No Android, Gradle, Capacitor, APK or AAB project/artifact exists in the current repository tree. Android delivery is not started.
+- No VAYRO production hosting deployment exists. Railway workspace currently has no dedicated VAYRO project; the free-plan resource limit previously prevented provisioning. Do not repurpose ARIA or LEADORA infrastructure.
+- The dedicated VAYRO-CORE Supabase project still requires a fresh read-only catalog comparison against Prisma schema and migration SQL. A safe migration baseline has not been independently verified; no live DDL or data changes are authorized.
+- Independent encrypted backup outside the database/hosting provider and a successful isolated restore drill are not evidenced.
+- Production email delivery, MFA for privileged accounts, endpoint-level negative authorization coverage, CSP runtime validation and independent penetration/security review remain open.
+- Billing, payment webhook idempotency, refunds/reconciliation, license lifecycle, legal/privacy review, support operations and customer onboarding controls are not production-ready.
+- The eight named products remain a catalogue, not eight completed operationally integrated products.
+- Owner UAT, real-device Android acceptance, production monitoring/rollback, final production commit parity and explicit release approval remain open.
+
+## CI maintenance note
+
+The successful CI logs surfaced a GitHub Actions runtime deprecation warning: `actions/checkout@v4` and `actions/setup-node@v4` currently target Node.js 20 while GitHub is forcing Node.js 24. This is not a failed check, but the workflow action versions should be reviewed and upgraded to supported Node 24-compatible releases, then revalidated. Do not change action versions without reviewing their official release/security guidance.
+
+**Current status: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
