@@ -262,7 +262,7 @@ test("owner email APIs enforce authorization, same-origin writes, audit, throttl
     assert.equal(blockedLastDelete.status, 409, "the final verified OWNER contact cannot be deleted");
   } finally {
     if (contactId) await db.emailContactVerificationToken.deleteMany({ where: { contactId } });
-    await db.emailContact.deleteMany({ where: { id: [...createdContactIds, ...ownerContactIds].filter(Boolean) } });
+    await db.emailContact.deleteMany({ where: { id: { in: [...createdContactIds, ...ownerContactIds].filter(Boolean) } } });
     if (userId) {
       await db.auditEvent.deleteMany({ where: { actorUserId: userId } });
       await db.session.deleteMany({ where: { userId } });
