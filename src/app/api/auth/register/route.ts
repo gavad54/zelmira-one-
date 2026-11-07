@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { AuthTokenPurpose } from "@prisma/client";
 import { hashPassword,isSameOriginRequest } from "@/lib/auth-core.mjs";
-import { allowAttempt,actionUrl,createActionToken,noStoreJson,requestFingerprint,sendActionEmail } from "@/lib/auth-service";
+import { allowIpAttempt,allowAttempt,actionUrl,createActionToken,noStoreJson,requestFingerprint,sendActionEmail } from "@/lib/auth-service";
 import { prisma } from "@/lib/prisma";
 export const runtime="nodejs";
 export async function POST(request:Request){
@@ -11,7 +11,7 @@ export async function POST(request:Request){
  const platformOwnerCount=await prisma.user.count({where:{platformRole:{in:["OWNER","PLATFORM_ADMIN"]}}});
  if(platformOwnerCount===0)return noStoreJson({error:"owner_setup_required"},503);
  const email=p.data.email.toLowerCase();
- const limits=await Promise.all([allowAttempt(await requestFingerprint("register-ip","all"),10,3600000),allowAttempt(await requestFingerprint("register-email",email),4,3600000)]);
+ const limits=await Promise.all([allowIpAttempt("register-ip",10,3600000),allowAttempt(await requestFingerprint("register-email",email),4,3600000)]);
  if(limits.some(x=>!x)) return noStoreJson({error:"try_again_later"},429);
  try{
   const user=await prisma.user.create({data:{email,displayName:p.data.displayName,passwordHash:await hashPassword(p.data.password)}});

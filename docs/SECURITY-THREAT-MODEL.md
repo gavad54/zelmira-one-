@@ -72,3 +72,9 @@ Confidentiality, integrity, availability, tenant isolation, accountable administ
 
 ## Release gate
 No statement of “fully secure” is permitted. Release requires a scoped security assessment, resolved critical/high findings, documented accepted residual risks and a tested incident response process.
+
+
+### Trusted proxy configuration
+- Never treat client-supplied `X-Forwarded-For` as authoritative without a verified trusted-proxy hop count.
+- Configure `TRUSTED_PROXY_HOPS` only after the selected host ingress behavior is verified.
+- Until then, account/email/token rate limits remain active and IP-only rate limits are skipped.

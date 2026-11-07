@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import {
   createHash,
   randomBytes,
@@ -118,4 +119,15 @@ export function isSameOriginRequest(request) {
   } catch {
     return false;
   }
+}
+
+
+/** Resolve the first untrusted address from the right side of a proxy chain. */
+export function getTrustedClientAddress(forwardedFor, trustedProxyHops) {
+  if (typeof forwardedFor !== "string" || !Number.isSafeInteger(trustedProxyHops) || trustedProxyHops < 1) return null;
+  const chain = forwardedFor.split(",").map(value => value.trim());
+  const clientIndex = chain.length - trustedProxyHops - 1;
+  if (clientIndex < 0) return null;
+  const candidate = chain[clientIndex];
+  return typeof candidate === "string" && isIP(candidate) !== 0 ? candidate : null;
 }

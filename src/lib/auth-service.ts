@@ -3,7 +3,7 @@ import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { Prisma, AuthTokenPurpose } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { createSessionToken, hashSessionToken } from "@/lib/auth-core.mjs";
+import { createSessionToken, getTrustedClientAddress, hashSessionToken } from "@/lib/auth-core.mjs";
 
 export const SESSION_COOKIE = "vayro_session";
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -17,11 +17,16 @@ export function safeEqualText(a: string, b: string): boolean {
   const left = Buffer.from(a, "utf8"), right = Buffer.from(b, "utf8");
   return left.length === right.length && timingSafeEqual(left, right);
 }
-export async function requestFingerprint(scope: string, identity: string): Promise<string> {
+export function requestFingerprint(scope: string, identity: "all"): Promise<string | null>;
+export function requestFingerprint(scope: string, identity: string): Promise<string>;
+export async function requestFingerprint(scope: string, identity: string): Promise<string | null> {
+  const normalizedIdentity = identity.toLowerCase();
+  if (normalizedIdentity !== "all") return sha256(scope + ":identity:" + normalizedIdentity);
+  const configuredHops = process.env.TRUSTED_PROXY_HOPS;
+  if (!configuredHops || !/^\\d+$/.test(configuredHops)) return null;
   const h = await headers();
-  const forwardedValues = h.get("x-forwarded-for")?.split(",").map(value => value.trim()).filter(Boolean) ?? [];
-  const forwarded = forwardedValues[forwardedValues.length - 1] ?? "unknown";
-  return sha256(scope + ":" + identity.toLowerCase() + ":" + forwarded);
+  const clientAddress = getTrustedClientAddress(h.get("x-forwarded-for"), Number(configuredHops));
+  return clientAddress ? sha256(scope + ":ip:" + clientAddress) : null;
 }
 /** Persistent DB-backed limiter; each identity gets a fixed window. */
 export async function allowAttempt(keyHash: string, limit: number, windowMs: number): Promise<boolean> {
@@ -37,6 +42,12 @@ export async function allowAttempt(keyHash: string, limit: number, windowMs: num
     RETURNING "count"
   `);
   return (result[0]?.count ?? limit + 1) <= limit;
+}
+
+/** Skip IP-only throttling until the actual trusted proxy chain is configured. */
+export async function allowIpAttempt(scope: string, limit: number, windowMs: number): Promise<boolean> {
+  const keyHash = await requestFingerprint(scope, "all");
+  return keyHash ? allowAttempt(keyHash, limit, windowMs) : true;
 }
 export async function createActionToken(userId: string, purpose: AuthTokenPurpose, ttlMs: number) {
   const token = randomActionToken();

@@ -68,3 +68,8 @@ This document records source-level observations and required verification. It do
 - HTTP integration coverage now verifies same-origin rejection, strict request-body validation, ADMIN permission to rename, ADMIN denial for tenant closure, OWNER permission to soft-close, audit persistence, data retention and denial of access to a closed workspace.
 - Tenant rename/closure uses the opaque server session, membership and role loaded from PostgreSQL. The API does not accept caller-supplied role or membership values.
 - This is automated application-level coverage, not a penetration test. Privileged MFA, trusted-proxy identity validation, complete member/role lifecycle authorization, all tenant-scoped export/delete routes, CSP policy validation, HTTPS cookie verification on the production host, independent review and live abuse testing remain open.
+
+
+## Trusted proxy and IP rate-limit boundary
+
+IP-based throttling must not trust an arbitrary `X-Forwarded-For` value. The application now uses the first untrusted address from the right only when `TRUSTED_PROXY_HOPS` is explicitly configured to match the verified ingress chain. Until the hosting topology is selected and verified, IP-only throttles are skipped; account/email/token limits remain active. Do not set this variable by guesswork. Verify the host header behavior and proxy-hop count before enabling IP throttling in production.
