@@ -13,13 +13,18 @@ export default function OwnerSetupPage(){
   try{
    const response=await fetch("/api/owner/bootstrap",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({bootstrapToken,email,displayName,password})});
    const data=await response.json();
+   if(data.created===true && data.authenticated===false){
+    setBootstrapToken("");setPassword("");
+    setMessage(data.error==="verification_delivery_unavailable"
+      ?"حساب مالک ایجاد شد، اما ارسال ایمیل تأیید انجام نشد. پس از پیکربندی سرویس ایمیل، از گزینه ارسال دوباره تأیید استفاده کنید."
+      :"حساب مالک ایجاد شد. ابتدا ایمیل تأیید را باز کنید؛ سپس از صفحه ورود وارد شوید.");
+    return;
+   }
    if(!response.ok){
     const errors:Record<string,string>={bootstrap_unavailable:"راه‌اندازی اولیه مجاز نیست؛ کلید یک‌بارمصرف در تنظیمات امن سرور وجود ندارد یا معتبر نیست.",bootstrap_already_used:"حساب مالک قبلاً ساخته شده است.",try_again_later:"تعداد تلاش‌ها زیاد است؛ بعداً دوباره تلاش کنید."};
     throw new Error(errors[data.error]??"ساخت حساب مالک انجام نشد. تنظیمات سرور را بررسی کنید.");
    }
-   setBootstrapToken("");setPassword("");
-   setMessage("حساب مالک ایجاد شد و نشست امن برقرار شد. اکنون وارد پنل مدیریت ایمیل شوید.");
-   window.location.assign("/owner/email-settings");
+   throw new Error("پاسخ راه‌اندازی مالک معتبر نیست؛ نشست ورود بدون تأیید ایمیل ایجاد نمی‌شود.");
   }catch(error){setMessage(error instanceof Error?error.message:"راه‌اندازی انجام نشد.");}
   finally{setBusy(false);}
  }
@@ -29,5 +34,5 @@ export default function OwnerSetupPage(){
  <label>نام نمایشی<input required minLength={2} maxLength={80} value={displayName} onChange={e=>setDisplayName(e.target.value)}/></label>
  <label>رمز عبور (حداقل ۱۲ نویسه)<input type="password" required minLength={12} maxLength={128} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)}/></label>
  <button disabled={busy}>{busy?"در حال راه‌اندازی...":"ایجاد حساب مالک"}</button>
- </form><p role="status">{message}</p><Link href="/">بازگشت به صفحه اصلی</Link></section></main>;
+ </form><p role="status">{message}</p><nav aria-label="مراحل بعدی"><Link href="/login">ورود پس از تأیید ایمیل</Link> · <Link href="/resend-verification">ارسال دوباره ایمیل تأیید</Link></nav><Link href="/">بازگشت به صفحه اصلی</Link></section></main>;
 }
