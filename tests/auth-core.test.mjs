@@ -47,3 +47,26 @@ test("mutating auth requests require an exact same-origin Origin header", () => 
   });
   assert.equal(isSameOriginRequest(foreign), false);
 });
+
+test("trusted proxy parsing selects the first untrusted hop from the right", async () => {
+  const { getTrustedClientAddress } = await import("../src/lib/auth-core.mjs");
+
+  assert.equal(
+    getTrustedClientAddress("198.51.100.77, 203.0.113.25, 10.0.0.2", 1),
+    "203.0.113.25"
+  );
+  assert.equal(
+    getTrustedClientAddress("198.51.100.77, 203.0.113.25, 10.0.0.2", 2),
+    "198.51.100.77"
+  );
+});
+
+test("trusted proxy parsing fails closed when the chain or configuration is invalid", async () => {
+  const { getTrustedClientAddress } = await import("../src/lib/auth-core.mjs");
+
+  assert.equal(getTrustedClientAddress("203.0.113.25", 1), null);
+  assert.equal(getTrustedClientAddress("not-an-ip, 10.0.0.2", 1), null);
+  assert.equal(getTrustedClientAddress("203.0.113.25, 10.0.0.2", 0), null);
+  assert.equal(getTrustedClientAddress("203.0.113.25, 10.0.0.2", 1.5), null);
+  assert.equal(getTrustedClientAddress("203.0.113.25, 10.0.0.2", Number.NaN), null);
+});
