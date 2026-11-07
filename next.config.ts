@@ -6,10 +6,6 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-DNS-Prefetch-Control", value: "off" },
   { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
-  {
-    key: "Content-Security-Policy",
-    value: "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
-  },
   // Voice input may be offered by the first-party application; camera and
   // geolocation remain disabled unless a separately reviewed feature needs them.
   { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" }
