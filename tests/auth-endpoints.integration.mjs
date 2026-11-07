@@ -449,3 +449,20 @@ test("tenant HTTP APIs enforce authentication, verified email, membership and cr
     await db.$disconnect();
   }
 });
+
+
+test("public HTML uses a per-response nonce-based CSP for scripts", async () => {
+  const response = await fetch(origin);
+  assert.equal(response.status, 200);
+  const csp = response.headers.get("content-security-policy") ?? "";
+  const nonceMatch = csp.match(/'nonce-([A-Za-z0-9+/]+=*)'/);
+  assert.ok(nonceMatch, "CSP must contain a cryptographically random script nonce");
+  assert.match(csp, /script-src[^;]*'strict-dynamic'/);
+  assert.doesNotMatch(csp, /script-src[^;]*'unsafe-inline'/);
+  assert.match(csp, /default-src 'self'/);
+  assert.match(csp, /object-src 'none'/);
+  assert.match(csp, /base-uri 'self'/);
+  assert.match(csp, /frame-ancestors 'none'/);
+  const html = await response.text();
+  assert.match(html, new RegExp('<script[^>]+nonce="' + nonceMatch[1] + '"'));
+});
