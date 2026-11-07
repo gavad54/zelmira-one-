@@ -74,3 +74,14 @@ This section supersedes older repository-head and dependency-audit statements ab
 All other gates remain as recorded above: production auth/MFA and endpoint authorization review, full tenant isolation, CSP and independent security review, live database reconciliation and migration safety, encrypted external backup plus isolated restore, dedicated hosting and email, billing/legal readiness, operational product integrations, Android release/device test, UAT, approved production commit and explicit owner release approval.
 
 **Current release posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Verification addendum — 2026-11-07 (latest verified code head)
+
+- Latest verified code/test head: `0e5609e00b17c9f641d3f397bf08310526d27a03`.
+- PR CI [42330032303](https://github.com/gavad54/zelmira-one-/actions/runs/42330032303) and PR CodeQL [42330032149](https://github.com/gavad54/zelmira-one-/actions/runs/42330032149) completed successfully on that exact head.
+- Blocking dependency audit: **0 vulnerabilities**. Unit tests: **35/35 passed**. Production PostgreSQL/HTTP integration tests: **12/12 passed**. Prisma schema, isolated PostgreSQL migration, lint, typecheck and production build passed.
+- Implemented and tested tenant rename by OWNER/ADMIN and tenant soft-close by OWNER only, with same-origin enforcement, DB-backed authorization, rate limiting and audit events. Soft close preserves data.
+- This closes only the repository checks listed above and the specific tenant rename/closure behavior. It does not close complete tenant member invitations/removal/role changes, billing, MFA, production security review, CSP runtime validation, external backup/restore, live DB migration baseline, production hosting/email, Android, UAT, legal review or owner release approval.
+
+**Release posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
