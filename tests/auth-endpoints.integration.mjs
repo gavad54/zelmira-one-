@@ -465,7 +465,7 @@ test("public HTML uses a fresh per-response nonce-based CSP for scripts", async 
   assert.match(csp, /base-uri 'self'/);
   assert.match(csp, /frame-ancestors 'none'/);
   const html = await response.text();
-  const scriptTags = [...html.matchAll(/<script\\b[^>]*>/g)].map(([tag]) => tag);
+  const scriptTags = [...html.matchAll(/<script\b[^>]*>/g)].map(([tag]) => tag);
   assert.ok(scriptTags.length > 0, "homepage must include script tags");
   assert.ok(
     scriptTags.every(tag => tag.includes(`nonce="${nonceMatch[1]}"`)),
@@ -479,7 +479,7 @@ test("public HTML uses a fresh per-response nonce-based CSP for scripts", async 
   assert.ok(secondNonce);
   assert.notEqual(secondNonce, nonceMatch[1], "each HTML response must receive a fresh nonce");
   const secondHtml = await secondResponse.text();
-  const secondScriptTags = [...secondHtml.matchAll(/<script\\b[^>]*>/g)].map(([tag]) => tag);
+  const secondScriptTags = [...secondHtml.matchAll(/<script\b[^>]*>/g)].map(([tag]) => tag);
   assert.ok(secondScriptTags.length > 0, "second homepage response must include script tags");
   assert.ok(
     secondScriptTags.every(tag => tag.includes(`nonce="${secondNonce}"`)),
