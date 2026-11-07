@@ -24,7 +24,7 @@ a{color:inherit;text-decoration:none}
 .orb-one{width:390px;height:390px;right:4%;top:90px;background:radial-gradient(circle at 35% 30%,rgba(155,216,238,.19),rgba(100,115,166,.08) 38%,transparent 70%);border:1px solid rgba(155,216,238,.13);box-shadow:inset 0 0 65px rgba(155,216,238,.06),0 0 100px rgba(85,119,171,.08)}
 .orb-two{width:220px;height:220px;right:12%;top:175px;border:1px solid rgba(216,189,131,.2);box-shadow:0 0 65px rgba(216,189,131,.08)}
 .section{padding:60px 0 86px}
-.section-heading{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:28px}
+.section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:28px}
 .section-heading h2,.vision h2{font-size:clamp(23px,3vw,34px);margin:12px 0 0}
 .section-heading>p,.vision p{font-size:12px;line-height:2;color:var(--muted);max-width:340px}
 .product-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
