@@ -1,4 +1,4 @@
-name: Generate npm lockfile
+name: Validate npm lockfile
 
 on:
   push:
@@ -7,41 +7,36 @@ on:
     paths:
       - .github/workflows/generate-lockfile.yml
       - package.json
+      - package-lock.json
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/generate-lockfile.yml
+      - package.json
+      - package-lock.json
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: vayro-lockfile-${{ github.ref }}
-  cancel-in-progress: false
+  group: vayro-lockfile-validation-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  generate:
+  validate:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Checkout target branch
+      - name: Checkout source
         uses: actions/checkout@v7
-        with:
-          ref: brand/vayro-name-only
-          persist-credentials: true
       - name: Setup Node.js 22
         uses: actions/setup-node@v7
         with:
           node-version: 22
-      - name: Generate npm v3 lockfile from package.json
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund --lockfile-version=3
-      - name: Verify clean reproducible install
-        run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Commit generated lockfile
+      - name: Verify package.json and lockfile are synchronized
         run: |
-          test -s package-lock.json
-          git add package-lock.json
-          if git diff --cached --quiet; then
-            echo "The generated lockfile is unchanged; no commit is necessary."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "build: add npm v3 lockfile"
-          git push origin HEAD:brand/vayro-name-only
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --lockfile-version=3
+          git diff --exit-code -- package-lock.json
+      - name: Verify reproducible dependency installation
+        run: npm ci --ignore-scripts --no-audit --no-fund
