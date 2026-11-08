@@ -253,3 +253,16 @@ This addendum supersedes earlier repository-head and CI statements where they co
 PR #2 remains open, draft, and unmerged. Production deployment remains blocked. All outstanding production gates listed above remain open, including production auth/MFA and endpoint authorization review, complete tenant isolation, independent security/privacy review, live database reconciliation and safe migration baseline, encrypted external backup and isolated restore, dedicated hosting and email, billing/legal readiness, operational product integrations, Android delivery/device acceptance, UAT, production commit verification, and explicit owner release approval.
 
 **Current release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Brand and public UI implementation — 2026-11-08
+
+- Added a reusable vector primary wordmark at `public/vayro-logo.svg`.
+- Refined the app icon at `public/vayro-mark.svg` and aligned `public/favicon.svg`.
+- Updated the public homepage header to use the VAYRO vector app mark.
+- Implemented responsive RTL-first styling for the existing product directory, hero, product cards, independent product boundaries, vision section and footer. Added visible keyboard focus and reduced-motion handling.
+- Added the full design specification at `docs/design/VAYRO-BRAND-AND-UI.md` and implementation plan at `docs/plans/2026-11-08-vayro-product-ui-brand.md`.
+- These changes are a public brand and directory UI implementation. They do not make the eight specialist products operational, provision production infrastructure, or certify release readiness.
+- CI and CodeQL for the final documentation-inclusive branch head must complete successfully before these UI changes are considered repository-verified.
+
+**Release posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
