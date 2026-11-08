@@ -109,3 +109,39 @@ Do not merge PR #2, deploy, migrate production data, enable customer onboarding,
 The repository has a meaningful engineering foundation and reproducible CI checks, but the evidence does not support production readiness. The next safe step is read-only verification of the dedicated VAYRO database and its runtime privileges, followed by an independently proven backup/restore path. Application changes that depend on unverified production data or infrastructure must wait.
 
 **Final status: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## 10. Verification addendum — 2026-11-08
+
+This addendum records a fresh read-only review. It supersedes older statements in this document where the same evidence category has changed.
+
+### Repository and workflow evidence
+
+- PR #2: open, Draft, unmerged; base `main`; head branch `brand/vayro-name-only`; head SHA `80b9eb660e8cf37310d0843e0f35791780074f7e`.
+- PR #3: open, Draft, unmerged; base `brand/vayro-name-only`; head branch `audit/vayro-engineering-baseline`; head SHA `cdbad992c031b28c8d6a925a5d2d53b1db1e113a`.
+- The PR #2 branch is 313 commits ahead of `main` and 0 commits behind it. The default `main` branch still contains the older ZELMIRA ONE package identity and a reduced CI workflow; VAYRO code has not been merged into `main`.
+- PR #2 head workflows: VAYRO CI [42405448961](https://github.com/gavad54/zelmira-one-/actions/runs/42405448961), CodeQL [42405448964](https://github.com/gavad54/zelmira-one-/actions/runs/42405448964), and lockfile validation [42405448987](https://github.com/gavad54/zelmira-one-/actions/runs/42405448987) all completed successfully.
+- PR #3 head workflows: VAYRO CI [42410563042](https://github.com/gavad54/zelmira-one-/actions/runs/42410563042), CodeQL [42410563118](https://github.com/gavad54/zelmira-one-/actions/runs/42410563118), and lockfile validation [42410563055](https://github.com/gavad54/zelmira-one-/actions/runs/42410563055) all completed successfully.
+- The PR #3 CI job log records `npm audit --audit-level=moderate` with **0 vulnerabilities**, **43/43 unit tests passed**, and **15/15 PostgreSQL/production HTTP integration tests passed**. Prisma generation and validation, migration execution against the disposable CI PostgreSQL service, lint, TypeScript checking and production build also completed successfully.
+- Two historical CodeQL inline review threads on PR #2 are now marked resolved and outdated by the GitHub Advanced Security bot. This verifies the state of those PR review threads only; it does not independently prove the repository's complete Code Scanning alert inventory is clear.
+
+### Fresh read-only VAYRO-CORE inspection
+
+- Project `VAYRO-CORE` (`wdqhdnhpgxhmmfeyxwxr`) reports `ACTIVE_HEALTHY`, PostgreSQL 17.11.0.018, region `eu-central-1`.
+- The live `public` schema contains 11 tables. All 11 have RLS enabled, and the table listing reports zero rows in every table.
+- Supabase migration history is empty; no development branches are listed.
+- Read-only catalog query returned zero public RLS policies and zero table grants to `anon`, `authenticated` or `service_role`.
+- The catalog query's `current_user` was `postgres`, representing the privileged inspection connection. It does **not** identify or prove the runtime database role used by an application. No VAYRO production application deployment was identified, so runtime role verification remains open.
+- Security Advisor reports 11 informational `rls_enabled_no_policy` findings. Given the observed lack of client-role grants, do not add permissive policies or grants merely to silence these notices. First establish the actual runtime connection identity and least-privilege model.
+- Performance Advisor reports 10 unused indexes. Because all 11 tables are empty, there is no representative workload evidence to justify removing any index.
+- These checks were read-only. No schema, rows, roles, grants, policies, migrations, backups, secrets or hosting resources were changed.
+
+### Corrected execution priorities
+
+1. Confirm the live application/runtime topology and database connection identity; no production app runtime has been proven.
+2. Reconcile the live 11-table schema with Prisma and the initial migration; do not run `prisma migrate deploy` against VAYRO-CORE until a reviewed baseline and rollback strategy exist.
+3. Produce an encrypted backup under independent control and complete a restore drill in an isolated environment; record checksum, RPO and RTO.
+4. Continue endpoint-by-endpoint authorization, tenant-isolation, MFA, trusted-proxy, email, privacy and security verification.
+5. Build and validate the dedicated hosting, Android, licensing/billing, operational product integrations and UAT workstreams only when their prerequisites are evidenced.
+
+**Release posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.** No merge, production migration, deployment, public release, payment activation or customer onboarding is authorized by this addendum.
