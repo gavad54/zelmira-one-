@@ -42,6 +42,9 @@ jobs:
           --no-prerender
           --no-warm-cache
 
+      - name: Update Vite to a patched 8.3 release
+        run: npm install --save-dev --no-audit --no-fund "vite@^8.3.3"
+
       - name: Build VAYRO for the Cloudflare Workers runtime
         env:
           VAYRO_CLOUDFLARE_BUILD: "1"
