@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PlatformRole {
+  OWNER
+  PLATFORM_ADMIN
+  SUPPORT
+  USER
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MANAGER
+  MEMBER
+  VIEWER
+}
+
+enum ProductStatus {
+  PLANNED
+  ACTIVE
+  MAINTENANCE
+  RETIRED
+}
+
+enum EmailPurpose {
+  OWNER
+  SUPPORT
+  BILLING
+  SECURITY
+  GENERAL
+}
+
+enum AuthTokenPurpose {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+model User {
+  id              String       @id @default(cuid())
+  email           String       @unique
+  passwordHash    String
+  displayName     String
+  platformRole    PlatformRole @default(USER)
+  emailVerifiedAt DateTime?
+  disabledAt      DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  memberships     Membership[]
+  sessions        Session[]
+  auditEvents     AuditEvent[] @relation("AuditActor")
+  authTokens      AuthActionToken[]
+}
+
+model Tenant {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  status      TenantStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  memberships Membership[]
+  licenses    License[]
+}
+
+model Membership {
+  id        String         @id @default(cuid())
+  userId    String
+  tenantId  String
+  role      MembershipRole @default(MEMBER)
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@index([tenantId, role])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  key         String        @unique
+  name        String
+  description String
+  status      ProductStatus @default(PLANNED)
+  baseUrl     String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  licenses    License[]
+}
+
+model License {
+  id        String   @id @default(cuid())
+  tenantId  String
+  productId String
+  startsAt  DateTime
+  endsAt    DateTime?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, active])
+  @@index([productId])
+  @@unique([tenantId, productId])
+}
+
+model AuditEvent {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  tenantId    String?
+  action      String
+  resource    String
+  resourceId  String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  actor       User?    @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+model EmailContact {
+  id                 String                          @id @default(cuid())
+  email              String                          @unique
+  label              String
+  purposes           EmailPurpose[]
+  enabled            Boolean                         @default(true)
+  isPrimary          Boolean                         @default(false)
+  verifiedAt         DateTime?
+  createdAt          DateTime                        @default(now())
+  updatedAt          DateTime                        @updatedAt
+  verificationTokens EmailContactVerificationToken[]
+
+  @@index([enabled, isPrimary])
+}
+
+model EmailContactVerificationToken {
+  id         String      @id @default(cuid())
+  tokenHash  String      @unique
+  contactId  String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime    @default(now())
+  contact    EmailContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([contactId, expiresAt])
+}
+
+model AuthActionToken {
+  id         String           @id @default(cuid())
+  tokenHash  String           @unique
+  userId     String
+  purpose    AuthTokenPurpose
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime         @default(now())
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, expiresAt])
+}
+
+model AuthRateLimit {
+  keyHash         String   @id
+  windowStartedAt DateTime
+  count           Int      @default(0)
+  expiresAt       DateTime
+
+  @@index([expiresAt])
+}

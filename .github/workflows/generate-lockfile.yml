@@ -1,0 +1,42 @@
+name: Validate npm lockfile
+
+on:
+  push:
+    branches:
+      - brand/vayro-name-only
+    paths:
+      - .github/workflows/generate-lockfile.yml
+      - package.json
+      - package-lock.json
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/generate-lockfile.yml
+      - package.json
+      - package-lock.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vayro-lockfile-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Verify package.json and lockfile are synchronized
+        run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --lockfile-version=3
+          git diff --exit-code -- package-lock.json
+      - name: Verify reproducible dependency installation
+        run: npm ci --ignore-scripts --no-audit --no-fund

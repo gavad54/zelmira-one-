@@ -1,0 +1,11 @@
+{
+  "name": "وایرو",
+  "short_name": "وایرو",
+  "description": "اکوسیستم هوشمند محصولات و خدمات وایرو",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090b12",
+  "theme_color": "#090b12"
+}
