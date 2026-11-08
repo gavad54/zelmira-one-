@@ -266,3 +266,36 @@ PR #2 remains open, draft, and unmerged. Production deployment remains blocked. 
 - CI and CodeQL for the final documentation-inclusive branch head must complete successfully before these UI changes are considered repository-verified.
 
 **Release posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Verification addendum — 2026-11-08 (live PR #5 and VAYRO-CORE inspection)
+
+This addendum supersedes earlier PR-number, branch-head, and CI statements where they conflict.
+
+### Repository and CI evidence
+
+- Live PR: [#5](https://github.com/gavad54/zelmira-one-/pull/5), title: feat(vayro): implement real owner dashboard and product catalog.
+- PR state at inspection: **open, draft, unmerged**; base `experiment/cloudflare-free-hosting-audit`; head branch `feature/vayro-real-dashboard`.
+- Exact PR head inspected: `03efd24144b1aa133f277b2a090e6156303fb9ed`.
+- VAYRO CI: [run 42458255861](https://github.com/gavad54/zelmira-one-/actions/runs/42458255861) — completed successfully.
+- CodeQL: [run 42458255899](https://github.com/gavad54/zelmira-one-/actions/runs/42458255899) — completed successfully.
+- Dashboard validation: [run 42458255804](https://github.com/gavad54/zelmira-one-/actions/runs/42458255804) — completed successfully.
+- These are repository/CI checks on the inspected head. They do not establish live owner login, production runtime, deployment, UAT or release readiness.
+
+### Fresh read-only VAYRO-CORE database evidence
+
+- Project `wdqhdnhpgxhmmfeyxwxr` was reachable and healthy at inspection; PostgreSQL 17.11.
+- The live `public` schema contains 11 tables. All 11 have RLS enabled; all inspected tables have zero rows.
+- `pg_policies`/Security Advisor show no policies on these 11 tables. The live table ACLs show only the `postgres` owner grant; no table-level grants were found for `anon`, `authenticated` or `service_role`.
+- Migration history is empty.
+- Security Advisor reports 11 informational `rls_enabled_no_policy` findings. Given the absence of client-role table grants, these notices do not by themselves prove public data exposure. Do not create broad policies or grants just to silence the notices.
+- The effective identity and privileges used by the actual VAYRO application runtime remain unverified. This is a hard release blocker: verify a dedicated least-privilege server-only database role and prove it cannot exceed the application's required operations. Never expose database credentials to browser code.
+- The empty migration history and existing live schema must be reconciled with Prisma and checked-in migrations before any production migration or baseline. No live DDL, grant, policy, migration or data change was performed during this inspection.
+
+### Release decision
+
+- PR #5 remains a draft implementation slice, not a releasable deployment.
+- The owner dashboard and product catalogue are repository-implemented; no live owner/browser E2E or production deployment was verified.
+- All previously listed gates remain open unless supported by evidence above. In particular: runtime DB least privilege, migration baseline/reconciliation, privileged MFA, endpoint authorization and tenant isolation, external encrypted backup and isolated restore, production hosting and email, operational product integrations, Android, UAT, rollback/monitoring, legal/privacy review and explicit release approval.
+
+**Current status: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
