@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const isCloudflareVinextBuild = process.env.VAYRO_CLOUDFLARE_BUILD === "1";
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -12,7 +14,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Keep the existing Node/Railway standalone output unchanged. Vinext builds
+  // its own Cloudflare output and must not try to emit a Next standalone bundle.
+  ...(!isCloudflareVinextBuild ? { output: "standalone" as const } : {}),
   poweredByHeader: false,
   reactStrictMode: true,
   async headers() {
