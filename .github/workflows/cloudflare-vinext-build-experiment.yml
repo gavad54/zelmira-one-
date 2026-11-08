@@ -1,0 +1,61 @@
+name: VAYRO Cloudflare Vinext Build Experiment
+
+on:
+  push:
+    branches:
+      - experiment/cloudflare-free-hosting-audit
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vayro-cloudflare-vinext-experiment
+  cancel-in-progress: true
+
+jobs:
+  cloudflare-build:
+    name: Initialize and build (no deployment)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout isolated experiment branch
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install existing locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Initialize Cloudflare Workers configuration without paid features
+        run: >-
+          npx --yes vinext init
+          --platform=cloudflare
+          --name=vayro-preview
+          --cdn-cache=none
+          --data-cache=none
+          --image-optimization=none
+          --no-prerender
+          --no-warm-cache
+
+      - name: Build VAYRO for the Cloudflare Workers runtime
+        run: npx vite build
+
+      - name: Preserve generated configuration and build evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vayro-cloudflare-build-evidence
+          if-no-files-found: warn
+          retention-days: 7
+          path: |
+            vite.config.ts
+            cloudflare.config.ts
+            package.json
+            package-lock.json
+            .cloudflare/**
+            dist/**
