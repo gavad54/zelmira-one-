@@ -2,9 +2,9 @@ name: CodeQL Security Analysis
 
 on:
   push:
-    branches: [main, brand/vayro-name-only]
+    branches: [main, brand/vayro-name-only, audit/vayro-engineering-baseline]
   pull_request:
-    branches: [main]
+    branches: [main, brand/vayro-name-only]
   schedule:
     - cron: "23 4 * * 1"
 
