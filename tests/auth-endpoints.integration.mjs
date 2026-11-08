@@ -563,3 +563,107 @@ test("owner bootstrap cannot grant owner access before email verification", asyn
     await db.$disconnect();
   }
 });
+
+
+test("tenant members endpoint requires OWNER or ADMIN and never exposes credentials", async () => {
+  const db = new PrismaClient();
+  const suffix = randomUUID();
+  const ownerToken = randomBytes(32).toString("hex");
+  const viewerToken = randomBytes(32).toString("hex");
+  const ownerTokenHash = createHash("sha256").update(ownerToken).digest("hex");
+  const viewerTokenHash = createHash("sha256").update(viewerToken).digest("hex");
+  let ownerId;
+  let viewerId;
+  let tenantId;
+
+  try {
+    await db.$connect();
+    const owner = await db.user.create({
+      data: {
+        email: `members-owner-${suffix}@example.invalid`,
+        passwordHash: "must-never-be-returned",
+        displayName: "Members Owner",
+        emailVerifiedAt: new Date()
+      }
+    });
+    ownerId = owner.id;
+
+    const viewer = await db.user.create({
+      data: {
+        email: `members-viewer-${suffix}@example.invalid`,
+        passwordHash: "must-never-be-returned",
+        displayName: "Members Viewer",
+        emailVerifiedAt: new Date()
+      }
+    });
+    viewerId = viewer.id;
+
+    const tenant = await db.tenant.create({
+      data: {
+        name: "Members API Test",
+        slug: `members-api-${suffix}`,
+        memberships: {
+          create: [
+            { userId: ownerId, role: "OWNER" },
+            { userId: viewerId, role: "VIEWER" }
+          ]
+        }
+      }
+    });
+    tenantId = tenant.id;
+
+    await db.session.createMany({
+      data: [
+        { userId: ownerId, tokenHash: ownerTokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
+        { userId: viewerId, tokenHash: viewerTokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+      ]
+    });
+
+    const unauthenticated = await fetch(`${origin}/api/tenants/${tenantId}/members`);
+    assert.equal(unauthenticated.status, 401);
+    assert.match(unauthenticated.headers.get("cache-control") ?? "", /no-store/);
+
+    const ownerResponse = await fetch(`${origin}/api/tenants/${tenantId}/members`, {
+      headers: { Cookie: `vayro_session=${ownerToken}` }
+    });
+    assert.equal(ownerResponse.status, 200);
+    assert.match(ownerResponse.headers.get("cache-control") ?? "", /no-store/);
+    const body = await ownerResponse.json();
+    assert.equal(body.members.length, 2);
+    assert.deepEqual(
+      body.members.map(({ email, role }) => ({ email, role })),
+      [
+        { email: owner.email, role: "OWNER" },
+        { email: viewer.email, role: "VIEWER" }
+      ]
+    );
+    assert.doesNotMatch(JSON.stringify(body), /passwordHash|must-never-be-returned/);
+
+    const viewerResponse = await fetch(`${origin}/api/tenants/${tenantId}/members`, {
+      headers: { Cookie: `vayro_session=${viewerToken}` }
+    });
+    assert.equal(viewerResponse.status, 401);
+
+    const otherTenant = await db.tenant.create({
+      data: { name: "Other Members Tenant", slug: `other-members-${suffix}` }
+    });
+    const crossTenant = await fetch(`${origin}/api/tenants/${otherTenant.id}/members`, {
+      headers: { Cookie: `vayro_session=${ownerToken}` }
+    });
+    assert.equal(crossTenant.status, 401);
+    await db.tenant.delete({ where: { id: otherTenant.id } });
+  } finally {
+    if (tenantId) {
+      await db.auditEvent.deleteMany({ where: { tenantId } });
+      await db.membership.deleteMany({ where: { tenantId } });
+      await db.tenant.deleteMany({ where: { id: tenantId } });
+    }
+    if (ownerId || viewerId) {
+      const userIds = [ownerId, viewerId].filter(Boolean);
+      await db.session.deleteMany({ where: { userId: { in: userIds } } });
+      await db.auditEvent.deleteMany({ where: { actorUserId: { in: userIds } } });
+      await db.user.deleteMany({ where: { id: { in: userIds } } });
+    }
+    await db.$disconnect();
+  }
+});
