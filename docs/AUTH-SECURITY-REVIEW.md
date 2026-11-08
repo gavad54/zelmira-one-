@@ -81,3 +81,24 @@ IP-based throttling must not trust an arbitrary `X-Forwarded-For` value. The app
 - Unit tests: 43 passed / 0 failed. PostgreSQL and production HTTP integration tests: 15 passed / 0 failed. The enforced npm audit reported 0 vulnerabilities; lint, typecheck, Prisma migration in isolated PostgreSQL and production build passed.
 - IP-only throttling now requires an explicit `TRUSTED_PROXY_HOPS` setting and parses the first untrusted hop from the right. Until the real ingress chain is verified, IP-only throttles are skipped; account/email/token-specific throttles remain active. The variable is intentionally unset in the example environment.
 - This change does not verify any live hosting proxy configuration and does not close production security review, MFA, tenant authorization coverage, or release gates.
+
+
+## Focused source review — 2026-11-08 (head `d2b7a311858385a23747c30c4dede05d62121b08`)
+
+The current branch head was re-inspected across `auth-core.mjs`, `auth-service.ts`, login/register/logout/session routes, owner bootstrap, tenant authorization and the owner product catalogue.
+
+### Open findings
+
+1. **AUTH-ENUM-01 — login timing asymmetry.** `POST /api/auth/login` calls `verifyPassword` only when `prisma.user.findUnique` returns a user. Unknown email addresses therefore bypass scrypt, while existing accounts incur the scrypt cost even when the password is wrong. The response body/status is generic, but timing can still disclose account existence. Remediation: perform a same-cost dummy scrypt verification for unknown accounts, and issue a session only when a real user exists, the password is valid, the account is enabled and email is verified. Add a deterministic regression test for the dummy-verification path; avoid fragile wall-clock thresholds.
+
+2. **AUTH-BOOTSTRAP-01 — shared bootstrap limiter availability risk.** `POST /api/owner/bootstrap` rate-limits every request under one fixed `owner-bootstrap:initial` key. An unauthenticated caller can consume the shared five-attempt/hour budget and temporarily deny legitimate first-owner setup. Design a limiter that accounts for verified ingress identity and preserves protection against secret guessing. Do not trust caller-supplied `X-Forwarded-For`, remove the limiter, or weaken the one-time bootstrap secret.
+
+3. **AUTH-PROXY-01 — production ingress remains unverified.** IP-only limits remain skipped unless `TRUSTED_PROXY_HOPS` is explicitly configured. The parser has unit coverage, but no deployed VAYRO ingress chain exists to establish the correct hop count and header behavior.
+
+### Clarifications
+
+- The current middleware source defines a nonce-based CSP including `default-src`, `script-src`, `style-src`, `object-src`, `base-uri`, `form-action` and `frame-ancestors`. This corrects older wording in this document that implied the policy directives were absent. Browser/runtime compatibility, nonce propagation and production-header verification are still open.
+- Tenant authorization uses server-loaded session and membership records in the reviewed routes. This does not establish complete authorization coverage for future member, billing, export, payment or product APIs.
+- The 2026-11-08 CI evidence is recorded in `docs/RELEASE-GATES.md`; it is not a penetration test or production certification.
+
+No production credentials, database, hosting, DNS, ARIA resources or customer data were accessed or changed during this source review.

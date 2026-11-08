@@ -266,3 +266,21 @@ PR #2 remains open, draft, and unmerged. Production deployment remains blocked. 
 - CI and CodeQL for the final documentation-inclusive branch head must complete successfully before these UI changes are considered repository-verified.
 
 **Release posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Fresh verification — 2026-11-08 (PR head `d2b7a311858385a23747c30c4dede05d62121b08`)
+
+- PR #2 remains open, Draft and unmerged on `brand/vayro-name-only`; the PR head and branch ref matched `d2b7a311858385a23747c30c4dede05d62121b08` at verification time.
+- PR VAYRO CI [42455919904](https://github.com/gavad54/zelmira-one-/actions/runs/42455919904) and push VAYRO CI [42455915968](https://github.com/gavad54/zelmira-one-/actions/runs/42455915968) completed successfully on this exact head.
+- Exact CI log evidence: `npm audit --audit-level=moderate` reported **0 vulnerabilities**; unit tests reported **47 passed / 0 failed**; PostgreSQL and production HTTP integration tests reported **16 passed / 0 failed**. Prisma client generation, schema validation, least-privilege role preparation and migration execution against the disposable CI PostgreSQL database, lint, TypeScript typecheck and production build all passed.
+- PR CodeQL [42455919789](https://github.com/gavad54/zelmira-one-/actions/runs/42455919789) and push CodeQL [42455915966](https://github.com/gavad54/zelmira-one-/actions/runs/42455915966) completed successfully. The PR scan log reports 47/47 TypeScript and 22/22 JavaScript files scanned. Successful SARIF upload is not proof that every historical alert record is closed; alert disposition remains open for separate verification.
+- PR lockfile validation [42455919795](https://github.com/gavad54/zelmira-one-/actions/runs/42455919795) completed successfully, including package/lockfile synchronization and reproducible locked installation.
+- These are repository checks on the exact head only. The isolated CI migration did not touch VAYRO-CORE. No production deployment, live database mutation, release, merge or infrastructure change was performed.
+
+## Security review findings added on 2026-11-08
+
+- Login timing asymmetry: the login route performs scrypt verification only when an account record exists. A nonexistent email returns before the expensive password verification, creating a potential timing-based account-enumeration signal despite a uniform error response. Add a dummy scrypt verification for unknown accounts and a regression test before production.
+- Owner bootstrap availability: the bootstrap attempt limiter uses one fixed shared identity (`owner-bootstrap:initial`). Unauthenticated requests can consume the shared five-attempt/hour budget and temporarily block legitimate first-owner setup. Review a proxy-aware, abuse-resistant design without trusting arbitrary forwarded headers or simply removing rate limiting.
+- Trusted proxy topology, privileged MFA and complete endpoint-level negative authorization coverage remain open.
+
+**Current posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**

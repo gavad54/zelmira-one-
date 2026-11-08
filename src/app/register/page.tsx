@@ -1,8 +1,0 @@
-"use client";
-import Link from "next/link";
-import {FormEvent,useState} from "react";
-export default function RegisterPage(){
- const [email,setEmail]=useState("");const [name,setName]=useState("");const [password,setPassword]=useState("");const [message,setMessage]=useState("");const [busy,setBusy]=useState(false);
- async function submit(e:FormEvent){e.preventDefault();setBusy(true);setMessage("");try{const r=await fetch("/api/auth/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,displayName:name,password})});const d=await r.json();if(!r.ok)throw new Error(d.error==="try_again_later"?"تلاش‌های زیاد؛ بعداً دوباره امتحان کنید.":"ثبت‌نام انجام نشد.");setMessage(d.verificationEmailSent?"اگر ثبت‌نام قابل انجام باشد، پیوند تأیید به ایمیل ارسال شده است.":"درخواست دریافت شد. اگر حساب جدید قابل ایجاد باشد، پس از پیکربندی ارسال ایمیل، امکان تأیید آن فراهم می‌شود.");}catch(e){setMessage(e instanceof Error?e.message:"ثبت‌نام ناموفق بود.");}finally{setBusy(false);}}
- return <main className="auth-page" dir="rtl"><section className="auth-panel"><span>VAYRO</span><h1>ساخت حساب</h1><form onSubmit={submit}><label>نام نمایشی<input required minLength={2} maxLength={80} value={name} onChange={e=>setName(e.target.value)}/></label><label>ایمیل<input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label><label>رمز عبور (حداقل ۱۲ نویسه)<input type="password" required minLength={12} maxLength={128} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)}/></label><button disabled={busy}>{busy?"در حال ثبت...":"ایجاد حساب"}</button></form><p role="status">{message}</p><Link href="/login">ورود به حساب</Link></section></main>;
-}
