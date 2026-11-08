@@ -6,7 +6,10 @@ export const PRODUCT_CATALOG = Object.freeze([
   { key: "SEPEHR", name: "SEPEHR", description: "زیرساخت ابری و خدمات فناوری" },
   { key: "NAMA", name: "NAMA", description: "ساخت وب‌سایت و صفحات فرود" },
   { key: "PAYAM", name: "PAYAM", description: "بازاریابی و توسعه مشتری" },
-  { key: "DANA", name: "DANA", description: "هوش مصنوعی و هماهنگی هوشمند" }
+  { key: "DANA", name: "DANA", description: "هوش مصنوعی و هماهنگی هوشمند" },
+  { key: "ARIA", name: "ARIA", description: "جامعه، خدمات و بازارگاه؛ بدون حسابداری و ERP" },
+  { key: "ARIANA", name: "ARIANA", description: "حسابداری، مالیات و برنامه‌ریزی منابع سازمانی" },
+  { key: "LEADORA", name: "LEADORA", description: "مدیریت فروش، انبار و عملیات توزیع" }
 ]);
 
 const PRODUCT_STATUSES = new Set(["PLANNED", "ACTIVE", "MAINTENANCE", "RETIRED"]);
