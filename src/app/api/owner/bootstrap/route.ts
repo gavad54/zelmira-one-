@@ -29,17 +29,20 @@ export async function POST(request: Request) {
 
   if (!parsed.success) return noStoreJson({ error: "invalid_input" }, 400);
 
+  const expected = process.env.VAYRO_OWNER_BOOTSTRAP_TOKEN;
+  if (!expected || expected.length < 32 || !safeEqualText(parsed.data.bootstrapToken, expected)) {
+    return noStoreJson({ error: "bootstrap_unavailable" }, 403);
+  }
+
+  // Only a caller holding the high-entropy one-time bootstrap secret may consume
+  // the shared setup budget. Invalid unauthenticated requests cannot lock out
+  // the legitimate initial owner. Do not infer client IP from untrusted headers.
   if (!await allowAttempt(
     await requestFingerprint("owner-bootstrap", "initial"),
     5,
     60 * 60 * 1000
   )) {
     return noStoreJson({ error: "try_again_later" }, 429);
-  }
-
-  const expected = process.env.VAYRO_OWNER_BOOTSTRAP_TOKEN;
-  if (!expected || expected.length < 32 || !safeEqualText(parsed.data.bootstrapToken, expected)) {
-    return noStoreJson({ error: "bootstrap_unavailable" }, 403);
   }
 
   try {
