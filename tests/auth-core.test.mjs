@@ -13,7 +13,7 @@ test("password hashes are salted, parameterized and verifiable", async () => {
   const first = await hashPassword("a-long-and-unique-password-42");
   const second = await hashPassword("a-long-and-unique-password-42");
   assert.notEqual(first, second);
-  assert.match(first, /^scrypt\\$32768\\$8\\$1\\$/);
+  assert.ok(first.startsWith("scrypt$32768$8$1$"));
   assert.equal(await verifyPassword("a-long-and-unique-password-42", first), true);
   assert.equal(await verifyPassword("a-different-password-42", first), false);
 });
@@ -24,7 +24,7 @@ test("password verification rejects malformed hashes without throwing", async ()
 });
 
 test("dummy login hash performs the approved scrypt verification and never matches an ordinary password", async () => {
-  assert.match(DUMMY_PASSWORD_HASH, /^scrypt\\$32768\\$8\\$1\\$/);
+  assert.ok(DUMMY_PASSWORD_HASH.startsWith("scrypt$32768$8$1$"));
   assert.equal(await verifyPassword("a-long-and-unique-password-42", DUMMY_PASSWORD_HASH), false);
 });
 
