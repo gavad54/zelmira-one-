@@ -237,3 +237,19 @@ This addendum supersedes older head and test-count statements above when they co
 - [ ] Complete Persian RTL/mobile/accessibility review, privacy/legal review, owner UAT and explicit release approval.
 
 **Release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Verification addendum — 2026-11-08 (commit 383ab0d4)
+
+This addendum supersedes earlier repository-head and CI statements where they conflict.
+
+- Verified PR workflow head: `383ab0d4aa6b525db29250f15b3b3ead6fcbe333`.
+- VAYRO CI run [42454837708](https://github.com/gavad54/zelmira-one-/actions/runs/42454837708): completed successfully.
+- CodeQL run [42454837760](https://github.com/gavad54/zelmira-one-/actions/runs/42454837760): completed successfully.
+- CI steps verified successful on this head: locked dependency installation and audit, unit tests, Prisma client generation and schema validation, least-privilege PostgreSQL role setup, real migration execution in isolated PostgreSQL, lint, TypeScript typecheck, production build, and PostgreSQL/production HTTP integration tests.
+- Code change adds the missing `listTenantMembers` TypeScript declaration and two tenant-service tests for restricted member projection/stable ordering and invalid or missing inputs.
+- The successful CI and CodeQL runs certify this commit's repository checks only. They do not establish production deployment readiness.
+
+PR #2 remains open, draft, and unmerged. Production deployment remains blocked. All outstanding production gates listed above remain open, including production auth/MFA and endpoint authorization review, complete tenant isolation, independent security/privacy review, live database reconciliation and safe migration baseline, encrypted external backup and isolated restore, dedicated hosting and email, billing/legal readiness, operational product integrations, Android delivery/device acceptance, UAT, production commit verification, and explicit owner release approval.
+
+**Current release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
