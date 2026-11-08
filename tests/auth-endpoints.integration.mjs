@@ -468,11 +468,11 @@ test("public HTML uses a fresh per-response nonce-based CSP for scripts", async 
   assert.match(csp, /frame-ancestors 'none'/);
   const html = await response.text();
   assert.deepEqual(
-    [...'<SCRIPT nonce="test">'.matchAll(/<script\b[^>]*>/gi)].map(([tag]) => tag),
+    [...'<SCRIPT nonce="test">'.matchAll(/<[sS][cC][rR][iI][pP][tT]\b[^>]*>/g)].map(([tag]) => tag),
     ['<SCRIPT nonce="test">'],
     "script tag detection must be case-insensitive"
   );
-  const scriptTags = [...html.matchAll(/<script\b[^>]*>/gi)].map(([tag]) => tag);
+  const scriptTags = [...html.matchAll(/<[sS][cC][rR][iI][pP][tT]\b[^>]*>/g)].map(([tag]) => tag);
   assert.ok(scriptTags.length > 0, "homepage must include script tags");
   assert.ok(
     scriptTags.every(tag => tag.includes(`nonce="${nonceMatch[1]}"`)),
@@ -486,7 +486,7 @@ test("public HTML uses a fresh per-response nonce-based CSP for scripts", async 
   assert.ok(secondNonce);
   assert.notEqual(secondNonce, nonceMatch[1], "each HTML response must receive a fresh nonce");
   const secondHtml = await secondResponse.text();
-  const secondScriptTags = [...secondHtml.matchAll(/<script\b[^>]*>/gi)].map(([tag]) => tag);
+  const secondScriptTags = [...secondHtml.matchAll(/<[sS][cC][rR][iI][pP][tT]\b[^>]*>/g)].map(([tag]) => tag);
   assert.ok(secondScriptTags.length > 0, "second homepage response must include script tags");
   assert.ok(
     secondScriptTags.every(tag => tag.includes(`nonce="${secondNonce}"`)),
