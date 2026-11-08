@@ -284,3 +284,16 @@ PR #2 remains open, draft, and unmerged. Production deployment remains blocked. 
 - Trusted proxy topology, privileged MFA and complete endpoint-level negative authorization coverage remain open.
 
 **Current posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Fresh verification — 2026-11-08 (PR head `9d56e93ec6f94f83386a132a54d519feb330531e`)
+
+- PR #2 remains open, Draft and unmerged on `brand/vayro-name-only`.
+- PR VAYRO CI [42464939703](https://github.com/gavad54/zelmira-one-/actions/runs/42464939703): **success** on this exact head. Locked dependency installation, enforced `npm audit --audit-level=moderate` (**0 vulnerabilities**), 48/48 unit tests, Prisma client generation/schema validation, least-privilege role setup and migration execution in disposable CI PostgreSQL, lint, typecheck, production build, and 16/16 PostgreSQL/production HTTP integration tests all passed.
+- PR lockfile validation [42464939812](https://github.com/gavad54/zelmira-one-/actions/runs/42464939812): **success**; package/lockfile synchronization and reproducible locked installation passed.
+- PR CodeQL [42464939685](https://github.com/gavad54/zelmira-one-/actions/runs/42464939685) and push CodeQL [42464934482](https://github.com/gavad54/zelmira-one-/actions/runs/42464934482): **success**; analysis and SARIF upload completed. The PR run had a transient HTTP 504 while streaming the CodeQL bundle, then successfully completed via fallback download. One raw CodeQL diagnostic was logged, but its detail was not available in the retrieved job output. Current open-alert records were not independently retrieved; do not equate workflow success with zero open alerts.
+- The CI install emitted a deprecation warning that the pinned ESLint 9.39.5 version is no longer supported. This did not fail CI or npm audit; assess a compatible supported upgrade separately rather than applying a blind major upgrade.
+- Bootstrap hardening: `src/app/api/owner/bootstrap/route.ts` now validates the high-entropy bootstrap secret before consuming the shared owner-bootstrap attempt budget. The integration regression sends six invalid-token requests (each expected 403 / `bootstrap_unavailable`) and then verifies that the valid initial-owner flow can still proceed. This closes the unauthenticated quota-consumption path covered by that test; it does not close one-time secret removal/rotation after successful setup, proxy topology review, privileged MFA, or complete endpoint authorization review.
+- These checks apply only to repository code and the disposable CI database. They do not verify VAYRO-CORE migration safety, production hosting, email delivery, external backup/restore, Android, UAT, or production release.
+
+**Current posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
