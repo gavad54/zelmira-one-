@@ -1,0 +1,33 @@
+name: Cloudflare Free Hosting Compatibility Audit
+
+on:
+  push:
+    branches:
+      - experiment/cloudflare-free-hosting-audit
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout isolated VAYRO experiment
+        uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked VAYRO dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check VAYRO compatibility with vinext
+        run: npx --yes vinext@latest check
