@@ -233,3 +233,53 @@ test("closes a tenant without deleting it and records the closure atomically", a
   assert.deepEqual(result, closed);
   assert.deepEqual(operations, ["tenant:close", "tenant:read", "audit:create"]);
 });
+
+
+test("lists tenant members with a restricted user projection and stable ordering", async () => {
+  const calls = [];
+  const joinedAt = new Date("2026-11-08T09:00:00.000Z");
+  const rows = [{
+    role: "OWNER",
+    createdAt: joinedAt,
+    user: { id: "user-1", email: "owner@example.test", displayName: "Owner" }
+  }, {
+    role: "MEMBER",
+    createdAt: new Date("2026-11-08T10:00:00.000Z"),
+    user: { id: "user-2", email: "member@example.test", displayName: null }
+  }];
+  const db = {
+    membership: {
+      async findMany(args) {
+        calls.push(args);
+        return rows;
+      }
+    }
+  };
+
+  const result = await tenantService.listTenantMembers({ db, tenantId: "tenant-1" });
+
+  assert.deepEqual(calls[0], {
+    where: { tenantId: "tenant-1" },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: {
+      role: true,
+      createdAt: true,
+      user: { select: { id: true, email: true, displayName: true } }
+    }
+  });
+  assert.deepEqual(result, [
+    { userId: "user-1", email: "owner@example.test", displayName: "Owner", role: "OWNER", joinedAt },
+    { userId: "user-2", email: "member@example.test", displayName: null, role: "MEMBER", joinedAt: rows[1].createdAt }
+  ]);
+});
+
+test("rejects tenant member listing without a database or tenant identifier", async () => {
+  await assert.rejects(
+    tenantService.listTenantMembers({ db: null, tenantId: "tenant-1" }),
+    /DB_AND_TENANT_ID_REQUIRED/
+  );
+  await assert.rejects(
+    tenantService.listTenantMembers({ db: {}, tenantId: "" }),
+    /DB_AND_TENANT_ID_REQUIRED/
+  );
+});
