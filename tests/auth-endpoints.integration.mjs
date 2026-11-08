@@ -235,8 +235,9 @@ test("tenant HTTP APIs enforce authentication, verified email, membership and cr
     const unverifiedList = await fetch(`${origin}/api/tenants`, {
       headers: { Cookie: cookie }
     });
-    assert.equal(unverifiedList.status, 403);
-    assert.deepEqual(await unverifiedList.json(), { error: "email_verification_required" });
+    assert.equal(unverifiedList.status, 401);
+    assert.deepEqual(await unverifiedList.json(), { error: "unauthorized" });
+    assert.match(unverifiedList.headers.get("cache-control") ?? "", /no-store/);
 
     await db.user.update({
       where: { id: userId },
