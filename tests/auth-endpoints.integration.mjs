@@ -667,3 +667,39 @@ test("tenant members endpoint requires OWNER or ADMIN and never exposes credenti
     await db.$disconnect();
   }
 });
+
+
+test("session identity endpoint denies an unverified account even if a session row exists", async () => {
+  const db = new PrismaClient();
+  const suffix = randomUUID();
+  const token = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  let userId;
+
+  try {
+    await db.$connect();
+    const user = await db.user.create({
+      data: {
+        email: `unverified-session-${suffix}@example.invalid`,
+        passwordHash: "integration-test-only-hash",
+        displayName: "Unverified Session Test"
+      }
+    });
+    userId = user.id;
+    await db.session.create({
+      data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+    });
+
+    const response = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${token}` }
+    });
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { authenticated: false });
+  } finally {
+    if (userId) {
+      await db.session.deleteMany({ where: { userId } });
+      await db.user.deleteMany({ where: { id: userId } });
+    }
+    await db.$disconnect();
+  }
+});
