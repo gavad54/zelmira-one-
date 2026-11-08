@@ -508,6 +508,26 @@ test("owner bootstrap cannot grant owner access before email verification", asyn
     });
     assert.equal(existingOwners, 0, "bootstrap integration test requires a clean owner state");
 
+    // Invalid bootstrap credentials must not consume the one-time owner's shared setup budget.
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const rejected = await fetch(`${origin}/api/owner/bootstrap`, {
+        method: "POST",
+        headers: {
+          Origin: `http://localhost:${port}`,
+          Host: `localhost:${port}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          bootstrapToken: "x".repeat(48),
+          email,
+          displayName: "Invalid Bootstrap Attempt",
+          password: "a-strong-test-password-2026"
+        })
+      });
+      assert.equal(rejected.status, 403, "invalid bootstrap credentials must not exhaust the valid setup budget");
+      assert.deepEqual(await rejected.json(), { error: "bootstrap_unavailable" });
+    }
+
     const response = await fetch(`${origin}/api/owner/bootstrap`, {
       method: "POST",
       headers: {
