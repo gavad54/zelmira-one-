@@ -43,6 +43,8 @@ jobs:
           --no-warm-cache
 
       - name: Build VAYRO for the Cloudflare Workers runtime
+        env:
+          VAYRO_CLOUDFLARE_BUILD: "1"
         run: npx vite build
 
       - name: Preserve generated configuration and build evidence
