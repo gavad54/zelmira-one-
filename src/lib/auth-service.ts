@@ -87,7 +87,7 @@ export async function currentSession() {
     where: { tokenHash: hashSessionToken(token) },
     include: { user: { select: { id: true, email: true, displayName: true, platformRole: true, emailVerifiedAt: true, disabledAt: true } } }
   });
-  if (!session || session.expiresAt.getTime() <= Date.now() || session.user.disabledAt) return null;
+  if (!session || session.expiresAt.getTime() <= Date.now() || !session.user.emailVerifiedAt || session.user.disabledAt) return null;
   return { sessionId: session.id, user: session.user };
 }
 export function noStoreJson(body: unknown, status = 200) {
