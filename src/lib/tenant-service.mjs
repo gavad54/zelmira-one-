@@ -97,3 +97,33 @@ export async function closeTenantWithOwnerAudit({ db, tenantId, actorUserId }) {
     return tenant;
   });
 }
+
+
+/** List a tenant's members with a deliberately limited user projection. */
+export async function listTenantMembers({ db, tenantId }) {
+  if (!db || !tenantId) throw new TypeError("DB_AND_TENANT_ID_REQUIRED");
+
+  const memberships = await db.membership.findMany({
+    where: { tenantId },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: {
+      role: true,
+      createdAt: true,
+      user: {
+        select: {
+          id: true,
+          email: true,
+          displayName: true
+        }
+      }
+    }
+  });
+
+  return memberships.map(({ role, createdAt, user }) => ({
+    userId: user.id,
+    email: user.email,
+    displayName: user.displayName,
+    role,
+    joinedAt: createdAt
+  }));
+}
