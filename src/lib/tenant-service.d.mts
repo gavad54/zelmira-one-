@@ -45,3 +45,17 @@ export function closeTenantWithOwnerAudit(input: {
   tenantId: string;
   actorUserId: string;
 }): Promise<TenantManagementResult | null>;
+
+
+export type TenantMember = {
+  userId: string;
+  email: string;
+  displayName: string | null;
+  role: string;
+  joinedAt: Date;
+};
+
+export function listTenantMembers(input: {
+  db: unknown;
+  tenantId: string;
+}): Promise<TenantMember[]>;
