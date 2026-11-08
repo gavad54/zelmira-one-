@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, brand/vayro-name-only]
   pull_request:
-    branches: [main]
+    branches: [main, brand/vayro-name-only]
 
 permissions:
   contents: read
