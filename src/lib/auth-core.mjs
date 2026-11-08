@@ -15,6 +15,11 @@ const KEY_LENGTH = 64;
 const MAX_PASSWORD_BYTES = 1024;
 const SESSION_TOKEN_BYTES = 32;
 
+// Fixed, non-secret hash used only to equalize the scrypt work for unknown accounts.
+// The corresponding plaintext is not a user credential and is never accepted as an account.
+export const DUMMY_PASSWORD_HASH =
+  "scrypt$32768$8$1$00112233445566778899aabbccddeeff$c5cb515c28b24f440f7c9fca611f8e48ae2c88209ce84f735d8190d330e38fa9a2c6cbcd377b372607b9dded9f7cb42d43b6b53307e1a84d1037db476fc39fe3";
+
 function validPassword(password) {
   return typeof password === "string" &&
     password.length >= 12 &&
@@ -120,7 +125,6 @@ export function isSameOriginRequest(request) {
     return false;
   }
 }
-
 
 /** Resolve the first untrusted address from the right side of a proxy chain. */
 export function getTrustedClientAddress(forwardedFor, trustedProxyHops) {
