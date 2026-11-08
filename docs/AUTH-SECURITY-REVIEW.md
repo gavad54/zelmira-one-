@@ -102,3 +102,23 @@ The current branch head was re-inspected across `auth-core.mjs`, `auth-service.t
 - The 2026-11-08 CI evidence is recorded in `docs/RELEASE-GATES.md`; it is not a penetration test or production certification.
 
 No production credentials, database, hosting, DNS, ARIA resources or customer data were accessed or changed during this source review.
+
+
+## Finding status refresh — 2026-11-08 (verified branch head `b716730e39d2f49a6808e598f5284caef28490bc`)
+
+The following source-level findings from the 2026-11-08 review are no longer open in the current source:
+
+- **AUTH-ENUM-01 — REMEDIATED IN SOURCE; AUTOMATED REGRESSION PRESENT.** `POST /api/auth/login` now performs exactly one approved-cost `verifyPassword` operation for both known and unknown email addresses, using `DUMMY_PASSWORD_HASH` when no user record exists. Session issuance still requires a real user, valid password, enabled account and verified email. `tests/auth-core.test.mjs` includes a regression asserting the dummy hash uses the approved scrypt parameter format and does not match an ordinary password. CI on this exact branch head passed 48/48 unit tests and 16/16 HTTP integration tests. This is not a timing side-channel penetration test.
+- **AUTH-BOOTSTRAP-01 — REMEDIATED FOR THE TESTED QUOTA-CONSUMPTION PATH.** The bootstrap route validates the high-entropy secret before consuming the shared limiter budget; the HTTP integration regression verifies six invalid-token requests do not prevent the valid initial-owner flow. CI on this exact head passed. The shared limiter's verified client-IP identity and production ingress configuration remain unverified.
+- **AUTH-BOOTSTRAP-02 — OPERATIONAL ACTION STILL REQUIRED.** After the initial OWNER is successfully created, remove `VAYRO_OWNER_BOOTSTRAP_TOKEN` from protected runtime configuration. The repository's `.env.example` explicitly requires this. The current tools cannot verify or change the production hosting secret, and no production bootstrap has been performed here. Keep this item BLOCKED until an authorized operator confirms removal and a safe runtime check confirms bootstrap is disabled.
+- **AUTH-PROXY-01 — BLOCKED.** No production VAYRO ingress chain has been verified; do not set `TRUSTED_PROXY_HOPS` by guesswork.
+
+### Exact-head verification evidence
+
+- PR #2 head: `b716730e39d2f49a6808e598f5284caef28490bc`; PR remains open, Draft and unmerged.
+- VAYRO CI [42467196692](https://github.com/gavad54/zelmira-one-/actions/runs/42467196692): success; npm audit reported 0 vulnerabilities; 48/48 unit tests and 16/16 PostgreSQL/production HTTP integration tests passed; Prisma schema and isolated CI migration, lint, typecheck and production build passed.
+- Lockfile validation [42467196696](https://github.com/gavad54/zelmira-one-/actions/runs/42467196696): success.
+- CodeQL [42467196695](https://github.com/gavad54/zelmira-one-/actions/runs/42467196695): success; analysis completed and SARIF processing ran. This workflow result does not itself establish that the repository has zero open code-scanning alerts.
+- The CI dependency install still reports pinned `eslint@9.39.5` as deprecated/unsupported. No forced or major dependency upgrade was applied.
+
+This update is a source-review correction and evidence record only. It does not verify production secrets, production hosting, email delivery, privileged MFA, complete authorization coverage, external backup/restore, Android, UAT or release readiness.
