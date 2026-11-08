@@ -15,9 +15,9 @@ concurrency:
 
 jobs:
   cloudflare-build:
-    name: Initialize and build (no deployment)
+    name: Build and local Worker smoke test (no deployment)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - name: Checkout isolated experiment branch
         uses: actions/checkout@v7
@@ -47,17 +47,79 @@ jobs:
           VAYRO_CLOUDFLARE_BUILD: "1"
         run: npx vite build
 
-      - name: Preserve generated configuration and build evidence
+      - name: Smoke-test the built Worker locally (no Cloudflare deployment)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vite preview --host 127.0.0.1 --port 8787 > /tmp/vayro-worker-preview.log 2>&1 &
+          server_pid=$!
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          ready=0
+          for attempt in $(seq 1 30); do
+            if curl --silent --show-error --fail http://127.0.0.1:8787/api/health > /tmp/vayro-health.json; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat /tmp/vayro-worker-preview.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+          if [ "$ready" -ne 1 ]; then
+            cat /tmp/vayro-worker-preview.log
+            echo "Worker preview did not become ready"
+            exit 1
+          fi
+
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const health = JSON.parse(fs.readFileSync("/tmp/vayro-health.json", "utf8"));
+            if (health.status !== "alive" || health.service !== "vayro-web") {
+              throw new Error("Unexpected health response: " + JSON.stringify(health));
+            }
+            console.log("Worker health endpoint passed:", JSON.stringify(health));
+          '
+
+          curl --silent --show-error --fail http://127.0.0.1:8787/ > /tmp/vayro-homepage.html
+          grep -q "VAYRO" /tmp/vayro-homepage.html
+          echo "Worker homepage HTTP smoke test passed"
+
+      - name: Capture dependency audit findings without automatic upgrades
+        if: always()
+        shell: bash
+        run: |
+          npm audit --json > /tmp/vayro-npm-audit.json || true
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const p = "/tmp/vayro-npm-audit.json";
+            if (!fs.existsSync(p)) process.exit(0);
+            const audit = JSON.parse(fs.readFileSync(p, "utf8"));
+            console.log("Dependency audit summary:", JSON.stringify(audit.metadata?.vulnerabilities ?? {}));
+          '
+
+      - name: Preserve generated configuration, runtime output, and evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vayro-cloudflare-build-evidence
           if-no-files-found: warn
           retention-days: 7
+          include-hidden-files: true
           path: |
             vite.config.ts
             cloudflare.config.ts
             package.json
             package-lock.json
             .cloudflare/**
+            .wrangler/**
             dist/**
+            /tmp/vayro-worker-preview.log
+            /tmp/vayro-health.json
+            /tmp/vayro-homepage.html
+            /tmp/vayro-npm-audit.json
