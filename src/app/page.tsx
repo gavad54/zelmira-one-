@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const products = [
@@ -23,7 +24,7 @@ export default function HomePage() {
     <main className="page-shell">
       <header className="topbar">
         <Link className="brand" href="/" aria-label="خانه وایرو">
-          <span className="brand-mark">V</span>
+          <Image className="brand-mark" src="/vayro-mark.svg" alt="" width={46} height={46} priority />
           <span><strong>وایرو</strong><small>VAYRO</small></span>
         </Link>
         <nav className="home-auth-nav" aria-label="حساب کاربری"><Link href="/login">ورود</Link><Link href="/register">ساخت حساب</Link></nav>
