@@ -77,7 +77,7 @@ The archive's own architecture document describes the package as a mobile-first/
 
 A separate candidate archive was created from the located v0.37 source without modifying the original Library archive:
 
-- Candidate: `ARIANA_v0.37.1_hardened_source.zip`
+- Candidate: `ARIANA_v0.37.1_HARDENED_CANDIDATE.zip`
 - Candidate ZIP reopened and integrity-checked successfully.
 - Candidate artifact contains 208 source/documentation entries; no APK/AAB is included.
 - Verification was repeated against the extracted candidate artifact: **94 tests passed**, all bundled JavaScript syntax checks passed, and Python compile checks passed.
@@ -99,8 +99,8 @@ Changes in the candidate:
 - Original SHA-256: `a9a4146a57e899c04939728bc9669d81145d8a6f8789b7e8a807ff08e3fa6ccb`
 - Original size: 660,622 bytes; ZIP integrity passed.
 - Isolated hardened candidate: `ARIANA_v0.37.1_hardened_source.zip`
-- Candidate SHA-256: `0a19f5e8976d2d1bbcbf6e3a43d0d768bfcb41bd0ab3878fb755264018ce112c`
-- Candidate size: 334,192 bytes; ZIP integrity passed.
-- Re-extracted candidate verification: `python -m pytest -q` — **94 passed**; `python -m compileall -q backend` — PASS.
+- Candidate SHA-256: `26d0f5fcf77c9174489f800d2faa5fed34976a6537a96838119858030864c3d8`
+- Candidate size: 351,677 bytes; ZIP integrity passed.
+- Re-extracted clean candidate verification: `PYTHONDONTWRITEBYTECODE=1 python -m pytest -p no:cacheprovider -q` — **94 passed**; `PYTHONPYCACHEPREFIX=/tmp/ariyana-pycache python -m compileall -q backend` — PASS. The final ZIP excludes Python bytecode and pytest cache files.
 - Android build is still not verified: this environment has no system Gradle, Gradle wrapper JAR, or Android SDK. No APK/AAB is present in the source archive.
 - The candidate is a local isolated artifact, not yet imported into a canonical ARIANA Git repository and not deployed. The current backend remains a prototype until database migrations, production authentication/session policy, tenant isolation, backup/restore, and external service integrations are operationally verified.
