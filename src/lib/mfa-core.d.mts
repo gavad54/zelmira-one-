@@ -1,0 +1,10 @@
+export function encodeBase32(input: Uint8Array): string;
+export function decodeBase32(value: string): Buffer;
+export function generateTotpSecret(): string;
+export function totpAt(secret: string, timestampMs: number, periodSeconds?: number): string;
+export function verifyTotp(secret: string, suppliedCode: string, timestampMs?: number, window?: number): number | null;
+export function parseMfaEncryptionKey(hex?: string): Buffer;
+export function encryptTotpSecret(secret: string, key?: Buffer): string;
+export function decryptTotpSecret(envelope: string, key?: Buffer): string;
+export function generateRecoveryCodes(count?: number): string[];
+export function hashRecoveryCode(code: string): string;

@@ -127,3 +127,80 @@ export async function listTenantMembers({ db, tenantId }) {
     joinedAt: createdAt
   }));
 }
+
+/** Tenant rename operation; caller must supply an already-authorized RLS transaction. */
+export async function renameTenantInTransaction({ tx, tenantId, actorUserId, name }) {
+  const updated = await tx.tenant.updateMany({
+    where: { id: tenantId, status: "ACTIVE" },
+    data: { name }
+  });
+  if (updated.count !== 1) return null;
+
+  const tenant = await tx.tenant.findUnique({
+    where: { id: tenantId },
+    select: { id: true, name: true, slug: true, status: true, updatedAt: true }
+  });
+  if (!tenant) throw new Error("TENANT_UPDATE_NOT_FOUND");
+
+  await tx.auditEvent.create({
+    data: {
+      actorUserId,
+      tenantId,
+      action: "tenant.renamed",
+      resource: "Tenant",
+      resourceId: tenantId,
+      metadata: { name }
+    }
+  });
+  return tenant;
+}
+
+/** Tenant close operation; caller must supply an already-authorized RLS transaction. */
+export async function closeTenantInTransaction({ tx, tenantId, actorUserId }) {
+  const updated = await tx.tenant.updateMany({
+    where: { id: tenantId, status: "ACTIVE" },
+    data: { status: "CLOSED" }
+  });
+  if (updated.count !== 1) return null;
+
+  const tenant = await tx.tenant.findUnique({
+    where: { id: tenantId },
+    select: { id: true, name: true, slug: true, status: true, updatedAt: true }
+  });
+  if (!tenant) throw new Error("TENANT_CLOSE_NOT_FOUND");
+
+  await tx.auditEvent.create({
+    data: {
+      actorUserId,
+      tenantId,
+      action: "tenant.closed",
+      resource: "Tenant",
+      resourceId: tenantId
+    }
+  });
+  return tenant;
+}
+
+/** Create a new tenant inside a user/session-bound RLS transaction. */
+export async function createTenantInTransaction({ tx, userId, tenantId, name, slug }) {
+  const created = await tx.tenant.create({
+    data: {
+      id: tenantId,
+      name,
+      slug,
+      memberships: { create: { userId, role: "OWNER" } }
+    },
+    select: { id: true, name: true, slug: true, status: true, createdAt: true }
+  });
+
+  await tx.auditEvent.create({
+    data: {
+      actorUserId: userId,
+      tenantId: created.id,
+      action: "tenant.created",
+      resource: "Tenant",
+      resourceId: created.id
+    }
+  });
+  return { ...created, role: "OWNER" };
+}

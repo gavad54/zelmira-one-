@@ -4,10 +4,24 @@ import { PrismaClient } from "@prisma/client";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
+import { hashPassword } from "../src/lib/auth-core.mjs";
+import { totpAt } from "../src/lib/mfa-core.mjs";
 import { setTimeout as delay } from "node:timers/promises";
 
 const port = 43179;
 const origin = `http://127.0.0.1:${port}`;
+const nativeFetch = globalThis.fetch.bind(globalThis);
+let proxyRequestSequence = 0;
+globalThis.fetch = (input, init = {}) => {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  if (typeof url !== "string" || !url.startsWith(origin)) return nativeFetch(input, init);
+  const headers = new Headers(input instanceof Request ? input.headers : undefined);
+  new Headers(init.headers).forEach((value, key) => headers.set(key, value));
+  // Simulate one trusted reverse proxy in CI only; use a distinct RFC 5737 test IP per suite.
+  proxyRequestSequence = (proxyRequestSequence % 254) + 1;
+  headers.set("x-forwarded-for", `198.51.100.${proxyRequestSequence}, 127.0.0.1`);
+  return nativeFetch(input, { ...init, headers });
+};
 const bootstrapToken = randomBytes(48).toString("hex");
 let server;
 let serverError = "";
@@ -17,7 +31,7 @@ before(async () => {
     process.execPath,
     ["server.js"],
     {
-      env: { ...process.env, NODE_ENV: "production", PORT: String(port), HOSTNAME: "127.0.0.1", NEXT_PUBLIC_APP_URL: origin, VAYRO_OWNER_BOOTSTRAP_TOKEN: bootstrapToken, EMAIL_PROVIDER: "disabled-for-test" },
+      env: { ...process.env, NODE_ENV: "production", PORT: String(port), HOSTNAME: "127.0.0.1", NEXT_PUBLIC_APP_URL: origin, TRUSTED_PROXY_HOPS: "1", VAYRO_OWNER_BOOTSTRAP_TOKEN: bootstrapToken, VAYRO_MFA_ENCRYPTION_KEY: "ab".repeat(32), EMAIL_PROVIDER: "disabled-for-test" },
       cwd: join(process.cwd(), ".next/standalone"),
       stdio: ["ignore", "ignore", "pipe"]
     }
@@ -60,7 +74,10 @@ test("liveness and database readiness are independently verified", async () => {
 
   const ready = await fetch(`${origin}/api/ready`);
   assert.equal(ready.status, 200);
-  assert.equal((await ready.json()).checks.database, "ok");
+  const readiness = await ready.json();
+  assert.equal(readiness.checks.database, "ok");
+  assert.equal(readiness.checks.authentication, "ok");
+  assert.equal(readiness.checks.platform, "ok");
 });
 
 test("authentication mutation endpoints reject cross-origin requests", async () => {
@@ -72,6 +89,13 @@ test("authentication mutation endpoints reject cross-origin requests", async () 
     "/api/auth/forgot-password",
     "/api/auth/reset-password",
     "/api/auth/verify-email",
+    "/api/auth/mfa/enroll",
+    "/api/auth/mfa/enroll/confirm",
+    "/api/auth/mfa/verify",
+    "/api/auth/mfa/disable",
+    "/api/auth/mfa/recovery-codes",
+    "/api/auth/sessions/revoke",
+    "/api/auth/sessions/revoke-all",
     "/api/owner/bootstrap"
   ];
   for (const route of routes) {
@@ -228,7 +252,7 @@ test("tenant HTTP APIs enforce authentication, verified email, membership and cr
     userId = user.id;
 
     await db.session.create({
-      data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+      data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000), assurance: "MFA", mfaAuthenticatedAt: new Date() }
     });
     const cookie = `vayro_session=${token}`;
 
@@ -361,7 +385,9 @@ test("tenant HTTP APIs enforce authentication, verified email, membership and cr
       data: {
         userId: adminUserId,
         tokenHash: adminTokenHash,
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        assurance: "MFA",
+        mfaAuthenticatedAt: new Date()
       }
     });
     const adminCookie = `vayro_session=${adminToken}`;
@@ -634,7 +660,7 @@ test("tenant members endpoint requires OWNER or ADMIN and never exposes credenti
 
     await db.session.createMany({
       data: [
-        { userId: ownerId, tokenHash: ownerTokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
+        { userId: ownerId, tokenHash: ownerTokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000), assurance: "MFA", mfaAuthenticatedAt: new Date() },
         { userId: viewerId, tokenHash: viewerTokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
       ]
     });
@@ -686,4 +712,389 @@ test("tenant members endpoint requires OWNER or ADMIN and never exposes credenti
     }
     await db.$disconnect();
   }
+});
+
+
+test("HTTP identity endpoint rejects a session marked revoked in PostgreSQL", async () => {
+  const db = new PrismaClient();
+  const suffix = randomUUID();
+  const token = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  let userId;
+  try {
+    await db.$connect();
+    const user = await db.user.create({
+      data: {
+        email: `revoked-session-${suffix}@example.invalid`,
+        passwordHash: "integration-test-only-hash",
+        displayName: "Revoked Session Test",
+        emailVerifiedAt: new Date()
+      }
+    });
+    userId = user.id;
+    await db.session.create({
+      data: {
+        userId,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        revokedAt: new Date()
+      }
+    });
+    const response = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${token}` }
+    });
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { authenticated: false });
+    assert.match(response.headers.get("cache-control") ?? "", /no-store/);
+  } finally {
+    if (userId) {
+      await db.session.deleteMany({ where: { userId } });
+      await db.user.deleteMany({ where: { id: userId } });
+    }
+    await db.$disconnect();
+  }
+});
+
+test("privileged login requires enrollment, TOTP replay is rejected, and recovery codes are single-use", async () => {
+  const db = new PrismaClient();
+  const suffix = randomUUID();
+  const email = `mfa-owner-${suffix}@example.invalid`;
+  const password = "Vayro-MFA-Integration-2026!";
+  let userId;
+  let normalUserId;
+  const requestHeaders = {
+    Origin: `http://localhost:${port}`,
+    Host: `localhost:${port}`,
+    "Content-Type": "application/json"
+  };
+  async function login() {
+    return fetch(`${origin}/api/auth/login`, {
+      method: "POST", headers: requestHeaders,
+      body: JSON.stringify({ email, password })
+    });
+  }
+  async function logout(cookie) {
+    return fetch(`${origin}/api/auth/logout`, {
+      method: "POST", headers: { ...requestHeaders, Cookie: cookie }
+    });
+  }
+  async function verify(challengeToken, code) {
+    return fetch(`${origin}/api/auth/mfa/verify`, {
+      method: "POST", headers: requestHeaders,
+      body: JSON.stringify({ challengeToken, code })
+    });
+  }
+  try {
+    await db.$connect();
+    const user = await db.user.create({
+      data: {
+        email, passwordHash: await hashPassword(password),
+        displayName: "MFA Integration Owner",
+        platformRole: "OWNER", emailVerifiedAt: new Date()
+      }
+    });
+    userId = user.id;
+    const preEnrollmentToken = randomBytes(32).toString("hex");
+    const preEnrollmentSession = await db.session.create({
+      data: {
+        userId,
+        tokenHash: createHash("sha256").update(preEnrollmentToken).digest("hex"),
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+      }
+    });
+
+    const firstLogin = await login();
+    assert.equal(firstLogin.status, 202);
+    const enrollmentChallenge = await firstLogin.json();
+    assert.equal(enrollmentChallenge.authenticated, false);
+    assert.equal(enrollmentChallenge.enrollmentRequired, true);
+    assert.equal(typeof enrollmentChallenge.challengeToken, "string");
+    assert.equal(firstLogin.headers.get("set-cookie"), null, "privileged password login must not issue a session cookie");
+    assert.equal(await db.session.count({ where: { userId, revokedAt: null } }), 1, "login must not create a general session before enrollment");
+
+    const enrollment = await fetch(`${origin}/api/auth/mfa/enroll`, {
+      method: "POST", headers: requestHeaders,
+      body: JSON.stringify({ challengeToken: enrollmentChallenge.challengeToken })
+    });
+    assert.equal(enrollment.status, 200);
+    const setup = await enrollment.json();
+    assert.match(setup.otpauthUrl, /^otpauth:\/\/totp\/VAYRO/);
+    assert.match(setup.secret, /^[A-Z2-7]+$/);
+    const enrollmentCode = totpAt(setup.secret, Date.now());
+
+    const confirmation = await fetch(`${origin}/api/auth/mfa/enroll/confirm`, {
+      method: "POST", headers: requestHeaders,
+      body: JSON.stringify({ challengeToken: enrollmentChallenge.challengeToken, code: enrollmentCode })
+    });
+    assert.equal(confirmation.status, 200);
+    const confirmationBody = await confirmation.json();
+    assert.equal(confirmationBody.mfaEnabled, true);
+    assert.equal(confirmationBody.recoveryCodes.length, 10);
+    const recoveryCode = confirmationBody.recoveryCodes[0];
+    const ownerCookie = (confirmation.headers.get("set-cookie") ?? "").split(";")[0];
+    assert.match(ownerCookie, /^vayro_session=[a-f0-9]{64}$/);
+
+    const activeMfa = await db.userMfa.findUnique({ where: { userId } });
+    assert.ok(activeMfa?.enabledAt);
+    assert.ok(activeMfa?.secretCiphertext);
+    assert.equal(activeMfa.pendingSecretCiphertext, null);
+    assert.equal(await db.mfaRecoveryCode.count({ where: { userId, usedAt: null } }), 10);
+    const activeSession = await db.session.findUnique({
+      where: { tokenHash: createHash("sha256").update(ownerCookie.split("=")[1]).digest("hex") }
+    });
+    assert.equal(activeSession?.assurance, "MFA");
+    assert.ok(activeSession?.mfaAuthenticatedAt);
+    const revokedPreEnrollmentSession = await db.session.findUnique({ where: { id: preEnrollmentSession.id } });
+    assert.ok(revokedPreEnrollmentSession?.revokedAt, "MFA enrollment must revoke prior password-only sessions");
+
+    // Reusing the exact TOTP time-step accepted during enrollment must fail.
+    await logout(ownerCookie);
+    const replayLogin = await login();
+    assert.equal(replayLogin.status, 202);
+    const replayChallenge = await replayLogin.json();
+    assert.equal(replayChallenge.enrollmentRequired, false);
+    const replayResponse = await verify(replayChallenge.challengeToken, enrollmentCode);
+    assert.equal(replayResponse.status, 401);
+    const currentSteps = new Set([-1, 0, 1].map(offset => totpAt(setup.secret, Date.now() + offset * 30_000)));
+    const wrongCode = Array.from({ length: 10 }, (_, index) => String(index).repeat(6))
+      .find(candidate => !currentSteps.has(candidate)) ?? "987654";
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      assert.equal((await verify(replayChallenge.challengeToken, wrongCode)).status, 401);
+    }
+    assert.equal((await verify(replayChallenge.challengeToken, wrongCode)).status, 401);
+    const exhaustedChallenge = await db.authChallenge.findUnique({
+      where: { challengeHash: createHash("sha256").update(replayChallenge.challengeToken).digest("hex") }
+    });
+    assert.equal(exhaustedChallenge?.attempts, 5, "challenge must stop accepting attempts after five tries");
+
+    // New MFA login must not revoke an unrelated already-active MFA session.
+    const otherDeviceToken = randomBytes(32).toString("hex");
+    const otherDeviceSession = await db.session.create({
+      data: {
+        userId,
+        tokenHash: createHash("sha256").update(otherDeviceToken).digest("hex"),
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        assurance: "MFA",
+        mfaAuthenticatedAt: new Date()
+      }
+    });
+
+    // A recovery code succeeds once and issues an MFA-assured session.
+    const recoveryLogin = await login();
+    assert.equal(recoveryLogin.status, 202);
+    const recoveryChallenge = await recoveryLogin.json();
+    const recoveryResponse = await verify(recoveryChallenge.challengeToken, recoveryCode);
+    assert.equal(recoveryResponse.status, 200);
+    const retainedOtherDeviceSession = await db.session.findUnique({ where: { id: otherDeviceSession.id } });
+    assert.equal(retainedOtherDeviceSession?.revokedAt, null, "MFA login must preserve other active devices");
+    const recoveryCookie = (recoveryResponse.headers.get("set-cookie") ?? "").split(";")[0];
+    assert.match(recoveryCookie, /^vayro_session=[a-f0-9]{64}$/);
+    assert.equal(await db.mfaRecoveryCode.count({
+      where: { userId, codeHash: createHash("sha256").update(recoveryCode).digest("hex"), usedAt: { not: null } }
+    }), 1);
+
+    // The same recovery code cannot authenticate a second challenge.
+    await logout(recoveryCookie);
+    const reuseLogin = await login();
+    assert.equal(reuseLogin.status, 202);
+    const reuseChallenge = await reuseLogin.json();
+    const reused = await verify(reuseChallenge.challengeToken, recoveryCode);
+    assert.equal(reused.status, 401);
+
+    // A fresh MFA session plus a second unused factor is required to disable MFA.
+    const disableLogin = await login();
+    assert.equal(disableLogin.status, 202);
+    const disableChallenge = await disableLogin.json();
+    const secondRecovery = confirmationBody.recoveryCodes[1];
+    const disableSessionResponse = await verify(disableChallenge.challengeToken, secondRecovery);
+    assert.equal(disableSessionResponse.status, 200);
+    const disableCookie = (disableSessionResponse.headers.get("set-cookie") ?? "").split(";")[0];
+    const rotateResponse = await fetch(`${origin}/api/auth/mfa/recovery-codes`, {
+      method: "POST",
+      headers: { ...requestHeaders, Cookie: disableCookie },
+      body: JSON.stringify({ code: confirmationBody.recoveryCodes[3] })
+    });
+    assert.equal(rotateResponse.status, 200);
+    const rotatedCodes = await rotateResponse.json();
+    assert.equal(rotatedCodes.recoveryCodes.length, 10);
+    assert.equal(await db.mfaRecoveryCode.count({ where: { userId, usedAt: null } }), 10);
+    assert.equal(await db.mfaRecoveryCode.count({
+      where: { userId, codeHash: createHash("sha256").update(confirmationBody.recoveryCodes[4]).digest("hex") }
+    }), 0);
+
+    const disableResponse = await fetch(`${origin}/api/auth/mfa/disable`, {
+      method: "POST",
+      headers: { ...requestHeaders, Cookie: disableCookie },
+      body: JSON.stringify({ code: rotatedCodes.recoveryCodes[0] })
+    });
+    assert.equal(disableResponse.status, 200);
+    assert.deepEqual(await disableResponse.json(), { mfaEnabled: false, authenticated: false });
+    const disabledMfa = await db.userMfa.findUnique({ where: { userId } });
+    assert.equal(disabledMfa?.enabledAt, null);
+    assert.equal(disabledMfa?.secretCiphertext, null);
+    assert.equal(await db.mfaRecoveryCode.count({ where: { userId } }), 0);
+    const disabledSession = await db.session.findUnique({
+      where: { tokenHash: createHash("sha256").update(disableCookie.split("=")[1]).digest("hex") }
+    });
+    assert.ok(disabledSession?.revokedAt);
+
+    // Ordinary non-privileged users retain the password-only login path.
+    const normalEmail = `mfa-normal-${suffix}@example.invalid`;
+    const normalUser = await db.user.create({
+      data: {
+        email: normalEmail, passwordHash: await hashPassword(password),
+        displayName: "Non-Privileged Integration User", emailVerifiedAt: new Date()
+      }
+    });
+    normalUserId = normalUser.id;
+    const normalResponse = await fetch(`${origin}/api/auth/login`, {
+      method: "POST", headers: requestHeaders,
+      body: JSON.stringify({ email: normalEmail, password })
+    });
+    assert.equal(normalResponse.status, 200);
+    assert.equal((await normalResponse.json()).authenticated, true);
+    const normalCookie = (normalResponse.headers.get("set-cookie") ?? "").split(";")[0];
+    const normalSession = await db.session.findUnique({
+      where: { tokenHash: createHash("sha256").update(normalCookie.split("=")[1]).digest("hex") }
+    });
+    assert.equal(normalSession?.assurance, "PASSWORD");
+  } finally {
+    if (normalUserId) {
+      await db.session.deleteMany({ where: { userId: normalUserId } });
+      await db.auditEvent.deleteMany({ where: { actorUserId: normalUserId } });
+      await db.user.deleteMany({ where: { id: normalUserId } });
+    }
+    if (userId) {
+      await db.mfaRecoveryCode.deleteMany({ where: { userId } });
+      await db.authChallenge.deleteMany({ where: { userId } });
+      await db.userMfa.deleteMany({ where: { userId } });
+      await db.session.deleteMany({ where: { userId } });
+      await db.auditEvent.deleteMany({ where: { actorUserId: userId } });
+      await db.user.deleteMany({ where: { id: userId } });
+    }
+    await db.$disconnect();
+  }
+});
+
+test("login returns the same denial for unknown, disabled, unverified and wrong-password accounts", async () => {
+  const db = new PrismaClient();
+  const suffix = randomUUID();
+  const password = "CorrectHorseBatteryStaple!";
+  const passwordHash = await hashPassword(password);
+  const attemptedPassword = "DifferentHorseBatteryStaple!";
+  const accounts = [];
+  const cases = [
+    { email: `login-unverified-${suffix}@example.invalid`, emailVerifiedAt: null, disabledAt: null, passwordHash },
+    { email: `login-disabled-${suffix}@example.invalid`, emailVerifiedAt: new Date(), disabledAt: new Date(), passwordHash },
+    { email: `login-wrong-password-${suffix}@example.invalid`, emailVerifiedAt: new Date(), disabledAt: null, passwordHash }
+  ];
+
+  try {
+    await db.$connect();
+    for (const account of cases) {
+      const created = await db.user.create({
+        data: {
+          email: account.email,
+          passwordHash: account.passwordHash,
+          displayName: "Login denial parity test",
+          emailVerifiedAt: account.emailVerifiedAt,
+          disabledAt: account.disabledAt
+        }
+      });
+      accounts.push(created.id);
+    }
+
+    const login = async (email, secret) => {
+      const response = await fetch(`${origin}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          Origin: "http://localhost:" + port,
+          Host: "localhost:" + port,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email, password: secret })
+      });
+      return {
+        status: response.status,
+        body: await response.json(),
+        setCookie: response.headers.get("set-cookie")
+      };
+    };
+
+    const outcomes = await Promise.all([
+      login(`login-unknown-${suffix}@example.invalid`, attemptedPassword),
+      login(cases[0].email, password),
+      login(cases[1].email, password),
+      login(cases[2].email, attemptedPassword)
+    ]);
+
+    for (const outcome of outcomes) {
+      assert.equal(outcome.status, 401);
+      assert.deepEqual(outcome.body, { error: "invalid_credentials" });
+      assert.equal(outcome.setCookie, null, "denied login must not issue a session cookie");
+    }
+    assert.equal(await db.session.count({ where: { userId: { in: accounts } } }), 0);
+  } finally {
+    if (accounts.length) {
+      await db.auditEvent.deleteMany({ where: { actorUserId: { in: accounts } } });
+      await db.session.deleteMany({ where: { userId: { in: accounts } } });
+      await db.user.deleteMany({ where: { id: { in: accounts } } });
+    }
+    await db.$disconnect();
+  }
+});
+
+
+test("AI capability catalogue is public, read-only and validates its filters", async () => {
+  const response = await fetch(`${origin}/api/ai-business-suite/capabilities`);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.ok(Array.isArray(body.products));
+  assert.ok(Array.isArray(body.engines));
+  assert.ok(Array.isArray(body.capabilities));
+  assert.match(response.headers.get("cache-control") ?? "", /public/);
+
+  const invalidProduct = await fetch(`${origin}/api/ai-business-suite/capabilities?product=NOT_A_PRODUCT`);
+  assert.equal(invalidProduct.status, 400);
+  assert.deepEqual(await invalidProduct.json(), { error: "invalid_product" });
+});
+
+test("DANA prompt studio and NEGAH creative brief reject cross-origin and unauthenticated requests", async () => {
+  const routes = [
+    ["/api/dana/prompt-studio", { business: "retail", goal: "plan", audience: "customers", tone: "clear", outputFormat: "steps" }],
+    ["/api/negah/creative-brief", { project: "campaign", format: "instagram-post", audience: "customers", message: "launch", style: "minimal" }]
+  ];
+
+  for (const [route, payload] of routes) {
+    const crossOrigin = await fetch(`${origin}${route}`, {
+      method: "POST",
+      headers: { Origin: "https://attacker.invalid", "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    assert.equal(crossOrigin.status, 403, `${route} must reject cross-origin requests`);
+
+    const unauthenticated = await fetch(`${origin}${route}`, {
+      method: "POST",
+      headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    assert.equal(unauthenticated.status, 401, `${route} must require an active session`);
+  }
+});
+
+test("password change rejects cross-origin and unauthenticated requests", async () => {
+  const payload = { currentPassword: "old-password-for-test", newPassword: "new-password-for-test-123" };
+  const crossOrigin = await fetch(`${origin}/api/auth/change-password`, {
+    method: "POST",
+    headers: { Origin: "https://attacker.invalid", "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  assert.equal(crossOrigin.status, 403);
+
+  const unauthenticated = await fetch(`${origin}/api/auth/change-password`, {
+    method: "POST",
+    headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  assert.equal(unauthenticated.status, 401);
 });

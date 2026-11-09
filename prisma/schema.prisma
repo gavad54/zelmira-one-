@@ -3,10 +3,10 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("MIGRATION_DATABASE_URL")
 }
-
 enum PlatformRole {
   OWNER
   PLATFORM_ADMIN
@@ -48,6 +48,16 @@ enum AuthTokenPurpose {
   PASSWORD_RESET
 }
 
+enum SessionAssurance {
+  PASSWORD
+  MFA
+}
+
+enum AuthChallengePurpose {
+  LOGIN_MFA
+  MFA_ENROLLMENT
+}
+
 model User {
   id              String       @id @default(cuid())
   email           String       @unique
@@ -62,6 +72,10 @@ model User {
   sessions        Session[]
   auditEvents     AuditEvent[] @relation("AuditActor")
   authTokens      AuthActionToken[]
+  mfa             UserMfa?
+  recoveryCodes   MfaRecoveryCode[]
+  authChallenges  AuthChallenge[]
+  aiGenerations   AiGeneration[]
 }
 
 model Tenant {
@@ -73,6 +87,8 @@ model Tenant {
   updatedAt   DateTime     @updatedAt
   memberships Membership[]
   licenses    License[]
+  auditEvents AuditEvent[]
+  aiGenerations AiGeneration[]
 }
 
 model Membership {
@@ -89,14 +105,19 @@ model Membership {
 }
 
 model Session {
-  id        String   @id @default(cuid())
-  tokenHash String   @unique
-  userId    String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                 String           @id @default(cuid())
+  tokenHash          String           @unique
+  userId             String
+  expiresAt          DateTime
+  createdAt          DateTime         @default(now())
+  revokedAt          DateTime?
+  lastSeenAt         DateTime?
+  assurance          SessionAssurance @default(PASSWORD)
+  mfaAuthenticatedAt DateTime?
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
+  @@index([userId, revokedAt])
 }
 
 model Product {
@@ -137,6 +158,7 @@ model AuditEvent {
   metadata    Json?
   createdAt   DateTime @default(now())
   actor       User?    @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, createdAt])
   @@index([actorUserId, createdAt])
@@ -189,4 +211,61 @@ model AuthRateLimit {
   expiresAt       DateTime
 
   @@index([expiresAt])
+}
+
+model UserMfa {
+  id                      String    @id @default(cuid())
+  userId                  String    @unique
+  secretCiphertext        String?
+  pendingSecretCiphertext String?
+  pendingExpiresAt        DateTime?
+  enabledAt               DateTime?
+  lastTotpStep            BigInt?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MfaRecoveryCode {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String    @unique
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, usedAt])
+}
+
+model AuthChallenge {
+  id          String               @id @default(cuid())
+  challengeHash String             @unique
+  userId      String
+  purpose     AuthChallengePurpose
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  attempts    Int                  @default(0)
+  maxAttempts Int                  @default(5)
+  createdAt   DateTime             @default(now())
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, expiresAt])
+  @@index([expiresAt, consumedAt])
+}
+
+model AiGeneration {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  kind      String
+  prompt    String
+  output    Json
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, userId, createdAt])
+  @@index([userId, createdAt])
+  @@map("AiGeneration")
 }

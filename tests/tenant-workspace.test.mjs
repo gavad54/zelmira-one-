@@ -8,7 +8,13 @@ const tokenHash = createHash("sha256").update(sessionToken).digest("hex");
 const now = new Date("2026-11-06T08:00:00.000Z");
 
 const activeSession = {
+  id: "session-1",
+  userId: "user-1",
+  createdAt: new Date("2026-11-06T07:50:00.000Z"),
+  lastSeenAt: new Date("2026-11-06T07:58:00.000Z"),
   expiresAt: new Date("2026-11-07T08:00:00.000Z"),
+  assurance: "MFA",
+  mfaAuthenticatedAt: new Date("2026-11-06T07:00:00.000Z"),
   user: { id: "user-1", emailVerifiedAt: new Date("2026-11-05T08:00:00.000Z"), disabledAt: null }
 };
 const activeMembership = {
@@ -39,13 +45,21 @@ const activeTenant = {
 };
 
 function makeDb({ session = activeSession, membership = activeMembership, tenant = activeTenant, tenantError } = {}) {
-  const calls = { session: [], membership: [], tenant: [] };
+  const calls = { session: [], membership: [], tenant: [], roleCheck: 0 };
   return {
     calls,
     session: {
       async findUnique(args) {
         calls.session.push(args);
         return session;
+      },
+      async updateMany() {
+        return { count: 1 };
+      }
+    },
+    user: {
+      async findUnique() {
+        return session?.user ?? null;
       }
     },
     membership: {
@@ -60,6 +74,20 @@ function makeDb({ session = activeSession, membership = activeMembership, tenant
         if (tenantError) throw tenantError;
         return tenant;
       }
+    },
+    async $queryRaw() {
+      calls.roleCheck += 1;
+      if (calls.roleCheck === 1) return [{
+        role_name: "vayro_app",
+        is_superuser: false,
+        bypasses_rls: false,
+        can_use_vayro_app: true,
+        owns_protected_tables: false
+      }];
+      return [];
+    },
+    async $transaction(callback) {
+      return callback(this);
     }
   };
 }

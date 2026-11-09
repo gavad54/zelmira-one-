@@ -3,7 +3,9 @@ const permissions = Object.freeze({
   tenant_manage: Object.freeze(["OWNER", "ADMIN"]),
   members_manage: Object.freeze(["OWNER", "ADMIN"]),
   billing_manage: Object.freeze(["OWNER"]),
-  tenant_delete: Object.freeze(["OWNER"])
+  tenant_delete: Object.freeze(["OWNER"]),
+  ai_generate: Object.freeze(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  ai_read: Object.freeze(["OWNER", "ADMIN", "MANAGER", "MEMBER"])
 });
 
 const membershipRoles = new Set(["OWNER", "ADMIN", "MANAGER", "MEMBER", "VIEWER"]);

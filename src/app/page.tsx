@@ -16,7 +16,6 @@ const independent = [
   { name: "LEADORA", detail: "توزیع، فروش و عملیات تجاری" },
   { name: "ARIANA", detail: "حسابداری، مالی و ERP" },
   { name: "ARIA", detail: "جامعه، خدمات و بازارگاه؛ بدون حسابداری و ERP" },
-  { name: "ARMIN MARKET", detail: "بازار درخواست و پیشنهاد تأمین‌کنندگان" }
 ];
 
 export default function HomePage() {
@@ -40,6 +39,11 @@ export default function HomePage() {
         <div className="hero-actions">
           <a className="primary-action" href="#products">کشف محصولات <span aria-hidden="true">←</span></a>
           <Link className="secondary-action" href="/growth">راهکارهای رشد کسب‌وکار</Link>
+          <Link className="secondary-action" href="/ai-business-suite">۵۰ قابلیت هوشمند وایرو</Link>
+          <Link className="secondary-action" href="/dana/ai-workspace">فضای کار هوشمند دانا</Link>
+          <Link className="secondary-action" href="/dana/prompt-studio">استودیوی پرامپت دانا</Link>
+          <Link className="secondary-action" href="/negah/creative-studio">استودیوی تولید تصویر نگاه</Link>
+          <Link className="secondary-action" href="/negah/creative-brief">بریف خلاقیت نگاه</Link>
         </div>
         <div className="orb orb-one" aria-hidden="true" />
         <div className="orb orb-two" aria-hidden="true" />
@@ -47,7 +51,7 @@ export default function HomePage() {
 
       <section className="section" id="products">
         <div className="section-heading">
-          <div><span className="eyebrow">VAYRO PRODUCT FAMILY</span><h2>هشت محصول تخصصی، یک خانواده</h2></div>
+          <div><span className="eyebrow">VAYRO PRODUCT FAMILY</span><h2>۱۱ اپلیکیشن تخصصی، یک اکوسیستم</h2></div>
           <p>هر محصول برای یک نیاز مشخص طراحی شده است؛ دسترسی و خرید محصولات مستقل خواهد بود.</p>
         </div>
         <div className="product-grid">

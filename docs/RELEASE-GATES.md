@@ -298,76 +298,140 @@ PR #2 remains open, draft, and unmerged. Production deployment remains blocked. 
 
 **Current posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
 
+## Verification addendum — 2026-11-08 database access audit
 
-## Fresh verification and engineering review — 2026-11-09 (application head \`c52f199e832b7808136313664895da0896523aab\`)
+This addendum records repository verification for the exact branch head below. It does not supersede production gates.
 
-This entry supersedes older CI/test-count statements where they conflict. PR #2 is open, Draft and unmerged. The \`brand/vayro-name-only\` branch ref matched the PR head at review time; base remains \`main\` at \`b8bafd001aba1021e58c50fbea861906f329c52e\`.
+- Verified branch head: `ce08fa5747ca325c8939df20049b3ee947ad6d4c`.
+- VAYRO CI run 758: [42513786720](https://github.com/gavad54/zelmira-one-/actions/runs/42513786720) — **success**.
+- CodeQL run 721: [42513786711](https://github.com/gavad54/zelmira-one-/actions/runs/42513786711) — **success**. Successful scan execution does not establish zero open alerts; inspect Security alert disposition separately.
+- Locked dependency audit: **0 vulnerabilities** at the time of this CI run.
+- Unit tests: **60 passed / 0 failed**.
+- PostgreSQL and production-HTTP integration tests: **25 passed / 0 failed**.
+- Prisma client generation and schema validation: passed.
+- Prisma migration deploy through the newly configured `MIGRATION_DATABASE_URL`: passed against disposable CI PostgreSQL only.
+- Real-table tenant RLS isolation SQL proof under the isolated non-owner runtime login: passed.
+- Lint, TypeScript typecheck and production build: passed.
+- The migration connection is now explicitly separated in Prisma schema through `directUrl = env("MIGRATION_DATABASE_URL")`; CI supplies an isolated disposable migration URL. This is repository/configuration separation only, not production role provisioning.
 
-### Exact-head repository evidence
+### Whole-application database access remains blocked
 
-- PR VAYRO CI [42469128427](https://github.com/gavad54/zelmira-one-/actions/runs/42469128427): **success** on the exact application head. Job [128695531027](https://github.com/gavad54/zelmira-one-/actions/runs/42469128427/job/128695531027) completed locked installation, enforced \`npm audit --audit-level=moderate\` (**0 vulnerabilities**), unit tests (**48 passed / 0 failed**), Prisma client generation and schema validation, least-privilege role preparation and migration deployment in disposable CI PostgreSQL, lint, TypeScript typecheck, production build, and PostgreSQL/production HTTP integration tests (**16 passed / 0 failed**).
-- PR CodeQL [42469128435](https://github.com/gavad54/zelmira-one-/actions/runs/42469128435): **success**. Analysis and SARIF upload completed. The run first received HTTP 504 while streaming the CodeQL bundle and then succeeded using the fallback download. One raw diagnostic message was logged without details in the retrieved output. The available GitHub connector could not retrieve the current Code Scanning alert records; therefore historical alert disposition remains **unverified and open**. A successful workflow is not proof of zero open alerts.
-- PR lockfile validation [42469128481](https://github.com/gavad54/zelmira-one-/actions/runs/42469128481): **success**. Package/lockfile synchronization and reproducible \`npm ci\` passed.
-- The CI install emitted a deprecation warning for \`eslint@9.39.5\` stating that this version is no longer supported. The dependency audit is clean, but this tooling-support warning remains a maintenance item. No blind major upgrade was applied.
-- PostgreSQL logs contained serialization-abort messages during the deliberately concurrent owner-email-contact tests. The integration suite completed **16/16**; the observed aborts are consistent with the SERIALIZABLE conflict path that returns a safe 409, not a failed test.
+The new source audit is recorded in [DATABASE-ACCESS-PATH-AUDIT.md](security/DATABASE-ACCESS-PATH-AUDIT.md). Tenant routes use the dedicated tenant RLS client, but authentication/MFA and platform-owner operations still use the default Prisma client. The actual production role behind `DATABASE_URL` remains unknown. The MFA tables have RLS enabled without policies in the current MFA migration. Platform-wide owner operations still need a separately verified platform control-plane role and policy boundary.
 
-### Source review and unresolved security boundaries
+Required before production:
+- [ ] Define and test a least-privilege authentication runtime role/policies for user, session, action-token, MFA, recovery-code, challenge, rate-limit and narrowly scoped audit operations.
+- [ ] Define and test a separate platform control-plane role/client for owner products and email administration, with transaction-bound actor context and exact table/operation grants.
+- [ ] Verify trusted proxy configuration or another trusted client-IP mechanism so IP throttling is active.
+- [ ] Obtain fresh read-only production role/catalog evidence.
+- [ ] Complete independent encrypted backup and isolated restore proof, migration baseline reconciliation and forward/recovery rehearsal.
+- [ ] Obtain explicit owner authorization for each production role, baseline and migration action.
 
-- Login now performs one approved-cost scrypt verification for both known and unknown emails using a fixed dummy hash; session issuance still requires a real, enabled, verified user. A deterministic regression test exists. This reduces the identified timing asymmetry but is not a timing-side-channel penetration test.
-- Owner bootstrap validates the high-entropy secret before consuming the shared setup limiter; the regression covers invalid-token quota consumption. The initial owner receives no session before email verification. Removing \`VAYRO_OWNER_BOOTSTRAP_TOKEN\` after bootstrap remains an operator action and is not verified because no VAYRO production host exists.
-- Sessions remain opaque random cookies with only token digests stored, HttpOnly/SameSite=Lax and Secure in production. Current absolute lifetime is seven days. Idle expiry, session listing/revocation, revoke-all, token rotation and MFA assurance are not implemented in this application head. Password reset revokes existing sessions. **Privileged-user MFA and the full session lifecycle remain release blockers.**
-- Account/email/token rate limits are present. IP-based limits are intentionally skipped until \`TRUSTED_PROXY_HOPS\` can be set from a verified production ingress chain. Do not guess this value; production proxy identity and abuse resistance remain unverified.
-- Owner routes use server-verified sessions and database-derived OWNER authorization; mutating owner operations include same-origin checks, throttling and audit events. This does not replace MFA or prove every present/future endpoint's negative authorization matrix.
-- Resend and Gmail API adapters exist, but no production provider credentials, verified sender, end-to-end delivery, bounce/suppression handling or delivery monitoring have been evidenced.
-- Tenant authorization derives membership and role from PostgreSQL and current tests cover selected cross-tenant denials. Full tenant read/write/export/delete coverage is incomplete. The live VAYRO-CORE database has no recorded Prisma migration baseline; its runtime database identity/effective privileges still require verification. CI migrations ran only against disposable PostgreSQL.
-- The Prisma model currently contains a basic Product and License record, not a complete billing ledger. Payment webhook idempotency, invoices, refunds, reconciliation, tax handling and complete entitlement transitions are not implemented. A catalogue status of ACTIVE is not proof of service health or public release.
-- The repository tree contains no Android/Gradle/Capacitor project or release artifact and no named DANA/agent runtime implementation. DANA remains a catalogue/design boundary; tool scopes, human confirmation, per-tenant kill switch and end-to-end agent audit have not been proven in code.
-- The public UI source is Persian-first and responsive, with RTL-aware inline positioning, visible keyboard focus and reduced-motion handling. This is source-level evidence only; screen-reader, real-device, browser-zoom and full accessibility acceptance remain open.
-- Backup/restore documentation is a design, not evidence of an operating encrypted external backup or isolated restore. No dedicated VAYRO production hosting, Android acceptance, UAT or production commit parity is verified.
-
-### Safety boundary for this run
-
-No production database DDL, migration, data write, grant or policy change was made. No Railway/Cloudflare production setting, DNS, secret, paid resource or deployment was changed. No ARIA, ARIANA or LEADORA repository, database or infrastructure was accessed. PR #2 was not merged, and no release or build was published.
-
-**Release posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+**Decision remains: REPOSITORY VERIFICATION PASS ON THE EXACT HEAD ABOVE — WHOLE-APPLICATION DATABASE LEAST-PRIVILEGE NOT VERIFIED — PRODUCTION ROLE/BASELINE/MIGRATION NOT EXECUTED — DEPLOYMENT BLOCKED — NOT RELEASED.**
 
 
-## Live engineering checkpoint — 2026-11-09
+## Verification addendum — 2026-11-09 (current engineering pass)
 
-This checkpoint supersedes older live-database and current-head statements above where they conflict.
+- PR #2 remains open, draft and unmerged. PR #6 remains open, draft and unmerged; current PR #6 head at this addendum is `ccd0193640827389ab45e70c76b2d8c82d005406`.
+- A fresh CI run on prior head `66a1eb828ab189305e1a48281814c63a3cc34ce2` failed in unit tests. The dependency audit passed; the failing tests exposed (1) provider-configuration validation order in the DANA AI adapter and (2) a NEGAH creative-brief test that expected the raw format key even though the implementation intentionally renders a localized format label.
+- Corrected the AI adapter to fail closed on missing provider credentials before checking the selected text model, and corrected the creative-brief test to assert the rendered localized label and supplied fields. These changes are committed on PR #6 as `71d09756fa316450660ec9a09f1ad1fb87a35846` and `6a9939c9ebce221aca19d166a515533ded88304a`.
+- CI and CodeQL were triggered on `6a9939c9ebce221aca19d166a515533ded88304a`; at the time of this addendum, those runs had not yet returned a final conclusion. The documentation-only product roadmap commit `ccd0193640827389ab45e70c76b2d8c82d005406` is the current PR #6 head; its CI and CodeQL runs are queued/pending. Do not report these checks as passed until completed on the exact current head.
+- Added `docs/PRODUCT-FAMILY-DELIVERY-ROADMAP.md`, defining minimum commercial scope and evidence gates for all eleven products. It is a delivery baseline, not proof that any product is complete.
+- The PR #6 changed-file inventory currently contains the shared platform/security foundation and DANA/NEGAH work. It does not demonstrate complete operational workflows for ARVAND, CHARSU, GANJINEH, SEPEHR, NAMA, PAYAM, ARIA, ARIANA or LEADORA. The independent repositories for ARIA, ARIANA and LEADORA require separate audits; they were not modified in this pass.
 
-### Repository and workflow state
-- PR #2 remains open, Draft and unmerged.
-- Application branch head observed before this addendum: `f5b0ea43b9c3b0f8381a175c8b519f2fe8650cdb`.
-- On that exact head, GitHub Actions returned completed-successful runs for VAYRO CI [42597510368](https://github.com/gavad54/zelmira-one-/actions/runs/42597510368), CodeQL [42597509624](https://github.com/gavad54/zelmira-one-/actions/runs/42597509624), and lockfile validation [42597509839](https://github.com/gavad54/zelmira-one-/actions/runs/42597509839).
-- These runs certify repository checks on that exact head only. They do not certify the production database, infrastructure, product modules or release.
+**Current posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.** No production database mutation, merge, deployment, payment activation or public release was performed.
 
-### Fresh read-only VAYRO-CORE evidence
-On 2026-11-09, read-only catalog queries against Supabase project `wdqhdnhpgxhmmfeyxwxr` confirmed:
-- Project `ACTIVE_HEALTHY`, PostgreSQL 17.11, region `eu-central-1`.
-- 11 public tables, all owned by `postgres`; the inspection's live-tuple snapshot reported zero rows in each.
-- RLS enabled on all 11 tables, but zero public RLS policies and zero FORCE RLS tables. Security Advisor reports 11 `rls_enabled_no_policy` findings.
-- No recorded migrations, no `public._prisma_migrations` table, no `vayro_*` roles or role memberships.
-- Missing tables: `UserMfa`, `MfaRecoveryCode`, `AuthChallenge`, `AiGeneration`.
-- Missing Session columns: `revokedAt`, `lastSeenAt`, `assurance`, `mfaAuthenticatedAt`.
-- `AuditEvent.tenantId` and its index exist; the `AuditEvent_tenantId_fkey` constraint is absent.
-- `postgres` and `service_role` have `BYPASSRLS`. The catalog inspection used `postgres`; it does not prove application runtime identity or tenant isolation.
-- No public triggers, functions or sequences were returned by the catalog inspection.
-- No production DDL, data changes, role/grant changes, policies or migrations were executed.
 
-Detailed evidence is maintained in [the PR #6 live production catalog audit](https://github.com/gavad54/zelmira-one-/blob/security/mfa-session-endpoint-gates/docs/security/2026-11-09-live-production-catalog-audit.md).
+## Fresh release-blocker inspection — 2026-11-09
 
-### Current additional blockers
-- Independent encrypted backup, off-site checksum verification and successful isolated PostgreSQL 17 restore are not evidenced.
-- Schema/migration baseline and forward/rollback rehearsal have not been completed on a verified restored clone.
-- Dedicated auth/platform/tenant LOGIN roles, effective grants and ownership are not provisioned or verified.
-- Production RLS policies/FORCE RLS and negative two-tenant tests have not been run against the actual non-owner runtime connection.
-- The reviewed security branch's auth service skips IP-only throttling when `TRUSTED_PROXY_HOPS` is missing or invalid; identity-based throttling is separate. Production ingress trust is not verified and this fail-open behavior requires remediation.
-- Dedicated VAYRO Railway hosting remains blocked by the previously observed workspace resource limit. ARIA and LEADORA infrastructure must not be reused.
-- Cloudflare Workers/Pages/R2 write scopes were previously denied (403); durable NEGAH object storage is unverified.
-- Production email, domain/TLS, CSP/CORS/headers, monitoring, AI provider configuration, billing/webhooks, Android/device acceptance, UAT and legal/privacy review remain unverified.
+- Current PR #6 head: `88a6bd6769822d74515fa5ff3468536cf49564e5`; PR #6 remains Draft/open/unmerged and depends on PR #2, which remains Draft/open/unmerged.
+- The prior CI failure on head `2e3230bd9675335659c7392dac22ed55ad2ae1cc` was TypeScript TS7016 for the JavaScript AI provider module imported by DANA and NEGAH. Added `src/lib/ai-provider.d.mts`, corrected image-provider credential validation order, and added a negative test for missing image-provider credentials. CodeQL passed on `2de003b2020d4fbb90315dc1f06b3615c264f7b9`; VAYRO CI was still running at the time of this inspection. New CI and CodeQL runs on the current documentation/audit head `88a6bd6769822d74515fa5ff3468536cf49564e5` were pending/in progress. No green result is claimed for the current head.
+- Fresh Railway workspace listing returned only projects `ARIA Web` and `LEADORA`; no dedicated VAYRO project is present. No Railway project or service was created or changed.
+- Fresh read-only VAYRO-CORE inspection on 2026-11-09 found 11 public tables, zero rows, no recorded migrations, RLS enabled but no policies and no FORCE RLS on all 11 tables; only `postgres` table grants were observed; `postgres` and `service_role` have BYPASSRLS; no `vayro_app`, `vayro_auth`, or `vayro_platform` roles were present. See `docs/security/DATABASE-ACCESS-PATH-AUDIT.md` section 10. This is a production security blocker, not an invitation to apply migrations directly.
+- Independent backup/restore proof, live DB baseline reconciliation, production runtime role provisioning, hosting, email, billing, product-provider configuration, Android, UAT, legal review and release approval remain unverified or blocked.
 
-### Release decision
-**ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+**Current posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.** No production database writes, Railway changes, merges or deployments were performed.
 
-Do not merge, deploy, migrate production, onboard customers or enable live payments until the applicable gates above have inspectable evidence and the authorized owner approves the exact change/release.
+
+## Fresh verification — 2026-11-09 (PR #6 head `7e472a2045b16c249d2426db08d9701593e2f683`)
+
+- PR #6 remains open, Draft and unmerged. Current branch head at verification: `7e472a2045b16c249d2426db08d9701593e2f683`.
+- VAYRO CI run [42564091088](https://github.com/gavad54/zelmira-one-/actions/runs/42564091088): **success** on this exact head. Verified completed steps: locked dependency installation, dependency audit, unit tests, Prisma generation and validation, least-privilege auth/platform/tenant database role tests, real migration application in isolated PostgreSQL, lint, TypeScript typecheck, production build, and PostgreSQL/production-HTTP integration tests.
+- CodeQL run [42564091086](https://github.com/gavad54/zelmira-one-/actions/runs/42564091086): **success** on this exact head. This certifies scan execution, not zero open alerts.
+- The two AI-generation route fixes committed immediately before this head convert DANA and NEGAH provider DTOs into explicit JSON objects before Prisma persistence; the exact head passed the full CI pipeline above.
+- Fresh Railway workspace listing still contains only `ARIA Web` and `LEADORA`; no dedicated VAYRO Railway project exists.
+- VAYRO-CORE (`wdqhdnhpgxhmmfeyxwxr`) is ACTIVE_HEALTHY, but its migration history is empty. Supabase security advisor still reports 11 public tables with RLS enabled and no policies. No production migration or data mutation was performed.
+- Supabase performance advisor reports 10 currently unused indexes. With no application traffic and no customer records, this is informational only; do not remove indexes before workload evidence exists. Health advisor returned no findings.
+- PR #2 remains open, Draft and unmerged at head `c52f199e832b7808136313664895da0896523aab`; PR #6 is stacked on its product-shell branch. Neither PR was merged.
+- The repository-level CI pass does not establish production role configuration, live RLS policy enforcement, backup/restore, independent hosting, provider credentials, durable NEGAH asset storage, email delivery, billing, Android device acceptance, product-level UAT or release readiness.
+
+**Current decision: EXACT-HEAD REPOSITORY CI PASS + CODEQL EXECUTION PASS — PRODUCTION SECURITY/INFRASTRUCTURE GATES OPEN — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+## Live verification addendum — 2026-11-09 (PR #6 exact head)
+
+- Current PR #6 head: `1fc32b368856a5eeaaf39b23149457a90febd08b`; PR #6 is still OPEN, DRAFT and unmerged.
+- VAYRO CI PR run [42564678213](https://github.com/gavad54/zelmira-one-/actions/runs/42564678213) and push run [42564675504](https://github.com/gavad54/zelmira-one-/actions/runs/42564675504) both completed successfully on this exact head. The completed job includes locked dependency audit, unit tests, Prisma generation/schema validation, isolated PostgreSQL role setup, real migration application in isolated PostgreSQL, auth/platform/tenant role-isolation tests, lint, typecheck, production build and PostgreSQL/production HTTP integration tests.
+- CodeQL run [42564678308](https://github.com/gavad54/zelmira-one-/actions/runs/42564678308) completed successfully on this exact head. This confirms scan execution only; it is not evidence that every alert is closed.
+- Latest CI evidence is repository/isolated-environment evidence. It does not certify production configuration or release readiness.
+
+### Fresh live infrastructure observations
+
+- Supabase project VAYRO-CORE (`wdqhdnhpgxhmmfeyxwxr`) is `ACTIVE_HEALTHY`, PostgreSQL 17.11.
+- Fresh live catalog query: 11 public tables have RLS enabled; zero public RLS policies; zero tables with FORCE RLS; migration history is empty. Supabase Security Advisor reports 11 informational RLS-enabled/no-policy findings. Health Advisor returned no findings. All 11 tables were reported empty by the table inventory.
+- The branch schema/migrations include newer authentication/MFA, tenant-RLS and AI-generation structures that are not represented by the live migration history. This is schema drift/baseline work, not permission to run migrations against production.
+- Railway currently lists only `ARIA Web` and `LEADORA` in the owner's workspace; no dedicated VAYRO project exists. Do not reuse either project's resources.
+- No independent encrypted backup and isolated restore proof was produced in this verification. No production DDL, grants, policies, role creation, data writes, deployment, merge or release was performed.
+
+### Blocking release gates — current
+
+- [ ] Establish an independently controlled encrypted backup and complete a restore drill into an isolated environment, with checksums and measured RPO/RTO.
+- [ ] Reconcile the live 11-table schema against the complete Prisma migration chain; establish a reviewed baseline and rehearse forward/rollback on a restored clone.
+- [ ] Provision and verify separate least-privilege production LOGIN identities for auth, tenant and platform clients; prove memberships, grants, table ownership, BYPASSRLS/superuser flags, policies and FORCE RLS. Do not place credentials in source or chat.
+- [ ] Complete production deployment configuration, dedicated VAYRO hosting, protected environment variables, domain/TLS, health monitoring and rollback. Railway currently has no VAYRO project.
+- [ ] Configure durable object storage for NEGAH generated assets; provider URL persistence alone is not durable storage.
+- [ ] Configure and verify production email delivery, sender identity, privileged-user MFA enrollment and recovery.
+- [ ] Complete trusted-proxy/IP rate-limit validation, security headers/CSP/CORS review and independent security assessment.
+- [ ] Complete billing/licensing, payment webhook idempotency, legal/privacy review, product integrations, Android release/device acceptance and owner UAT.
+- [ ] Verify exact deployed commit parity and record explicit release approval.
+
+**Decision: EXACT-HEAD REPOSITORY CI PASS + CODEQL EXECUTION PASS — PRODUCTION DATABASE/INFRASTRUCTURE GATES OPEN — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Exact source verification — 2026-11-09 (PR #6 source commit `47792d4a891795d60a4b65c11c4a4ffb8cab2f74`)
+
+- PR #6 remains open, Draft and unmerged. Its base is `brand/vayro-name-only`; PR #2 remains a separate prerequisite and is also unmerged.
+- VAYRO CI [42568663911](https://github.com/gavad54/zelmira-one-/actions/runs/42568663911): completed successfully on this exact source commit.
+- CodeQL [42568663777](https://github.com/gavad54/zelmira-one-/actions/runs/42568663777): completed successfully on this exact source commit. This proves the scan ran; it does not prove all alert records are closed.
+- The CI log confirms dependency audit **0 vulnerabilities**, unit tests **78/78**, PostgreSQL/production-HTTP integration tests **27/27**, Prisma client generation and schema validation, full migration application to disposable PostgreSQL, auth/platform/tenant role-boundary SQL checks, lint, typecheck, production build and Docker image build all passed.
+- The current source includes separate lazy `AUTH_DATABASE_URL` and `PLATFORM_DATABASE_URL` clients, plus `MIGRATION_DATABASE_URL` as Prisma `directUrl`. The auth and platform migrations add their own role grants/policies and FORCE RLS; see the superseding source-verification section in `docs/security/DATABASE-ACCESS-PATH-AUDIT.md`.
+- A documentation-only update after this source commit must receive its own CI result before it is called verified. No production database, secret, hosting, DNS, payment, deployment, merge or release action is included in these CI results.
+
+**Release posture remains: REPOSITORY SOURCE/ISOLATED-CI PASS ON THE EXACT SOURCE COMMIT — PRODUCTION BACKUP/RESTORE, LIVE ROLE/BASELINE, HOSTING AND PRODUCT RELEASE GATES OPEN — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Fresh read-only VAYRO-CORE catalog reconciliation — 2026-11-09
+
+A fresh read-only inspection of project `wdqhdnhpgxhmmfeyxwxr` returned PostgreSQL 17.11 and the following live state:
+
+- 11 public tables; all 11 have RLS enabled; **0 policies** and **0 FORCE RLS** tables.
+- Prisma migration history: **empty**.
+- The four repository models `UserMfa`, `MfaRecoveryCode`, `AuthChallenge`, and `AiGeneration` are absent from the live catalog.
+- Live `Session` is missing repository columns `revokedAt`, `lastSeenAt`, `assurance`, and `mfaAuthenticatedAt`.
+- Live `AuditEvent` does contain `tenantId` and the `AuditEvent_tenantId_createdAt_idx` index, but the `AuditEvent_tenantId_fkey` foreign-key constraint is absent. RLS policies are also absent.
+- The role groups `vayro_app`, `vayro_auth`, `vayro_platform`, and `vayro_platform_bootstrap` are absent; no `vayro_%` LOGIN role was found.
+- Supabase Security Advisor reports 11 RLS-enabled/no-policy findings. Health Advisor returned no findings.
+
+This confirms material schema and security drift, not just a missing migration-history record. **Do not apply the migration chain, record a baseline, create roles, or add policies on production.** The correct next gate is an independently encrypted backup and a successful isolated restore, followed by a full object-by-object schema comparison and rehearsed forward/recovery plan. A fresh empty branch is not a substitute for restoring the current production schema/data.
+
+
+## Verification addendum — 2026-11-09 (PR #6 security branch)
+
+This addendum supersedes prior PR #6 head and CI references above where they conflict.
+
+- PR #6 head: `691c0626ceb0905643c8ac1423b2b132e22ed4ab`, branch `security/mfa-session-endpoint-gates`.
+- PR #6 remains open, Draft and unmerged; base is `brand/vayro-name-only`.
+- Exact-head VAYRO CI [42638412270](https://github.com/gavad54/zelmira-one-/actions/runs/42638412270): completed successfully. All inspected steps passed, including locked dependency audit, unit tests, Prisma generation/validation, isolated PostgreSQL auth/platform/tenant role-boundary tests, tenant RLS test, lint, typecheck, production build, Docker image build and PostgreSQL/production HTTP integration tests.
+- Exact-head CodeQL [42638412263](https://github.com/gavad54/zelmira-one-/actions/runs/42638412263): completed successfully.
+- This closes the current branch's repository CI and CodeQL execution gates only. It is not evidence of zero open CodeQL alert records unless the alert inventory is separately inspected, and it does not close production database, migration, backup/restore, hosting, email, billing, product MVP, Android, UAT, legal or release-approval gates.
+- The exact-head run resolves the previously failing production HTTP integration job after test-only proxy identity isolation was corrected. The test proxy configuration exists only in disposable CI; do not copy its proxy-hop count or IP behavior into production without verifying the real hosting ingress.
+
+**Current disposition remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**

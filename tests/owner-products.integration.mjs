@@ -65,7 +65,7 @@ test("owner product configuration writes are rate limited without weakening auth
     actualRateLimitKey = createHash("sha256").update("owner-products-update:" + userId).digest("hex");
 
     await db.session.create({
-      data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+      data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000), assurance: "MFA", mfaAuthenticatedAt: new Date() }
     });
     const product = await db.product.create({
       data: {
@@ -83,6 +83,30 @@ test("owner product configuration writes are rate limited without weakening auth
       Cookie: `vayro_session=${token}`,
       "Content-Type": "application/json"
     };
+
+    const initialized = await fetch(`${origin}/api/owner/products`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ action: "initialize_catalog" })
+    });
+    assert.equal(initialized.status, 201, "an MFA-authenticated platform owner can initialize the complete product registry");
+    assert.deepEqual(await initialized.json(), { initialized: 11 });
+
+    const initializedAgain = await fetch(`${origin}/api/owner/products`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ action: "initialize_catalog" })
+    });
+    assert.equal(initializedAgain.status, 201, "catalog initialization remains safely repeatable");
+    assert.deepEqual(await initializedAgain.json(), { initialized: 11 });
+
+    const catalog = await db.product.findMany({
+      where: { key: { in: ["ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM", "DANA", "LEADORA", "ARIANA", "ARIA"] } },
+      select: { key: true, status: true }
+    });
+    assert.equal(catalog.length, 11, "the owner operation persists all eleven child apps");
+    assert.ok(catalog.every(item => item.status === ProductStatus.PLANNED), "catalog registration must not falsely mark incomplete apps as active");
+
     const crossOrigin = await fetch(`${origin}/api/owner/products`, {
       method: "PATCH",
       headers: { ...headers, Origin: "https://attacker.invalid" },

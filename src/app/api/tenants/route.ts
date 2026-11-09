@@ -1,9 +1,12 @@
-import { randomBytes } from "node:crypto";
+import { cookies } from "next/headers";
+import { randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { isSameOriginRequest } from "@/lib/auth-core.mjs";
 import { allowAttempt, currentSession, noStoreJson, requestFingerprint } from "@/lib/auth-service";
-import { createTenantWithOwnerAudit, listActiveTenants } from "@/lib/tenant-service.mjs";
-import { prisma } from "@/lib/prisma";
+import { createTenantInTransaction, listActiveTenants } from "@/lib/tenant-service.mjs";
+import { withAuthenticatedUserTransaction } from "@/lib/tenant-request-transaction.mjs";
+import { getTenantPrisma } from "@/lib/tenant-prisma";
+import { authPrisma, assertAuthRuntimeRole } from "@/lib/auth-prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,21 +16,29 @@ const createTenantInput = z.object({
 }).strict();
 
 export async function GET() {
+  await assertAuthRuntimeRole();
   try {
     const session = await currentSession();
     if (!session) return noStoreJson({ error: "unauthorized" }, 401);
     if (!session.user.emailVerifiedAt) {
       return noStoreJson({ error: "email_verification_required" }, 403);
     }
-
-    const tenants = await listActiveTenants({ db: prisma, userId: session.user.id });
-    return noStoreJson({ tenants });
+    const sessionToken = (await cookies()).get("vayro_session")?.value;
+    const result = await withAuthenticatedUserTransaction({
+      authDb: authPrisma,
+      tenantDb: getTenantPrisma(),
+      sessionToken,
+      callback: (tx, actor) => listActiveTenants({ db: tx, userId: actor.userId })
+    });
+    if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
+    return noStoreJson({ tenants: result.value });
   } catch {
     return noStoreJson({ error: "tenant_list_unavailable" }, 503);
   }
 }
 
 export async function POST(request: Request) {
+  await assertAuthRuntimeRole();
   if (!isSameOriginRequest(request)) {
     return noStoreJson({ error: "invalid_origin" }, 403);
   }
@@ -38,6 +49,7 @@ export async function POST(request: Request) {
     if (!session.user.emailVerifiedAt) {
       return noStoreJson({ error: "email_verification_required" }, 403);
     }
+    const sessionToken = (await cookies()).get("vayro_session")?.value;
 
     const parsed = createTenantInput.safeParse(await request.json().catch(() => null));
     if (!parsed.success) return noStoreJson({ error: "invalid_input" }, 400);
@@ -49,14 +61,23 @@ export async function POST(request: Request) {
     );
     if (!allowed) return noStoreJson({ error: "try_again_later" }, 429);
 
-    const tenant = await createTenantWithOwnerAudit({
-      db: prisma,
-      userId: session.user.id,
-      name: parsed.data.name,
-      slug: "vayro-" + randomBytes(8).toString("hex")
+    const tenantId = randomUUID();
+    const result = await withAuthenticatedUserTransaction({
+      authDb: authPrisma,
+      tenantDb: getTenantPrisma(),
+      sessionToken,
+      tenantId,
+      callback: (tx, actor) => createTenantInTransaction({
+        tx,
+        userId: actor.userId,
+        tenantId,
+        name: parsed.data.name,
+        slug: "vayro-" + randomBytes(8).toString("hex")
+      })
     });
+    if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
 
-    return noStoreJson({ tenant }, 201);
+    return noStoreJson({ tenant: result.value }, 201);
   } catch {
     return noStoreJson({ error: "tenant_creation_failed" }, 503);
   }

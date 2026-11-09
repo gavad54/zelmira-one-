@@ -126,12 +126,31 @@ export function isSameOriginRequest(request) {
   }
 }
 
-/** Resolve the first untrusted address from the right side of a proxy chain. */
+/**
+ * Parse an explicitly configured trusted-proxy hop count.
+ * Bound the value to prevent overflow and accidental acceptance of nonsensical topology.
+ */
+export function parseTrustedProxyHops(value) {
+  if (typeof value !== "string" || !/^[1-9][0-9]*$/.test(value)) return null;
+  const hops = Number(value);
+  return Number.isSafeInteger(hops) && hops <= 32 ? hops : null;
+}
+
+/**
+ * Resolve the first untrusted address from the right side of a proxy chain.
+ * Every forwarded element is validated; malformed or empty entries fail closed.
+ */
 export function getTrustedClientAddress(forwardedFor, trustedProxyHops) {
-  if (typeof forwardedFor !== "string" || !Number.isSafeInteger(trustedProxyHops) || trustedProxyHops < 1) return null;
+  if (
+    typeof forwardedFor !== "string" ||
+    !Number.isSafeInteger(trustedProxyHops) ||
+    trustedProxyHops < 1 ||
+    trustedProxyHops > 32
+  ) return null;
+
   const chain = forwardedFor.split(",").map(value => value.trim());
-  const clientIndex = chain.length - trustedProxyHops - 1;
-  if (clientIndex < 0) return null;
-  const candidate = chain[clientIndex];
-  return typeof candidate === "string" && isIP(candidate) !== 0 ? candidate : null;
+  if (chain.length < trustedProxyHops + 1 || chain.length > 64) return null;
+  if (chain.some(address => address.length === 0 || isIP(address) === 0)) return null;
+
+  return chain[chain.length - trustedProxyHops - 1] ?? null;
 }

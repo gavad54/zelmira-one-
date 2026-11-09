@@ -1,13 +1,28 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { PRODUCT_CATALOG, validateProductConfiguration } from "../src/lib/product-catalog.mjs";
+import {
+  PRODUCT_CATALOG,
+  PRODUCT_FAMILY_CATALOG,
+  INDEPENDENT_PRODUCT_CATALOG,
+  validateProductConfiguration
+} from "../src/lib/product-catalog.mjs";
 
-test("the central catalog contains exactly the eight approved VAYRO products", () => {
-  assert.deepEqual(PRODUCT_CATALOG.map(product => product.key), [
+test("the mother-platform registry contains the eight VAYRO products and three independent apps", () => {
+  assert.deepEqual(PRODUCT_FAMILY_CATALOG.map(product => product.key), [
     "ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM", "DANA"
   ]);
-  assert.equal(new Set(PRODUCT_CATALOG.map(product => product.key)).size, 8);
+  assert.deepEqual(INDEPENDENT_PRODUCT_CATALOG.map(product => product.key), [
+    "LEADORA", "ARIANA", "ARIA"
+  ]);
+  assert.equal(PRODUCT_CATALOG.length, 11);
+  assert.deepEqual(PRODUCT_CATALOG.map(product => product.key), [
+    "ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM", "DANA",
+    "LEADORA", "ARIANA", "ARIA"
+  ]);
+  assert.equal(new Set(PRODUCT_CATALOG.map(product => product.key)).size, 11);
   assert.ok(PRODUCT_CATALOG.every(product => product.name && product.description));
+  assert.match(PRODUCT_CATALOG.find(product => product.key === "ARIA").description, /بدون حسابداری و ERP/);
+  assert.match(PRODUCT_CATALOG.find(product => product.key === "ARIANA").description, /مستقل از ARIA/);
 });
 
 test("a product cannot be marked active without a secure HTTPS destination", () => {
