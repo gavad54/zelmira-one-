@@ -172,3 +172,17 @@ This update supersedes earlier statements above where they conflict.
 - No production database, grants, policies, secrets, DNS, hosting, deployment, or other product repositories were changed.
 
 **Release posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Verification and source-status refresh — 2026-11-09
+
+- PR #2 head at this review: \`c52f199e832b7808136313664895da0896523aab\`; PR remains open, Draft and unmerged. Three commits after the previous application source head \`b716730e39d2f49a6808e598f5284caef28490bc\` changed only CI/CodeQL workflow triggers and the authentication review document; no application runtime files changed in those commits.
+- PR VAYRO CI [42469128427](https://github.com/gavad54/zelmira-one-/actions/runs/42469128427) passed on the exact PR head: blocking npm audit **0 vulnerabilities**, unit tests **48/48**, PostgreSQL/production HTTP integration tests **16/16**, Prisma generation/schema validation, isolated PostgreSQL migration, lint, typecheck and production build.
+- PR CodeQL [42469128435](https://github.com/gavad54/zelmira-one-/actions/runs/42469128435) and lockfile validation [42469128481](https://github.com/gavad54/zelmira-one-/actions/runs/42469128481) passed on the same head. CodeQL needed a fallback download after a transient HTTP 504; SARIF upload completed. Current open Code Scanning alert records could not be retrieved, so alert closure remains unverified. The CI install warns that pinned \`eslint@9.39.5\` is no longer supported; do not apply a blind major upgrade.
+- Source review confirms login dummy-scrypt verification and bootstrap secret validation before limiter consumption. Owner routes use database-derived OWNER authorization, same-origin write checks, throttling and audit records. Privileged MFA, session rotation/idle expiry/revoke-all, verified production proxy identity, bootstrap-secret removal, complete endpoint-negative authorization coverage and production email delivery remain open.
+- The session model is still opaque-cookie based with a seven-day absolute expiry; password reset revokes sessions. No MFA assurance or complete session-management workflow exists in the application source.
+- The basic Product/License schema does not implement a payment ledger, invoices/refunds, webhook idempotency or full entitlement state transitions. The eight family entries remain catalogue records. No DANA/agent runtime or Android/Gradle/Capacitor project was found in the repository tree.
+- Persian RTL/mobile source styling includes visible focus and reduced-motion handling, but no screen-reader or real-device accessibility acceptance has been recorded.
+- VAYRO-CORE still has no verified migration-history baseline; no live migration is permitted. Encrypted external backup/restore, dedicated hosting, production email, Android, billing/legal readiness, UAT and explicit release approval remain unverified.
+
+**Status: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
