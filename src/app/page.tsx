@@ -1,23 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const products = [
-  { name: "ARVAND", fa: "اروند", detail: "تجارت بین‌الملل، صادرات و واردات", tag: "تجارت جهانی" },
-  { name: "CHARSU", fa: "چهارسو", detail: "بازارگاه و شبکه خریدوفروش", tag: "بازارگاه" },
-  { name: "GANJINEH", fa: "گنجینه", detail: "فروشگاه و تجارت الکترونیک", tag: "فروش دیجیتال" },
-  { name: "NEGAH", fa: "نگاه", detail: "استودیو خلاقیت و تولید محتوا", tag: "خلاقیت" },
-  { name: "SEPEHR", fa: "سپهر", detail: "زیرساخت ابری و خدمات فناوری", tag: "زیرساخت" },
-  { name: "NAMA", fa: "نما", detail: "ساخت وب‌سایت و صفحات فرود", tag: "وب‌ساز" },
-  { name: "PAYAM", fa: "پیام", detail: "بازاریابی و توسعه مشتری", tag: "رشد کسب‌وکار" },
-  { name: "DANA", fa: "دانا", detail: "هوش مصنوعی و هماهنگی هوشمند", tag: "هوش مصنوعی" }
-];
-
-const independent = [
-  { name: "LEADORA", detail: "توزیع، فروش و عملیات تجاری" },
-  { name: "ARIANA", detail: "حسابداری، مالی و ERP" },
-  { name: "ARIA", detail: "جامعه، خدمات و بازارگاه؛ بدون حسابداری و ERP" },
-  { name: "ARMIN MARKET", detail: "بازار درخواست و پیشنهاد تأمین‌کنندگان" }
-];
+import { VAYRO_PRODUCTS, INDEPENDENT_PRODUCTS } from "@/lib/product-directory.mjs";
 
 export default function HomePage() {
   return (
@@ -40,6 +24,11 @@ export default function HomePage() {
         <div className="hero-actions">
           <a className="primary-action" href="#products">کشف محصولات <span aria-hidden="true">←</span></a>
           <Link className="secondary-action" href="/growth">راهکارهای رشد کسب‌وکار</Link>
+          <Link className="secondary-action" href="/ai-business-suite">۵۰ قابلیت هوشمند وایرو</Link>
+          <Link className="secondary-action" href="/dana/ai-workspace">فضای کار هوشمند دانا</Link>
+          <Link className="secondary-action" href="/dana/prompt-studio">استودیوی پرامپت دانا</Link>
+          <Link className="secondary-action" href="/negah/creative-studio">استودیوی تولید تصویر نگاه</Link>
+          <Link className="secondary-action" href="/negah/creative-brief">بریف خلاقیت نگاه</Link>
         </div>
         <div className="orb orb-one" aria-hidden="true" />
         <div className="orb orb-two" aria-hidden="true" />
@@ -47,14 +36,15 @@ export default function HomePage() {
 
       <section className="section" id="products">
         <div className="section-heading">
-          <div><span className="eyebrow">VAYRO PRODUCT FAMILY</span><h2>هشت محصول تخصصی، یک خانواده</h2></div>
+          <div><span className="eyebrow">VAYRO PRODUCT FAMILY</span><h2>۱۱ اپلیکیشن تخصصی، یک اکوسیستم</h2></div>
           <p>هر محصول برای یک نیاز مشخص طراحی شده است؛ دسترسی و خرید محصولات مستقل خواهد بود.</p>
         </div>
         <div className="product-grid">
-          {products.map((product) => (
+          {VAYRO_PRODUCTS.map((product) => (
             <article className="product-card" key={product.name}>
               <span className="product-tag">{product.tag}</span>
-              <h3>{product.name}</h3>
+              <span className={`product-status ${product.statusClass}`}>{product.status}</span>
+              <h3>{product.href ? <Link href={product.href}>{product.name}</Link> : product.name}</h3>
               <strong className="product-fa">{product.fa}</strong>
               <p>{product.detail}</p>
               <span className="card-foot">محصول خانواده وایرو <span aria-hidden="true">✦</span></span>
@@ -69,9 +59,9 @@ export default function HomePage() {
           <p>محصولات تخصصی موجود، هویت و مرز داده‌ای مستقل خود را حفظ می‌کنند.</p>
         </div>
         <div className="independent-grid">
-          {independent.map((product) => (
+          {INDEPENDENT_PRODUCTS.map((product) => (
             <article className="independent-card" key={product.name}>
-              <h3>{product.name}</h3><p>{product.detail}</p>
+              <h3>{product.name}</h3><p>{product.detail}</p><span className={`product-status ${product.statusClass}`}>{product.status}</span>
             </article>
           ))}
         </div>

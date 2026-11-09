@@ -2,7 +2,7 @@ name: VAYRO CI
 
 on:
   push:
-    branches: [main, brand/vayro-name-only]
+    branches: [main, brand/vayro-name-only, security/mfa-session-endpoint-gates]
   pull_request:
     branches: [main, brand/vayro-name-only]
 
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:17-alpine
         env:
           POSTGRES_USER: ci
           POSTGRES_PASSWORD: ci
@@ -32,6 +32,11 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/vayro_ci?schema=public
+      AUTH_DATABASE_URL: postgresql://vayro_auth_ci:ci-only@localhost:5432/vayro_ci?schema=public
+      PLATFORM_DATABASE_URL: postgresql://vayro_platform_ci:ci-only@localhost:5432/vayro_ci?schema=public
+      MIGRATION_DATABASE_URL: postgresql://ci:ci@localhost:5432/vayro_ci?schema=public
+      CI_DATABASE_URL: postgresql://ci:ci@localhost:5432/vayro_ci
+      TENANT_DATABASE_URL: postgresql://vayro_tenant_ci:ci-only@localhost:5432/vayro_ci
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -55,6 +60,18 @@ jobs:
         run: psql "postgresql://ci:ci@localhost:5432/vayro_ci" -v ON_ERROR_STOP=1 -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN;'
       - name: Apply real Prisma migration history
         run: npx prisma migrate deploy
+      - name: Prove authentication database role isolation (isolated PostgreSQL only)
+        run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/auth-db-role-boundary.sql
+      - name: Enable dedicated authentication runtime login in isolated CI only
+        run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE vayro_auth_ci LOGIN PASSWORD 'ci-only' IN ROLE vayro_auth;"
+      - name: Prove platform database role isolation (isolated PostgreSQL only)
+        run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/platform-db-role-boundary.sql
+      - name: Enable dedicated platform runtime login in isolated CI only
+        run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE vayro_platform_ci LOGIN PASSWORD 'ci-only' IN ROLE vayro_platform;"
+      - name: Create a dedicated tenant runtime login for RLS and integration tests
+        run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE vayro_tenant_ci LOGIN PASSWORD 'ci-only' IN ROLE vayro_app"
+      - name: Prove tenant RLS isolation using the dedicated runtime login (isolated PostgreSQL only)
+        run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/tenant-rls-isolation.sql
       - name: Lint
         run: npm run lint
       - name: Typecheck
@@ -63,5 +80,7 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_APP_URL: http://localhost:3000
+      - name: Build production Docker image
+        run: docker build --pull --tag vayro-ci:local .
       - name: Run PostgreSQL and production HTTP integration tests
         run: npm run test:integration

@@ -11,11 +11,13 @@ import {
   noStoreJson,
   requestFingerprint
 } from "@/lib/auth-service";
-import { prisma } from "@/lib/prisma";
+import { authPrisma, assertAuthRuntimeRole } from "@/lib/auth-prisma";
+import { createMfaChallenge, isPrivilegedRole } from "@/lib/mfa-service";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  await assertAuthRuntimeRole();
   if (!isSameOriginRequest(request)) {
     return noStoreJson({ error: "invalid_origin" }, 403);
   }
@@ -38,7 +40,7 @@ export async function POST(request: Request) {
     return noStoreJson({ error: "try_again_later" }, 429);
   }
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await authPrisma.user.findUnique({ where: { email } });
 
   // Always perform one approved-cost scrypt verification, including for unknown accounts.
   // The boolean result is never sufficient to authenticate without a real user record.
@@ -51,15 +53,42 @@ export async function POST(request: Request) {
     return noStoreJson({ error: "invalid_credentials" }, 401);
   }
 
-  await issueSession(user.id);
-  await prisma.auditEvent.create({
+  const [membership, mfa] = await Promise.all([
+    authPrisma.membership.findFirst({
+      where: { userId: user.id, role: { in: ["OWNER", "ADMIN"] }, tenant: { status: "ACTIVE" } },
+      select: { role: true }
+    }),
+    authPrisma.userMfa.findUnique({ where: { userId: user.id }, select: { enabledAt: true } })
+  ]);
+  if (isPrivilegedRole(user.platformRole, membership ? [membership.role] : [])) {
+    const purpose = mfa?.enabledAt ? "LOGIN_MFA" : "MFA_ENROLLMENT";
+    const challenge = await createMfaChallenge(user.id, purpose);
+    await authPrisma.auditEvent.create({
+      data: {
+        actorUserId: user.id,
+        action: purpose === "LOGIN_MFA" ? "auth.mfa.challenge.created" : "auth.mfa.enrollment.required",
+        resource: "User",
+        resourceId: user.id
+      },
+    select: { id: true }});
+    return noStoreJson({
+      authenticated: false,
+      mfaRequired: true,
+      enrollmentRequired: purpose === "MFA_ENROLLMENT",
+      challengeToken: challenge.token,
+      expiresAt: challenge.expiresAt.toISOString()
+    }, 202);
+  }
+
+  await issueSession(user.id, "PASSWORD");
+  await authPrisma.auditEvent.create({
     data: {
       actorUserId: user.id,
       action: "auth.login",
       resource: "User",
       resourceId: user.id
-    }
-  });
+    },
+  select: { id: true }});
 
   return noStoreJson({
     authenticated: true,

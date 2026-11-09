@@ -6,7 +6,9 @@ import {
   DUMMY_PASSWORD_HASH,
   createSessionToken,
   hashSessionToken,
-  isSameOriginRequest
+  isSameOriginRequest,
+  getTrustedClientAddress,
+  parseTrustedProxyHops
 } from "../src/lib/auth-core.mjs";
 
 test("password hashes are salted, parameterized and verifiable", async () => {
@@ -54,9 +56,15 @@ test("mutating auth requests require an exact same-origin Origin header", () => 
   assert.equal(isSameOriginRequest(foreign), false);
 });
 
-test("trusted proxy parsing selects the first untrusted hop from the right", async () => {
-  const { getTrustedClientAddress } = await import("../src/lib/auth-core.mjs");
+test("trusted proxy parser accepts only bounded positive decimal hop counts", () => {
+  assert.equal(parseTrustedProxyHops("1"), 1);
+  assert.equal(parseTrustedProxyHops("32"), 32);
+  for (const invalid of [undefined, "", "0", "01", "-1", "1.5", "1e2", "33", "999999999999999999999"]) {
+    assert.equal(parseTrustedProxyHops(invalid), null, String(invalid));
+  }
+});
 
+test("trusted proxy parsing selects the first untrusted hop from the right", () => {
   assert.equal(
     getTrustedClientAddress("198.51.100.77, 203.0.113.25, 10.0.0.2", 1),
     "203.0.113.25"
@@ -65,14 +73,29 @@ test("trusted proxy parsing selects the first untrusted hop from the right", asy
     getTrustedClientAddress("198.51.100.77, 203.0.113.25, 10.0.0.2", 2),
     "198.51.100.77"
   );
+  assert.equal(
+    getTrustedClientAddress("2001:db8::10, 2001:db8::20", 1),
+    "2001:db8::10"
+  );
 });
 
-test("trusted proxy parsing fails closed when the chain or configuration is invalid", async () => {
-  const { getTrustedClientAddress } = await import("../src/lib/auth-core.mjs");
+test("trusted proxy parsing rejects malformed elements anywhere in the chain", () => {
+  for (const chain of [
+    "not-an-ip, 10.0.0.2",
+    "198.51.100.77, garbage, 10.0.0.2",
+    "198.51.100.77,,10.0.0.2",
+    "198.51.100.77, 10.0.0.2,",
+    "198.51.100.77:1234, 10.0.0.2",
+  ]) {
+    assert.equal(getTrustedClientAddress(chain, 1), null, chain);
+  }
+});
 
-  assert.equal(getTrustedClientAddress("203.0.113.25", 1), null);
-  assert.equal(getTrustedClientAddress("not-an-ip, 10.0.0.2", 1), null);
+test("trusted proxy parsing rejects invalid hop counts and unreasonable chains", () => {
   assert.equal(getTrustedClientAddress("203.0.113.25, 10.0.0.2", 0), null);
   assert.equal(getTrustedClientAddress("203.0.113.25, 10.0.0.2", 1.5), null);
   assert.equal(getTrustedClientAddress("203.0.113.25, 10.0.0.2", Number.NaN), null);
+  assert.equal(getTrustedClientAddress("203.0.113.25, 10.0.0.2", 33), null);
+  assert.equal(getTrustedClientAddress("203.0.113.25", 1), null);
+  assert.equal(getTrustedClientAddress(Array(66).fill("10.0.0.1").join(","), 1), null);
 });

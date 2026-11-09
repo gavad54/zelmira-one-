@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { authorizeTenantRequest } from "@/lib/tenant-request-authorization.mjs";
-import { prisma } from "@/lib/prisma";
+import { authPrisma, assertAuthRuntimeRole } from "@/lib/auth-prisma";
+import { getTenantPrisma } from "@/lib/tenant-prisma";
+import { withTenantRequestTransaction } from "@/lib/tenant-request-transaction.mjs";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -10,35 +11,41 @@ type RouteContext = {
   params: Promise<{ tenantId: string }>;
 };
 
-/**
- * Minimal protected proof endpoint. It does not create sessions or expose
- * tenant data; it verifies that the current session can read this tenant.
- */
+/** Prove tenant access through the dedicated RLS runtime connection. */
 export async function GET(_request: Request, context: RouteContext) {
+  await assertAuthRuntimeRole();
   const { tenantId } = await context.params;
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get("vayro_session")?.value;
+  const sessionToken = (await cookies()).get("vayro_session")?.value;
 
-  const authorization = await authorizeTenantRequest({
-    sessionToken,
-    tenantId,
-    action: "tenant_read",
-    db: prisma
-  });
+  try {
+    const result = await withTenantRequestTransaction({
+      authDb: authPrisma,
+      tenantDb: getTenantPrisma(),
+      sessionToken,
+      tenantId,
+      action: "tenant_read",
+      callback: async () => true
+    });
 
-  if (!authorization.authorized) {
+    if (!result.authorized) {
+      return NextResponse.json(
+        { error: "unauthorized" },
+        { status: 401, headers: { "Cache-Control": "no-store" } }
+      );
+    }
+
     return NextResponse.json(
-      { error: "unauthorized" },
-      { status: 401, headers: { "Cache-Control": "no-store" } }
+      {
+        tenantId: result.tenantId,
+        role: result.role,
+        access: "granted"
+      },
+      { status: 200, headers: { "Cache-Control": "no-store" } }
+    );
+  } catch {
+    return NextResponse.json(
+      { error: "tenant_access_unavailable" },
+      { status: 503, headers: { "Cache-Control": "no-store" } }
     );
   }
-
-  return NextResponse.json(
-    {
-      tenantId: authorization.tenantId,
-      role: authorization.role,
-      access: "granted"
-    },
-    { status: 200, headers: { "Cache-Control": "no-store" } }
-  );
 }

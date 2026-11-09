@@ -59,3 +59,31 @@ export function listTenantMembers(input: {
   db: unknown;
   tenantId: string;
 }): Promise<TenantMember[]>;
+
+export function createTenantInTransaction(input: {
+  tx: unknown;
+  userId: string;
+  tenantId: string;
+  name: string;
+  slug: string;
+}): Promise<{
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  createdAt: Date;
+  role: "OWNER";
+}>;
+
+export function renameTenantInTransaction(input: {
+  tx: unknown;
+  tenantId: string;
+  actorUserId: string;
+  name: string;
+}): Promise<TenantManagementResult | null>;
+
+export function closeTenantInTransaction(input: {
+  tx: unknown;
+  tenantId: string;
+  actorUserId: string;
+}): Promise<TenantManagementResult | null>;

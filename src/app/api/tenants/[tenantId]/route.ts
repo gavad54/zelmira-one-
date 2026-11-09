@@ -8,11 +8,13 @@ import {
 } from "@/lib/auth-service";
 import { authorizeTenantRequest } from "@/lib/tenant-request-authorization.mjs";
 import {
-  closeTenantWithOwnerAudit,
-  renameTenantWithOwnerAudit
+  closeTenantInTransaction,
+  renameTenantInTransaction
 } from "@/lib/tenant-service.mjs";
+import { withTenantRequestTransaction } from "@/lib/tenant-request-transaction.mjs";
 import { getTenantWorkspace } from "@/lib/tenant-workspace.mjs";
-import { prisma } from "@/lib/prisma";
+import { authPrisma, assertAuthRuntimeRole } from "@/lib/auth-prisma";
+import { getTenantPrisma } from "@/lib/tenant-prisma";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -26,19 +28,25 @@ const renameInput = z.object({
 }).strict();
 
 export async function GET(_request: Request, context: RouteContext) {
+  await assertAuthRuntimeRole();
   const { tenantId } = await context.params;
   const sessionToken = (await cookies()).get("vayro_session")?.value;
 
-  const result = await getTenantWorkspace({
-    sessionToken,
-    tenantId,
-    db: prisma
-  });
-
-  return noStoreJson(result.body, result.status);
+  try {
+    const result = await getTenantWorkspace({
+      sessionToken,
+      tenantId,
+      authDb: authPrisma,
+      tenantDb: getTenantPrisma()
+    });
+    return noStoreJson(result.body, result.status);
+  } catch {
+    return noStoreJson({ error: "workspace_unavailable" }, 503);
+  }
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
+  await assertAuthRuntimeRole();
   if (!isSameOriginRequest(request)) {
     return noStoreJson({ error: "invalid_origin" }, 403);
   }
@@ -54,7 +62,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       sessionToken,
       tenantId,
       action: "tenant_manage",
-      db: prisma
+      db: authPrisma
     });
     if (!authorization.authorized) {
       return noStoreJson({ error: "unauthorized" }, 401);
@@ -67,21 +75,30 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
     if (!allowed) return noStoreJson({ error: "try_again_later" }, 429);
 
-    const tenant = await renameTenantWithOwnerAudit({
-      db: prisma,
+    const result = await withTenantRequestTransaction({
+      authDb: authPrisma,
+      tenantDb: getTenantPrisma(),
+      sessionToken,
       tenantId,
-      actorUserId: authorization.userId,
-      name: parsed.data.name
+      action: "tenant_manage",
+      callback: tx => renameTenantInTransaction({
+        tx,
+        tenantId,
+        actorUserId: authorization.userId,
+        name: parsed.data.name
+      })
     });
-    if (!tenant) return noStoreJson({ error: "tenant_not_found" }, 404);
+    if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
+    if (!result.value) return noStoreJson({ error: "tenant_not_found" }, 404);
 
-    return noStoreJson({ tenant });
+    return noStoreJson({ tenant: result.value });
   } catch {
     return noStoreJson({ error: "tenant_update_failed" }, 503);
   }
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
+  await assertAuthRuntimeRole();
   if (!isSameOriginRequest(request)) {
     return noStoreJson({ error: "invalid_origin" }, 403);
   }
@@ -94,7 +111,7 @@ export async function DELETE(request: Request, context: RouteContext) {
       sessionToken,
       tenantId,
       action: "tenant_delete",
-      db: prisma
+      db: authPrisma
     });
     if (!authorization.authorized) {
       return noStoreJson({ error: "unauthorized" }, 401);
@@ -107,14 +124,22 @@ export async function DELETE(request: Request, context: RouteContext) {
     );
     if (!allowed) return noStoreJson({ error: "try_again_later" }, 429);
 
-    const tenant = await closeTenantWithOwnerAudit({
-      db: prisma,
+    const result = await withTenantRequestTransaction({
+      authDb: authPrisma,
+      tenantDb: getTenantPrisma(),
+      sessionToken,
       tenantId,
-      actorUserId: authorization.userId
+      action: "tenant_delete",
+      callback: tx => closeTenantInTransaction({
+        tx,
+        tenantId,
+        actorUserId: authorization.userId
+      })
     });
-    if (!tenant) return noStoreJson({ error: "tenant_not_found" }, 404);
+    if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
+    if (!result.value) return noStoreJson({ error: "tenant_not_found" }, 404);
 
-    return noStoreJson({ tenant, closed: true });
+    return noStoreJson({ tenant: result.value, closed: true });
   } catch {
     return noStoreJson({ error: "tenant_close_failed" }, 503);
   }

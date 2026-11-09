@@ -100,11 +100,11 @@ export default function OwnerDashboardPage() {
       <section className="owner-dashboard-intro">
         <span className="workspace-kicker">VAYRO · PLATFORM CONTROL</span>
         <h1>داشبورد مرکزی مدیریت</h1>
-        <p>نمای کلی هسته وایرو و مدیریت وضعیت کاتالوگ هشت محصول. این پنل فقط برای حساب مالک تأییدشده قابل دسترسی است.</p>
+        <p>نمای کلی هسته وایرو و مدیریت وضعیت کاتالوگ یازده اپلیکیشن. این پنل فقط برای حساب مالک تأییدشده قابل دسترسی است.</p>
       </section>
 
       <section className="owner-metrics" aria-label="شاخص‌های مرکزی">
-        <article><span>محصولات ثبت‌شده</span><strong>{metrics.totalProducts} / 8</strong></article>
+        <article><span>محصولات ثبت‌شده</span><strong>{metrics.totalProducts} / 11</strong></article>
         <article><span>سازمان‌ها</span><strong>{metrics.totalTenants}</strong></article>
         <article><span>مجوزهای فعال</span><strong>{metrics.activeLicenses}</strong></article>
         <article><span>کل مجوزها</span><strong>{metrics.allLicenses}</strong></article>
@@ -115,14 +115,14 @@ export default function OwnerDashboardPage() {
 
       <section className="owner-products-panel">
         <div className="owner-products-heading">
-          <div><span className="workspace-kicker">PRODUCT GOVERNANCE</span><h2>مدیریت هشت محصول</h2></div>
+          <div><span className="workspace-kicker">PRODUCT GOVERNANCE</span><h2>مدیریت یازده محصول</h2></div>
           <button type="button" onClick={() => void load()} disabled={loading || !!busy}>به‌روزرسانی</button>
         </div>
         {loading ? <p className="workspace-muted">در حال دریافت اطلاعات امن...</p> :
           products.length === 0 ? <div className="workspace-empty">
             <strong>کاتالوگ هنوز در پایگاه داده ثبت نشده است.</strong>
-            <p>با این عملیات فقط هشت رکورد پایه ساخته می‌شود؛ هیچ محصولی فعال یا منتشر نخواهد شد.</p>
-            <button type="button" onClick={() => void initializeCatalog()} disabled={!!busy}>{busy === "initialize" ? "در حال ثبت..." : "ثبت اولیه هشت محصول"}</button>
+            <p>با این عملیات فقط یازده رکورد پایه ساخته می‌شود؛ هیچ محصولی فعال یا منتشر نخواهد شد.</p>
+            <button type="button" onClick={() => void initializeCatalog()} disabled={!!busy}>{busy === "initialize" ? "در حال ثبت..." : "ثبت اولیه یازده محصول"}</button>
           </div> :
           <div className="owner-product-grid">{products.map(product => (
             <article className="owner-product-card" key={product.id}>

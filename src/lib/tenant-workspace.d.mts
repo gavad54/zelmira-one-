@@ -1,7 +1,9 @@
 export function getTenantWorkspace(input: {
-  sessionToken?: string;
+  sessionToken?: string | null;
   tenantId: string;
-  db: unknown;
+  db?: unknown;
+  authDb?: unknown;
+  tenantDb?: unknown;
   now?: Date;
 }): Promise<{
   status: number;
