@@ -330,3 +330,44 @@ This entry supersedes older CI/test-count statements where they conflict. PR #2 
 No production database DDL, migration, data write, grant or policy change was made. No Railway/Cloudflare production setting, DNS, secret, paid resource or deployment was changed. No ARIA, ARIANA or LEADORA repository, database or infrastructure was accessed. PR #2 was not merged, and no release or build was published.
 
 **Release posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Live engineering checkpoint — 2026-11-09
+
+This checkpoint supersedes older live-database and current-head statements above where they conflict.
+
+### Repository and workflow state
+- PR #2 remains open, Draft and unmerged.
+- Application branch head observed before this addendum: `f5b0ea43b9c3b0f8381a175c8b519f2fe8650cdb`.
+- On that exact head, GitHub Actions returned completed-successful runs for VAYRO CI [42597510368](https://github.com/gavad54/zelmira-one-/actions/runs/42597510368), CodeQL [42597509624](https://github.com/gavad54/zelmira-one-/actions/runs/42597509624), and lockfile validation [42597509839](https://github.com/gavad54/zelmira-one-/actions/runs/42597509839).
+- These runs certify repository checks on that exact head only. They do not certify the production database, infrastructure, product modules or release.
+
+### Fresh read-only VAYRO-CORE evidence
+On 2026-11-09, read-only catalog queries against Supabase project `wdqhdnhpgxhmmfeyxwxr` confirmed:
+- Project `ACTIVE_HEALTHY`, PostgreSQL 17.11, region `eu-central-1`.
+- 11 public tables, all owned by `postgres`; the inspection's live-tuple snapshot reported zero rows in each.
+- RLS enabled on all 11 tables, but zero public RLS policies and zero FORCE RLS tables. Security Advisor reports 11 `rls_enabled_no_policy` findings.
+- No recorded migrations, no `public._prisma_migrations` table, no `vayro_*` roles or role memberships.
+- Missing tables: `UserMfa`, `MfaRecoveryCode`, `AuthChallenge`, `AiGeneration`.
+- Missing Session columns: `revokedAt`, `lastSeenAt`, `assurance`, `mfaAuthenticatedAt`.
+- `AuditEvent.tenantId` and its index exist; the `AuditEvent_tenantId_fkey` constraint is absent.
+- `postgres` and `service_role` have `BYPASSRLS`. The catalog inspection used `postgres`; it does not prove application runtime identity or tenant isolation.
+- No public triggers, functions or sequences were returned by the catalog inspection.
+- No production DDL, data changes, role/grant changes, policies or migrations were executed.
+
+Detailed evidence is maintained in [the PR #6 live production catalog audit](https://github.com/gavad54/zelmira-one-/blob/security/mfa-session-endpoint-gates/docs/security/2026-11-09-live-production-catalog-audit.md).
+
+### Current additional blockers
+- Independent encrypted backup, off-site checksum verification and successful isolated PostgreSQL 17 restore are not evidenced.
+- Schema/migration baseline and forward/rollback rehearsal have not been completed on a verified restored clone.
+- Dedicated auth/platform/tenant LOGIN roles, effective grants and ownership are not provisioned or verified.
+- Production RLS policies/FORCE RLS and negative two-tenant tests have not been run against the actual non-owner runtime connection.
+- The reviewed security branch's auth service skips IP-only throttling when `TRUSTED_PROXY_HOPS` is missing or invalid; identity-based throttling is separate. Production ingress trust is not verified and this fail-open behavior requires remediation.
+- Dedicated VAYRO Railway hosting remains blocked by the previously observed workspace resource limit. ARIA and LEADORA infrastructure must not be reused.
+- Cloudflare Workers/Pages/R2 write scopes were previously denied (403); durable NEGAH object storage is unverified.
+- Production email, domain/TLS, CSP/CORS/headers, monitoring, AI provider configuration, billing/webhooks, Android/device acceptance, UAT and legal/privacy review remain unverified.
+
+### Release decision
+**ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+Do not merge, deploy, migrate production, onboard customers or enable live payments until the applicable gates above have inspectable evidence and the authorized owner approves the exact change/release.
