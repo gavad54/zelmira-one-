@@ -10,7 +10,7 @@ This is a source, CI, and live infrastructure audit. It records verified state a
 - ARIA remains separate from accounting/ERP. Accounting and ERP remain in ARIANA.
 - Main repository: `gavad54/zelmira-one-`.
 - PR #2 (mother brand/product-family baseline): merged into `main` as commit `4e98a25503f94c2dc5d4ebc11a804f64d6568d5c`.
-- PR #6 (security/MFA/session/tenant isolation/product catalog): open, ready for review, base `main`, latest head `ba3da559655b40f7680402f839726c06f1a5c5f3`; not merged. VAYRO CI and CodeQL for this exact head were still running at the time of this audit.
+- PR #6 (security/MFA/session/tenant isolation/product catalog): **merged** into `main` as `00d61a634bebc6bc812b3bdc189ad1725d18fa39`. Its exact pre-merge head `93108e0d95ff940e9855f8fdc3ef4f37063b1043` passed VAYRO CI and CodeQL. CI and CodeQL were running again on the merge commit at the time of this update.
 - The security branch's current file tree includes the same 132-file security/product foundation as the previously tested source, plus the latest 11-product directory, owner dashboard and documentation updates.
 
 ## VAYRO application code
@@ -30,9 +30,10 @@ The homepage directory is a product/status catalogue, not proof that the eleven 
 
 ## VAYRO CI and security checks
 
-- The earlier security source head `e086e1870e4dc9f171add890d74d6d0cf1e64f18` passed VAYRO CI and CodeQL.
-- The clean integration commit `b88c8efaf9e203736bd38ba5c44e45bc6d4ad998` had an identical Git tree to that previously tested source.
-- Latest exact head `ba3da559655b40f7680402f839726c06f1a5c5f3`: VAYRO CI and CodeQL were still running at audit time. Do not mark these latest checks passed until they complete.
+- Earlier security head `e086e1870e4dc9f171add890d74d6d0cf1e64f18` passed VAYRO CI and CodeQL.
+- The clean integration tree was compared against the tested source; the 11-product directory and owner-dashboard changes were then added and typechecked.
+- Exact pre-merge head `93108e0d95ff940e9855f8fdc3ef4f37063b1043`: VAYRO CI and CodeQL both completed successfully. The CI included unit tests, Prisma schema validation, isolated PostgreSQL migrations, auth/platform/tenant role-boundary tests, lint, typecheck, production build, Docker image build and production HTTP/PostgreSQL integration tests.
+- CI and CodeQL were running again on merge commit `00d61a634bebc6bc812b3bdc189ad1725d18fa39` at the time of this update.
 - CI's isolated PostgreSQL tests are not production database evidence.
 
 ## VAYRO hosting and live database
@@ -41,8 +42,8 @@ Railway:
 - The Railway workspace exposes a project named `ARIA Web` containing a `VAYRO` service and a separate `Postgres` service. The VAYRO service has public domain `vayro-production.up.railway.app`.
 - The VAYRO service source is `gavad54/zelmira-one-`, branch `security/mfa-session-endpoint-gates`.
 - The application service currently exposes Railway system variables only. No `DATABASE_URL`, `AUTH_DATABASE_URL`, `PLATFORM_DATABASE_URL`, or `MIGRATION_DATABASE_URL` is configured.
-- The last successful deployment before the latest build was commit `2bfe5df2c9153f48e431a0ef953a7a57d8e68edd`. A new deployment for `ba3da559655b40f7680402f839726c06f1a5c5f3` was building at audit time.
-- The service healthcheck configuration has been changed from liveness-only `/api/health` to readiness `/api/ready`. The setting applies on the next deployment; because database runtime URLs are absent, the new readiness check is expected to block promotion until the DB access path is configured.
+- The last known successful deployment is `a9475f02-0013-4641-aa44-c533490edf1d`. The latest deployment `6241fc61-31f5-4acd-a657-464fb962c4cd` built the application and Docker image successfully, started the container, but its `/api/ready` healthcheck returned HTTP 503 repeatedly; it remained in `DEPLOYING` and was not promoted at the time of this update. The earlier deployment `e4576056-cad2-4642-ad28-1288ae01ad62` also failed the same readiness check.
+- The service healthcheck configuration has been changed from liveness-only `/api/health` to readiness `/api/ready`. This correctly blocks promotion until the missing database runtime URLs, migrations and least-privilege roles are configured. The prior successful deployment remains the last confirmed healthy deployment.
 - A second VAYRO-named service exists inside the LEADORA Railway project without a public domain or application variables; it is not the dedicated VAYRO deployment.
 
 Supabase VAYRO-CORE:
