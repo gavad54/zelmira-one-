@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 190" role="img" aria-labelledby="title desc">
+  <title id="title">VAYRO</title>
+  <desc id="desc">VAYRO brand mark and wordmark in ice blue and champagne gold.</desc>
+  <defs>
+    <linearGradient id="vayro-metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#bcefff"/>
+      <stop offset=".42" stop-color="#4aa9f5"/>
+      <stop offset=".7" stop-color="#d9c18e"/>
+      <stop offset="1" stop-color="#fff0c7"/>
+    </linearGradient>
+    <linearGradient id="vayro-word" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f4e4bd"/>
+      <stop offset=".5" stop-color="#d8bd83"/>
+      <stop offset="1" stop-color="#a7dcf6"/>
+    </linearGradient>
+    <filter id="soft-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g transform="translate(12 12)" filter="url(#soft-glow)">
+    <path d="M8 18h31l45 116 45-116h31l-61 150H69z" fill="none" stroke="url(#vayro-metal)" stroke-width="10" stroke-linejoin="round"/>
+    <path d="M84 22v139" fill="none" stroke="#e7f8ff" stroke-opacity=".28" stroke-width="2"/>
+    <path d="M13 18h27M130 18h27" fill="none" stroke="#e7f8ff" stroke-opacity=".55" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="84" cy="8" r="4" fill="#d8bd83"/>
+  </g>
+  <text x="205" y="126" fill="url(#vayro-word)" font-family="Arial, Helvetica, sans-serif" font-size="108" font-weight="700" letter-spacing="7">VAYRO</text>
+  <path d="M210 151h435" stroke="#6dbce8" stroke-opacity=".55" stroke-width="2"/>
+</svg>

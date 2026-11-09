@@ -35,19 +35,33 @@ enum ProductStatus {
   RETIRED
 }
 
+enum EmailPurpose {
+  OWNER
+  SUPPORT
+  BILLING
+  SECURITY
+  GENERAL
+}
+
+enum AuthTokenPurpose {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
 model User {
-  id             String       @id @default(cuid())
-  email          String       @unique
-  passwordHash   String
-  displayName    String
-  platformRole   PlatformRole @default(USER)
+  id              String       @id @default(cuid())
+  email           String       @unique
+  passwordHash    String
+  displayName     String
+  platformRole    PlatformRole @default(USER)
   emailVerifiedAt DateTime?
-  disabledAt     DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  memberships    Membership[]
-  sessions       Session[]
-  auditEvents    AuditEvent[] @relation("AuditActor")
+  disabledAt      DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  memberships     Membership[]
+  sessions        Session[]
+  auditEvents     AuditEvent[] @relation("AuditActor")
+  authTokens      AuthActionToken[]
 }
 
 model Tenant {
@@ -109,6 +123,7 @@ model License {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@index([tenantId, active])
+  @@index([productId])
   @@unique([tenantId, productId])
 }
 
@@ -125,4 +140,53 @@ model AuditEvent {
 
   @@index([tenantId, createdAt])
   @@index([actorUserId, createdAt])
+}
+
+model EmailContact {
+  id                 String                          @id @default(cuid())
+  email              String                          @unique
+  label              String
+  purposes           EmailPurpose[]
+  enabled            Boolean                         @default(true)
+  isPrimary          Boolean                         @default(false)
+  verifiedAt         DateTime?
+  createdAt          DateTime                        @default(now())
+  updatedAt          DateTime                        @updatedAt
+  verificationTokens EmailContactVerificationToken[]
+
+  @@index([enabled, isPrimary])
+}
+
+model EmailContactVerificationToken {
+  id         String      @id @default(cuid())
+  tokenHash  String      @unique
+  contactId  String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime    @default(now())
+  contact    EmailContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([contactId, expiresAt])
+}
+
+model AuthActionToken {
+  id         String           @id @default(cuid())
+  tokenHash  String           @unique
+  userId     String
+  purpose    AuthTokenPurpose
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime         @default(now())
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, expiresAt])
+}
+
+model AuthRateLimit {
+  keyHash         String   @id
+  windowStartedAt DateTime
+  count           Int      @default(0)
+  expiresAt       DateTime
+
+  @@index([expiresAt])
 }

@@ -1,31 +1,45 @@
+import Image from "next/image";
+import Link from "next/link";
+
 const products = [
-  { name: "LEADORA", detail: "توزیع، فروش و عملیات تجاری", tag: "عملیات تجاری" },
-  { name: "ARIANA", detail: "حسابداری، مالی و ERP", tag: "مالی و سازمانی" },
-  { name: "ARIA", detail: "جامعه، خدمات و بازارگاه", tag: "اجتماعی و خدمات" },
-  { name: "ARMIN MARKET", detail: "بازار درخواست و پیشنهاد تأمین‌کنندگان", tag: "بازار تأمین" }
+  { name: "ARVAND", fa: "اروند", detail: "تجارت بین‌الملل، صادرات و واردات", tag: "تجارت جهانی" },
+  { name: "CHARSU", fa: "چهارسو", detail: "بازارگاه و شبکه خریدوفروش", tag: "بازارگاه" },
+  { name: "GANJINEH", fa: "گنجینه", detail: "فروشگاه و تجارت الکترونیک", tag: "فروش دیجیتال" },
+  { name: "NEGAH", fa: "نگاه", detail: "استودیو خلاقیت و تولید محتوا", tag: "خلاقیت" },
+  { name: "SEPEHR", fa: "سپهر", detail: "زیرساخت ابری و خدمات فناوری", tag: "زیرساخت" },
+  { name: "NAMA", fa: "نما", detail: "ساخت وب‌سایت و صفحات فرود", tag: "وب‌ساز" },
+  { name: "PAYAM", fa: "پیام", detail: "بازاریابی و توسعه مشتری", tag: "رشد کسب‌وکار" },
+  { name: "DANA", fa: "دانا", detail: "هوش مصنوعی و هماهنگی هوشمند", tag: "هوش مصنوعی" }
+];
+
+const independent = [
+  { name: "LEADORA", detail: "توزیع، فروش و عملیات تجاری" },
+  { name: "ARIANA", detail: "حسابداری، مالی و ERP" },
+  { name: "ARIA", detail: "جامعه، خدمات و بازارگاه؛ بدون حسابداری و ERP" },
+  { name: "ARMIN MARKET", detail: "بازار درخواست و پیشنهاد تأمین‌کنندگان" }
 ];
 
 export default function HomePage() {
   return (
     <main className="page-shell">
       <header className="topbar">
-        <a className="brand" href="/" aria-label="ZELMIRA ONE home">
-          <span className="brand-mark">Z</span>
-          <span><strong>ZELMIRA</strong><small>ONE · SIGNATURE</small></span>
-        </a>
-        <span className="topbar-note">هوشمندی، بدون مرز</span>
+        <Link className="brand" href="/" aria-label="خانه وایرو">
+          <Image className="brand-mark" src="/vayro-mark.svg" alt="" width={46} height={46} priority />
+          <span><strong>وایرو</strong><small>VAYRO</small></span>
+        </Link>
+        <nav className="home-auth-nav" aria-label="حساب کاربری"><Link href="/login">ورود</Link><Link href="/register">ساخت حساب</Link></nav>
       </header>
 
       <section className="hero">
-        <div className="eyebrow"><span className="status-dot" /> اکوسیستم یکپارچه زلمیرا</div>
-        <h1>یک مرکز هوشمند،<br /><span>بی‌نهایت امکان.</span></h1>
+        <div className="eyebrow"><span className="status-dot" /> اکوسیستم فناوری وایرو</div>
+        <h1>یک جهان هوشمند،<br /><span>در یک تجربه.</span></h1>
         <p className="hero-copy">
-          از یک نقطه، محصولات و ابزارهای زلمیرا را بشناسید، مدیریت کنید و
-          به‌تدریج به یک تجربه هوشمند و هماهنگ متصل شوید.
+          وایرو نقطه اتصال محصولات تخصصی برای تجارت، بازار، خلاقیت و فناوری است.
+          هر محصول مستقل عمل می‌کند و در صورت نیاز، با دسترسی کنترل‌شده به اکوسیستم متصل می‌شود.
         </p>
         <div className="hero-actions">
-          <a className="primary-action" href="#products">مشاهده محصولات <span aria-hidden="true">←</span></a>
-          <a className="secondary-action" href="/growth">صفحات هوشمند و رشد فروش</a>
+          <a className="primary-action" href="#products">کشف محصولات <span aria-hidden="true">←</span></a>
+          <Link className="secondary-action" href="/growth">راهکارهای رشد کسب‌وکار</Link>
         </div>
         <div className="orb orb-one" aria-hidden="true" />
         <div className="orb orb-two" aria-hidden="true" />
@@ -33,29 +47,44 @@ export default function HomePage() {
 
       <section className="section" id="products">
         <div className="section-heading">
-          <div><span className="eyebrow">PRODUCT ECOSYSTEM</span><h2>محصولات مستقل، تجربه‌ای هماهنگ</h2></div>
-          <p>هر محصول تخصص و مرز اطلاعاتی خود را حفظ می‌کند.</p>
+          <div><span className="eyebrow">VAYRO PRODUCT FAMILY</span><h2>هشت محصول تخصصی، یک خانواده</h2></div>
+          <p>هر محصول برای یک نیاز مشخص طراحی شده است؛ دسترسی و خرید محصولات مستقل خواهد بود.</p>
         </div>
         <div className="product-grid">
           {products.map((product) => (
             <article className="product-card" key={product.name}>
               <span className="product-tag">{product.tag}</span>
               <h3>{product.name}</h3>
+              <strong className="product-fa">{product.fa}</strong>
               <p>{product.detail}</p>
-              <span className="card-foot">درگاه محصول <span aria-hidden="true">↗</span></span>
+              <span className="card-foot">محصول خانواده وایرو <span aria-hidden="true">✦</span></span>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="section independent-section">
+        <div className="section-heading">
+          <div><span className="eyebrow">INDEPENDENT PRODUCTS</span><h2>محصولات مستقل و متصل</h2></div>
+          <p>محصولات تخصصی موجود، هویت و مرز داده‌ای مستقل خود را حفظ می‌کنند.</p>
+        </div>
+        <div className="independent-grid">
+          {independent.map((product) => (
+            <article className="independent-card" key={product.name}>
+              <h3>{product.name}</h3><p>{product.detail}</p>
             </article>
           ))}
         </div>
       </section>
 
       <section className="vision" id="vision">
-        <span className="eyebrow">ZELMIRA INTELLIGENCE</span>
+        <span className="eyebrow">VAYRO INTELLIGENCE</span>
         <h2>فناوری در خدمت تصمیم بهتر.</h2>
-        <p>مدیریت دسترسی، هماهنگی سرویس‌ها و اتوماسیون هوشمند با امنیت، شفافیت و کنترل انسانی.</p>
+        <p>وایرو مسیر یکپارچه‌ای برای کشف و مدیریت محصولات فراهم می‌کند؛ بدون ادغام ناخواسته داده‌ها یا حذف استقلال هر کسب‌وکار.</p>
       </section>
 
       <footer className="footer">
-        <span>© {new Date().getFullYear()} ZELMIRA ONE</span>
+        <span>© {new Date().getFullYear()} VAYRO</span>
         <span>INTELLIGENCE. WITHOUT LIMITS.</span>
       </footer>
     </main>
