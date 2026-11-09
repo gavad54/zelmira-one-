@@ -704,3 +704,62 @@ test("session identity endpoint denies an unverified account even if a session r
     await db.$disconnect();
   }
 });
+
+
+test("session identity endpoint denies expired sessions and disabled accounts", async () => {
+  const db = new PrismaClient();
+  const suffix = randomUUID();
+  const token = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  let userId;
+
+  try {
+    await db.$connect();
+    const user = await db.user.create({
+      data: {
+        email: `inactive-session-${suffix}@example.invalid`,
+        passwordHash: "integration-test-only-hash",
+        displayName: "Inactive Session Test",
+        emailVerifiedAt: new Date()
+      }
+    });
+    userId = user.id;
+
+    await db.session.create({
+      data: {
+        userId,
+        tokenHash,
+        expiresAt: new Date(Date.now() - 1000)
+      }
+    });
+
+    const expired = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${token}` }
+    });
+    assert.equal(expired.status, 401);
+    assert.deepEqual(await expired.json(), { authenticated: false });
+    assert.match(expired.headers.get("cache-control") ?? "", /no-store/);
+
+    await db.session.update({
+      where: { tokenHash },
+      data: { expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+    });
+    await db.user.update({
+      where: { id: userId },
+      data: { disabledAt: new Date() }
+    });
+
+    const disabled = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${token}` }
+    });
+    assert.equal(disabled.status, 401);
+    assert.deepEqual(await disabled.json(), { authenticated: false });
+    assert.match(disabled.headers.get("cache-control") ?? "", /no-store/);
+  } finally {
+    if (userId) {
+      await db.session.deleteMany({ where: { userId } });
+      await db.user.deleteMany({ where: { id: userId } });
+    }
+    await db.$disconnect();
+  }
+});
