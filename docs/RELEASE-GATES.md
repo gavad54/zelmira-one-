@@ -297,3 +297,36 @@ PR #2 remains open, draft, and unmerged. Production deployment remains blocked. 
 - These checks apply only to repository code and the disposable CI database. They do not verify VAYRO-CORE migration safety, production hosting, email delivery, external backup/restore, Android, UAT, or production release.
 
 **Current posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Fresh verification and engineering review — 2026-11-09 (application head \`c52f199e832b7808136313664895da0896523aab\`)
+
+This entry supersedes older CI/test-count statements where they conflict. PR #2 is open, Draft and unmerged. The \`brand/vayro-name-only\` branch ref matched the PR head at review time; base remains \`main\` at \`b8bafd001aba1021e58c50fbea861906f329c52e\`.
+
+### Exact-head repository evidence
+
+- PR VAYRO CI [42469128427](https://github.com/gavad54/zelmira-one-/actions/runs/42469128427): **success** on the exact application head. Job [128695531027](https://github.com/gavad54/zelmira-one-/actions/runs/42469128427/job/128695531027) completed locked installation, enforced \`npm audit --audit-level=moderate\` (**0 vulnerabilities**), unit tests (**48 passed / 0 failed**), Prisma client generation and schema validation, least-privilege role preparation and migration deployment in disposable CI PostgreSQL, lint, TypeScript typecheck, production build, and PostgreSQL/production HTTP integration tests (**16 passed / 0 failed**).
+- PR CodeQL [42469128435](https://github.com/gavad54/zelmira-one-/actions/runs/42469128435): **success**. Analysis and SARIF upload completed. The run first received HTTP 504 while streaming the CodeQL bundle and then succeeded using the fallback download. One raw diagnostic message was logged without details in the retrieved output. The available GitHub connector could not retrieve the current Code Scanning alert records; therefore historical alert disposition remains **unverified and open**. A successful workflow is not proof of zero open alerts.
+- PR lockfile validation [42469128481](https://github.com/gavad54/zelmira-one-/actions/runs/42469128481): **success**. Package/lockfile synchronization and reproducible \`npm ci\` passed.
+- The CI install emitted a deprecation warning for \`eslint@9.39.5\` stating that this version is no longer supported. The dependency audit is clean, but this tooling-support warning remains a maintenance item. No blind major upgrade was applied.
+- PostgreSQL logs contained serialization-abort messages during the deliberately concurrent owner-email-contact tests. The integration suite completed **16/16**; the observed aborts are consistent with the SERIALIZABLE conflict path that returns a safe 409, not a failed test.
+
+### Source review and unresolved security boundaries
+
+- Login now performs one approved-cost scrypt verification for both known and unknown emails using a fixed dummy hash; session issuance still requires a real, enabled, verified user. A deterministic regression test exists. This reduces the identified timing asymmetry but is not a timing-side-channel penetration test.
+- Owner bootstrap validates the high-entropy secret before consuming the shared setup limiter; the regression covers invalid-token quota consumption. The initial owner receives no session before email verification. Removing \`VAYRO_OWNER_BOOTSTRAP_TOKEN\` after bootstrap remains an operator action and is not verified because no VAYRO production host exists.
+- Sessions remain opaque random cookies with only token digests stored, HttpOnly/SameSite=Lax and Secure in production. Current absolute lifetime is seven days. Idle expiry, session listing/revocation, revoke-all, token rotation and MFA assurance are not implemented in this application head. Password reset revokes existing sessions. **Privileged-user MFA and the full session lifecycle remain release blockers.**
+- Account/email/token rate limits are present. IP-based limits are intentionally skipped until \`TRUSTED_PROXY_HOPS\` can be set from a verified production ingress chain. Do not guess this value; production proxy identity and abuse resistance remain unverified.
+- Owner routes use server-verified sessions and database-derived OWNER authorization; mutating owner operations include same-origin checks, throttling and audit events. This does not replace MFA or prove every present/future endpoint's negative authorization matrix.
+- Resend and Gmail API adapters exist, but no production provider credentials, verified sender, end-to-end delivery, bounce/suppression handling or delivery monitoring have been evidenced.
+- Tenant authorization derives membership and role from PostgreSQL and current tests cover selected cross-tenant denials. Full tenant read/write/export/delete coverage is incomplete. The live VAYRO-CORE database has no recorded Prisma migration baseline; its runtime database identity/effective privileges still require verification. CI migrations ran only against disposable PostgreSQL.
+- The Prisma model currently contains a basic Product and License record, not a complete billing ledger. Payment webhook idempotency, invoices, refunds, reconciliation, tax handling and complete entitlement transitions are not implemented. A catalogue status of ACTIVE is not proof of service health or public release.
+- The repository tree contains no Android/Gradle/Capacitor project or release artifact and no named DANA/agent runtime implementation. DANA remains a catalogue/design boundary; tool scopes, human confirmation, per-tenant kill switch and end-to-end agent audit have not been proven in code.
+- The public UI source is Persian-first and responsive, with RTL-aware inline positioning, visible keyboard focus and reduced-motion handling. This is source-level evidence only; screen-reader, real-device, browser-zoom and full accessibility acceptance remain open.
+- Backup/restore documentation is a design, not evidence of an operating encrypted external backup or isolated restore. No dedicated VAYRO production hosting, Android acceptance, UAT or production commit parity is verified.
+
+### Safety boundary for this run
+
+No production database DDL, migration, data write, grant or policy change was made. No Railway/Cloudflare production setting, DNS, secret, paid resource or deployment was changed. No ARIA, ARIANA or LEADORA repository, database or infrastructure was accessed. PR #2 was not merged, and no release or build was published.
+
+**Release posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
