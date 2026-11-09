@@ -2,20 +2,20 @@ import Image from "next/image";
 import Link from "next/link";
 
 const products = [
-  { name: "ARVAND", fa: "اروند", detail: "تجارت بین‌الملل، صادرات و واردات", tag: "تجارت جهانی" },
-  { name: "CHARSU", fa: "چهارسو", detail: "بازارگاه و شبکه خریدوفروش", tag: "بازارگاه" },
-  { name: "GANJINEH", fa: "گنجینه", detail: "فروشگاه و تجارت الکترونیک", tag: "فروش دیجیتال" },
-  { name: "NEGAH", fa: "نگاه", detail: "استودیو خلاقیت و تولید محتوا", tag: "خلاقیت" },
-  { name: "SEPEHR", fa: "سپهر", detail: "زیرساخت ابری و خدمات فناوری", tag: "زیرساخت" },
-  { name: "NAMA", fa: "نما", detail: "ساخت وب‌سایت و صفحات فرود", tag: "وب‌ساز" },
-  { name: "PAYAM", fa: "پیام", detail: "بازاریابی و توسعه مشتری", tag: "رشد کسب‌وکار" },
-  { name: "DANA", fa: "دانا", detail: "هوش مصنوعی و هماهنگی هوشمند", tag: "هوش مصنوعی" }
+  { name: "ARVAND", fa: "اروند", detail: "تجارت بین‌الملل، صادرات و واردات", tag: "تجارت جهانی", status: "در صف توسعه", statusClass: "planned" },
+  { name: "CHARSU", fa: "چهارسو", detail: "بازارگاه و شبکه خریدوفروش", tag: "بازارگاه", status: "در صف توسعه", statusClass: "planned" },
+  { name: "GANJINEH", fa: "گنجینه", detail: "فروشگاه و تجارت الکترونیک", tag: "فروش دیجیتال", status: "در صف توسعه", statusClass: "planned" },
+  { name: "NEGAH", fa: "نگاه", detail: "استودیو خلاقیت و تولید محتوا", tag: "خلاقیت", status: "نمونه اولیه؛ اتصال سرویس لازم", statusClass: "prototype" },
+  { name: "SEPEHR", fa: "سپهر", detail: "زیرساخت ابری و خدمات فناوری", tag: "زیرساخت", status: "در صف توسعه", statusClass: "planned" },
+  { name: "NAMA", fa: "نما", detail: "ساخت وب‌سایت و صفحات فرود", tag: "وب‌ساز", status: "در صف توسعه", statusClass: "planned" },
+  { name: "PAYAM", fa: "پیام", detail: "بازاریابی و توسعه مشتری", tag: "رشد کسب‌وکار", status: "در صف توسعه", statusClass: "planned" },
+  { name: "DANA", fa: "دانا", detail: "هوش مصنوعی و هماهنگی هوشمند", tag: "هوش مصنوعی", status: "نمونه اولیه؛ اتصال سرویس لازم", statusClass: "prototype" }
 ];
 
 const independent = [
-  { name: "LEADORA", detail: "توزیع، فروش و عملیات تجاری" },
-  { name: "ARIANA", detail: "حسابداری، مالی و ERP" },
-  { name: "ARIA", detail: "جامعه، خدمات و بازارگاه؛ بدون حسابداری و ERP" },
+  { name: "LEADORA", detail: "توزیع، فروش و عملیات تجاری", status: "نسخه موجود؛ انتشار نهایی مسدود", statusClass: "blocked" },
+  { name: "ARIANA", detail: "حسابداری، مالی و ERP", status: "سورس v0.37؛ انتشار Android مسدود", statusClass: "blocked" },
+  { name: "ARIA", detail: "جامعه، خدمات و بازارگاه؛ بدون حسابداری و ERP", status: "نمونه وب؛ انتشار Android مسدود", statusClass: "blocked" },
 ];
 
 export default function HomePage() {
@@ -58,6 +58,7 @@ export default function HomePage() {
           {products.map((product) => (
             <article className="product-card" key={product.name}>
               <span className="product-tag">{product.tag}</span>
+              <span className={`product-status ${product.statusClass}`}>{product.status}</span>
               <h3>{product.name}</h3>
               <strong className="product-fa">{product.fa}</strong>
               <p>{product.detail}</p>
@@ -75,7 +76,7 @@ export default function HomePage() {
         <div className="independent-grid">
           {independent.map((product) => (
             <article className="independent-card" key={product.name}>
-              <h3>{product.name}</h3><p>{product.detail}</p>
+              <h3>{product.name}</h3><p>{product.detail}</p><span className={`product-status ${product.statusClass}`}>{product.status}</span>
             </article>
           ))}
         </div>
