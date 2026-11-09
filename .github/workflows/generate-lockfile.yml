@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - brand/vayro-name-only
+      - audit/vayro-engineering-baseline
     paths:
       - .github/workflows/generate-lockfile.yml
       - package.json
@@ -11,6 +12,7 @@ on:
   pull_request:
     branches:
       - main
+      - brand/vayro-name-only
     paths:
       - .github/workflows/generate-lockfile.yml
       - package.json
