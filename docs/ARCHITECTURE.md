@@ -3,14 +3,15 @@
 ## Purpose
 VAYRO is the platform shell and governance plane for independent specialist products. Tenant authorization and the operational control plane remain under development.
 
-## Current infrastructure
-- Web application: Next.js App Router, React and TypeScript.
-- Database: dedicated Supabase PostgreSQL 17 project named VAYRO-CORE, region eu-central-1, Free plan.
-- Database is separate from ARIA. No ARIA database, volume or credentials are used.
-- Eleven initial Prisma-aligned tables are provisioned. RLS is enabled on all eleven; client-role table privileges are revoked. No user, tenant or sample records were inserted.
-- The schema was provisioned directly. Prisma migration history is not yet baselined; do not run migrate deploy until baseline reconciliation and isolated forward/rollback testing are complete.
-- GitHub Actions CI and CodeQL are configured.
-- No VAYRO application hosting or production deployment exists. Railway free-plan resource limits blocked a separate project.
+## Current infrastructure (verified 2026-11-10)
+- Web application: Next.js App Router, React and TypeScript; Prisma ORM; PostgreSQL 17.
+- Database: dedicated Supabase PostgreSQL project named VAYRO-CORE, region eu-central-1, Free plan.
+- Database is separate from ARIA and LEADORA. No ARIA or LEADORA database, volume or credentials are reused.
+- Eleven initial Prisma-aligned tables are present in the live public schema. RLS is enabled on all eleven, but there are currently zero RLS policies and zero FORCE RLS tables. Security Advisor reports eleven RLS-enabled/no-policy findings.
+- Live migration history is empty. The schema was provisioned directly; do not run `prisma migrate deploy`, baseline production, create runtime roles or change grants/policies until the schema is reconciled object-by-object, an independently encrypted backup is restored successfully to an isolated PostgreSQL 17 target, and a forward/recovery plan is rehearsed.
+- GitHub Actions CI and CodeQL are configured. Exact PR #12 head d0300f87eef12011623378e377b6bfd625f4eed9 passed VAYRO CI and CodeQL. A later documentation-only commit b8d0c766dfe99b27884170b80b762b9ee6d0d0fb has a fresh CI run in progress as of 2026-11-10; do not assume it passed.
+- A Railway service named VAYRO exists and is online at `https://vayro-production.up.railway.app`, but it is housed in the legacy Railway project `ARIA Web`, not a dedicated VAYRO project. Its latest observed successful deployment ran base commit f3abc61523cb7abbd0b0ab4559a34f40a068ddb5, not the PR #12 branch head. One recent failed deployment on commit 93108e0d95ff940e9855f8fdc3ef4f37063b1043 was classified as a healthcheck failure even though the process log showed Next.js starting and becoming ready. A separate VAYRO Railway project was previously blocked by the free-plan resource limit; no paid upgrade is authorized.
+- PR #12 adds backup/restore workflow scaffolding only. No B2 bucket/keys, protected GitHub secrets, backup object, isolated restore database or actual backup/restore run exists.
 
 ## Implemented foundation (not production certification)
 - Public Persian-first product directory and responsive web shell.
@@ -46,7 +47,10 @@ Routes and helpers do not prove complete endpoint coverage, production email del
 LEADORA is distribution and sales operations; ARIANA is accounting and ERP; ARIA is social, services and marketplace without accounting/ERP; ARMIN MARKET is request and supplier quotation marketplace. Keep their data stores separate. Integrate only through separately reviewed, versioned APIs. Purchasing one product must not require another.
 
 ## Reliability and release boundary
-- Review migrations and test forward/rollback in isolated environments.
+- Review migrations and test forward/recovery in isolated environments.
 - Store encrypted backups outside the hosting provider and prove an isolated restore.
 - AI tools require allowlists, scoped identities, budgets, approval for consequential actions and audit trails.
-- No VAYRO application deployment, independent backup/restore drill, owner UAT or public commercial release is verified. Keep customer onboarding, real payments and production data collection disabled until release gates pass and the authorized owner approves release.
+- The existing Railway service is not accepted as independent VAYRO production hosting because it remains in the legacy ARIA Web project and is not running the current reviewed PR head.
+- No independent backup/restore drill, live production tenant isolation, owner UAT or public commercial release is verified. Keep customer onboarding, real payments and production data collection disabled until release gates pass and the authorized owner approves release.
+
+**Current release disposition: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
