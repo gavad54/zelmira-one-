@@ -87,6 +87,7 @@ jobs:
           umask 077
           mkdir -p "$RUNNER_TEMP/vayro-restore"
           chmod 700 "$RUNNER_TEMP/vayro-restore"
+          trap 'rm -f "$RUNNER_TEMP/vayro-restore/age-identity.txt" "$RUNNER_TEMP/vayro-restore/backup.dump"' EXIT
           aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
             s3 cp "s3://$B2_BUCKET/$BACKUP_OBJECT_KEY" \
             "$RUNNER_TEMP/vayro-restore/vayro.dump.age" --only-show-errors
