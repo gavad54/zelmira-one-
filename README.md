@@ -64,4 +64,4 @@ Production email, complete endpoint authorization, tenant isolation, privileged-
 - `npm run db:validate`
 - `npm run db:migrate:deploy` only after the existing database baseline is reconciled and verified
 
-Never commit secrets, production credentials, signing keys, customer data or backups. See [docs/INDEPENDENT-PRODUCT-ARCHITECTURE.md](docs/INDEPENDENT-PRODUCT-ARCHITECTURE.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/PRODUCT-BOUNDARIES.md](docs/PRODUCT-BOUNDARIES.md) and [docs/RELEASE-GATES.md](docs/RELEASE-GATES.md).
+Never commit secrets, production credentials, signing keys, customer data or backups. See [docs/INDEPENDENT-PRODUCT-ARCHITECTURE.md](docs/INDEPENDENT-PRODUCT-ARCHITECTURE.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/PRODUCT-BOUNDARIES.md](docs/PRODUCT-BOUNDARIES.md) and [docs/RELEASE-GATES.md](docs/RELEASE-GATES.md) and [docs/PRODUCT-REPOSITORY-INVENTORY.md](docs/PRODUCT-REPOSITORY-INVENTORY.md).
