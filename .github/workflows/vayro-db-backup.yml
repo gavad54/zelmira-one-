@@ -1,0 +1,89 @@
+name: VAYRO encrypted offsite database backup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 2 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vayro-db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Dump, encrypt and upload private backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Validate required protected configuration
+        shell: bash
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.VAYRO_BACKUP_DATABASE_URL }}
+          AGE_RECIPIENT: ${{ vars.VAYRO_BACKUP_AGE_RECIPIENT }}
+          B2_KEY_ID: ${{ secrets.VAYRO_B2_KEY_ID }}
+          B2_APPLICATION_KEY: ${{ secrets.VAYRO_B2_APPLICATION_KEY }}
+          B2_BUCKET: ${{ vars.VAYRO_B2_BUCKET }}
+          B2_S3_ENDPOINT: ${{ vars.VAYRO_B2_S3_ENDPOINT }}
+          B2_REGION: ${{ vars.VAYRO_B2_REGION }}
+        run: |
+          set -euo pipefail
+          for name in BACKUP_DATABASE_URL AGE_RECIPIENT B2_KEY_ID B2_APPLICATION_KEY B2_BUCKET B2_S3_ENDPOINT B2_REGION; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Missing protected configuration: $name"
+              exit 1
+            fi
+          done
+
+      - name: Install age and AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes age awscli
+
+      - name: Create and encrypt PostgreSQL 17 dump
+        shell: bash
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.VAYRO_BACKUP_DATABASE_URL }}
+          AGE_RECIPIENT: ${{ vars.VAYRO_BACKUP_AGE_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/vayro-backup"
+          chmod 700 "$RUNNER_TEMP/vayro-backup"
+          docker run --rm --network host \
+            -e BACKUP_DATABASE_URL \
+            -v "$RUNNER_TEMP/vayro-backup:/backup" \
+            postgres:17-alpine \
+            sh -ceu 'pg_dump --format=custom --no-owner --no-acl "$BACKUP_DATABASE_URL" > /backup/vayro.dump'
+          test -s "$RUNNER_TEMP/vayro-backup/vayro.dump"
+          age --recipient "$AGE_RECIPIENT" \
+            --output "$RUNNER_TEMP/vayro-backup/vayro.dump.age" \
+            "$RUNNER_TEMP/vayro-backup/vayro.dump"
+          sha256sum "$RUNNER_TEMP/vayro-backup/vayro.dump.age" \
+            > "$RUNNER_TEMP/vayro-backup/vayro.dump.age.sha256"
+          rm -f "$RUNNER_TEMP/vayro-backup/vayro.dump"
+
+      - name: Upload encrypted backup to private B2 bucket
+        shell: bash
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.VAYRO_B2_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.VAYRO_B2_APPLICATION_KEY }}
+          AWS_EC2_METADATA_DISABLED: "true"
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          B2_BUCKET: ${{ vars.VAYRO_B2_BUCKET }}
+          B2_S3_ENDPOINT: ${{ vars.VAYRO_B2_S3_ENDPOINT }}
+          B2_REGION: ${{ vars.VAYRO_B2_REGION }}
+        run: |
+          set -euo pipefail
+          stamp="$(date -u +%Y/%m/%d/%H%M%S)"
+          key="vayro/postgres/$stamp/vayro.dump.age"
+          aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
+            s3 cp "$RUNNER_TEMP/vayro-backup/vayro.dump.age" \
+            "s3://$B2_BUCKET/$key" --only-show-errors
+          aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
+            s3 cp "$RUNNER_TEMP/vayro-backup/vayro.dump.age.sha256" \
+            "s3://$B2_BUCKET/$key.sha256" --only-show-errors
+          echo "Encrypted backup uploaded: s3://$B2_BUCKET/$key"
