@@ -1,26 +1,28 @@
+# VAYRO project state — authoritative snapshot
+Updated: 2026-11-10 11:15:28 +03:30
+Deadline: 2026-11-12 11:13:24 +03:30 (fixed; no restart).
 
+## Repository
+- Repository: gavad54/zelmira-one-
+- PR #12: open, draft, unmerged; branch infra/backup-restore-b2; 32 commits ahead / 0 behind main at last compare.
+- Last fully checked code head before governance-doc commits: 7d0edb71522c281b546011ae110f4501c6903c43.
+- Exact-head CI run 42776421939 and CodeQL run 42776421968 both completed successfully. CI's 45 steps all succeeded; 86/86 unit tests and 30/30 PostgreSQL/production-HTTP integration tests passed.
+- Governance files were then added in commits ending f22be227; fresh exact-head CI/CodeQL must be checked for the resulting branch head before any latest-head verification claim.
 
-## Exact-head verification update — 2026-11-10
-- Current PR #12 head: `e8a5fecb9bebbbac67919d805677fc71dceb2c08`; PR is open, draft and unmerged.
-- Exact-head VAYRO CI 42769407953 and CodeQL 42769407907 completed successfully.
-- CI evidence: 86 unit tests and 30 PostgreSQL/production HTTP integration tests passed; isolated PostgreSQL migration, auth/platform role isolation, tenant RLS proof, lint, typecheck, Prisma schema validation, production build and Docker build passed.
-- Railway's existing VAYRO service is online, but its active deployment remains on `f3abc61523cb7abbd0b0ab4559a34f40a068ddb5`, not this PR head. The previous failed deploy's readiness endpoint returned HTTP 503; exact internal cause is not exposed.
-- The service healthcheck is currently `/api/health` (liveness only). This does not certify DB readiness or production feature operation.
-- No B2 backup resource/keys, protected GitHub secrets, independent restore target, verified backup object or actual restore evidence exists.
-- Release disposition remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.
+## Product identity and boundaries
+- Mother app: VAYRO only.
+- Approved family modules: ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA, PAYAM.
+- ARIA excludes accounting/ERP; ARIANA owns accounting/ERP; LEADORA stays independent pending audit. Preserve existing capabilities until audited and approved for change.
+- Independent product databases; integrations only through reviewed, versioned APIs.
+- Persian RTL + English; mobile-first responsive UI.
 
+## Production facts / release blockers
+- Live VAYRO-CORE previously inspected: 11 public tables, RLS enabled on all 11, zero policies, zero FORCE RLS; migration history empty; Security Advisor had 11 RLS-without-policy findings.
+- Live schema drift includes missing UserMfa, MfaRecoveryCode, AuthChallenge and AiGeneration models, and missing Session fields revokedAt, lastSeenAt, assurance, mfaAuthenticatedAt.
+- No verified encrypted offsite backup, backup object, separate restore target or successful restore.
+- Railway VAYRO service remains in legacy ARIA Web project and last verified successful deployment used base commit f3abc61523cb7abbd0b0ab4559a34f40a068ddb5, not PR #12. /api/health is liveness only.
+- No production DB mutation, PR merge, deployment, public release or Android signing performed.
 
-## Latest verified CI and release state — 2026-11-10
-- Current PR #12 head: `33ef687486f7d4f64b292a3a283b808e54b2e72e`.
-- Exact-head VAYRO CI 42774211321 and CodeQL 42774211165 both passed.
-- CI evidence: 86 unit tests and 30 PostgreSQL/production HTTP integration tests passed; isolated PostgreSQL 17 migration and auth/platform/tenant role-isolation checks passed; lint, typecheck, Prisma validation, production build and Docker build passed.
-- CI PostgreSQL logs show serialization conflicts during concurrent test operations although the overall suite passed; follow up on retry/concurrency handling.
-- Production backup/restore, live DB schema/security reconciliation, dedicated hosting and deployment parity remain blocked/open. PR remains draft and unmerged; no release.
-
-## 2026-11-10 — latest exact-head verification
-- PR #12 head `077c540102df569811aac074db2e2a1c6294bcf5`; open, draft, unmerged; 28 ahead / 0 behind main.
-- VAYRO CI 42775449887 and CodeQL 42775450223 passed on this exact head; all job steps inspected.
-- CI evidence: 86 unit tests and 30 PostgreSQL/HTTP integration tests passed; isolated PostgreSQL 17 migration, auth/platform/tenant role-isolation, dependency audit, lint, typecheck, Prisma validation, production build and Docker build passed.
-- Test PostgreSQL logs record serializable conflicts around concurrent EmailContact enabled-state update and AuditEvent insert inside `vayro_platform_actor_is_owner`; follow up on transaction retry semantics. CI still passed.
-- Railway VAYRO remains online at 1/1 replica but deployed from base commit `f3abc61523cb7abbd0b0ab4559a34f40a068ddb5`, not PR #12; five recent failures observed in the last 24-hour snapshot.
-- No actual encrypted backup/restore or live DB security/schema reconciliation; dedicated hosting and deployment parity remain open. PR stays draft; no release.
+## Current disposition
+ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.
+See TASK-REGISTRY.md, SECURITY-REPORT.md, DEPLOYMENT-REPORT.md, RELEASE-GATES.md and TEST-EVIDENCE.md.
