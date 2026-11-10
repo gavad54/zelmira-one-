@@ -62,8 +62,8 @@ jobs:
           age --recipient "$AGE_RECIPIENT" \
             --output "$RUNNER_TEMP/vayro-backup/vayro.dump.age" \
             "$RUNNER_TEMP/vayro-backup/vayro.dump"
-          sha256sum "$RUNNER_TEMP/vayro-backup/vayro.dump.age" \
-            > "$RUNNER_TEMP/vayro-backup/vayro.dump.age.sha256"
+          cd "$RUNNER_TEMP/vayro-backup"
+          sha256sum vayro.dump.age > vayro.dump.age.sha256
           rm -f "$RUNNER_TEMP/vayro-backup/vayro.dump"
 
       - name: Upload encrypted backup to private B2 bucket
