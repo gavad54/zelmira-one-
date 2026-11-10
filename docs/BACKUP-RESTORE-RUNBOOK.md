@@ -44,7 +44,7 @@ The restore workflow compares the production and restore database hostnames and 
 ## Workflow behavior
 
 - .github/workflows/vayro-db-backup.yml: manual run plus daily schedule at 02:17 UTC. Uses PostgreSQL 17 client tools, age encryption and the B2 S3 API. It checks both uploaded objects' remote sizes. It does not delete old objects.
-- .github/workflows/vayro-db-restore-drill.yml: manual only. Requires the exact confirmation string RESTORE_TO_ISOLATED_VAYRO_TEST, a timestamp-format backup object key, valid credentials, a different target hostname, PostgreSQL 17 and an empty target public schema.
+- .github/workflows/vayro-db-restore-drill.yml: manual only and runs only from `main`. Requires the exact confirmation string RESTORE_TO_ISOLATED_VAYRO_TEST, a timestamp-format backup object key, valid credentials, a different target hostname, PostgreSQL 17 and an empty target across all non-system schemas and user objects.
 - Neither workflow changes database schema, creates database roles, alters grants/RLS, or deploys the application.
 - Retention and lifecycle deletion are intentionally not automated. Configure and review retention only after confirming backup cadence, restore requirements and provider billing behavior.
 
