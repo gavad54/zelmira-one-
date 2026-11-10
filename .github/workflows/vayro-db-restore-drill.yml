@@ -132,4 +132,16 @@ jobs:
             postgres:17-alpine \
             pg_restore --exit-on-error --no-owner --no-acl \
               --dbname="$RESTORE_DATABASE_URL" /backup/backup.dump
-          echo "Restore command completed against the isolated PostgreSQL 17 target. Independent post-restore validation is still required."
+          restored_relations="$(docker run --rm --network host -e RESTORE_DATABASE_URL postgres:17-alpine psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -Atqc "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname <> 'information_schema' AND c.relkind IN ('r','p','v','m','S','f')")"
+          if [[ ! "$restored_relations" =~ ^[0-9]+$ || "$restored_relations" == "0" ]]; then
+            echo "::error::Restore finished but no user relations were detected; restore is not accepted"
+            exit 1
+          fi
+          {
+            echo "## VAYRO isolated restore drill"
+            echo "- PostgreSQL target version: 17"
+            echo "- User relations detected after restore: $restored_relations"
+            echo "- pg_restore: completed with --exit-on-error"
+            echo "- Application-level row-count and invariant comparison: still required"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Restore completed and user relations were detected. Application-level validation is still required."
