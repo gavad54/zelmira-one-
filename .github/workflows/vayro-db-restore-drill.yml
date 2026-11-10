@@ -22,7 +22,7 @@ concurrency:
 jobs:
   restore:
     name: Verify, decrypt and restore to isolated PostgreSQL
-    if: ${{ inputs.confirmation == 'RESTORE_TO_ISOLATED_VAYRO_TEST' }}
+    if: ${{ github.ref == 'refs/heads/main' && inputs.confirmation == 'RESTORE_TO_ISOLATED_VAYRO_TEST' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -46,7 +46,7 @@ jobs:
               exit 1
             fi
           done
-          if [[ "$BACKUP_OBJECT_KEY" != vayro/postgres/*/*.dump.age ]]; then
+          if [[ "$BACKUP_OBJECT_KEY" != vayro/postgres/* || "$BACKUP_OBJECT_KEY" != *.dump.age || "$BACKUP_OBJECT_KEY" == *..* ]]; then
             echo "::error::Backup key must be under vayro/postgres/ and end in .dump.age"
             exit 1
           fi
@@ -106,6 +106,7 @@ jobs:
         shell: bash
         env:
           RESTORE_DATABASE_URL: ${{ secrets.VAYRO_ISOLATED_RESTORE_DATABASE_URL }}
+          EMPTY_SCHEMA_SQL: "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p','v','m','S','f')"
         run: |
           set -euo pipefail
           object_count="$(
