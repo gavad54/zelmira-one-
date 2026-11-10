@@ -66,7 +66,8 @@ jobs:
           sha256sum vayro.dump.age > vayro.dump.age.sha256
           rm -f "$RUNNER_TEMP/vayro-backup/vayro.dump"
 
-      - name: Upload encrypted backup to private B2 bucket
+      - name: Upload and verify encrypted backup objects in private B2 bucket
+        id: upload
         shell: bash
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.VAYRO_B2_KEY_ID }}
@@ -81,10 +82,32 @@ jobs:
           set -euo pipefail
           stamp="$(date -u +%Y/%m/%d/%H%M%S)"
           key="vayro/postgres/$stamp/vayro.dump.age"
+          dump_file="$RUNNER_TEMP/vayro-backup/vayro.dump.age"
+          checksum_file="$RUNNER_TEMP/vayro-backup/vayro.dump.age.sha256"
           aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
-            s3 cp "$RUNNER_TEMP/vayro-backup/vayro.dump.age" \
-            "s3://$B2_BUCKET/$key" --only-show-errors
+            s3 cp "$dump_file" "s3://$B2_BUCKET/$key" --only-show-errors
           aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
-            s3 cp "$RUNNER_TEMP/vayro-backup/vayro.dump.age.sha256" \
-            "s3://$B2_BUCKET/$key.sha256" --only-show-errors
-          echo "Encrypted backup uploaded: s3://$B2_BUCKET/$key"
+            s3 cp "$checksum_file" "s3://$B2_BUCKET/$key.sha256" --only-show-errors
+
+          remote_dump_size="$(aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
+            s3api head-object --bucket "$B2_BUCKET" --key "$key" --query ContentLength --output text)"
+          remote_checksum_size="$(aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
+            s3api head-object --bucket "$B2_BUCKET" --key "$key.sha256" --query ContentLength --output text)"
+          local_dump_size="$(wc -c < "$dump_file" | tr -d ' ')"
+          local_checksum_size="$(wc -c < "$checksum_file" | tr -d ' ')"
+
+          if [[ "$remote_dump_size" != "$local_dump_size" || "$remote_checksum_size" != "$local_checksum_size" ]]; then
+            echo "::error::B2 object size verification failed; backup must not be treated as accepted"
+            exit 1
+          fi
+
+          echo "Encrypted backup uploaded and object sizes verified: s3://$B2_BUCKET/$key"
+          {
+            echo "## VAYRO encrypted backup upload"
+            echo "- Object: `s3://$B2_BUCKET/$key`"
+            echo "- Encrypted object bytes: $remote_dump_size"
+            echo "- Checksum sidecar bytes: $remote_checksum_size"
+            echo "- B2 HEAD metadata size verification: passed"
+            echo "- This does not replace an independent restore drill."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "object_key=$key" >> "$GITHUB_OUTPUT"
