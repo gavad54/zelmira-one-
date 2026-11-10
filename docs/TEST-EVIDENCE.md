@@ -23,3 +23,13 @@ Source PR #12 head at verification: `33ef687486f7d4f64b292a3a283b808e54b2e72e`.
 - CI job log also records PostgreSQL serialization-conflict errors during concurrent test operations; the workflow and test suite nevertheless completed successfully. Treat this as a concurrency/retry observation for follow-up, not as a failed CI run or proof of production safety.
 
 These results apply to disposable CI infrastructure only. They do not prove live Supabase migration/security, offsite backup/restore, or Railway production deployment parity.
+
+## Exact latest PR head — 2026-11-10
+Source PR #12 head: `077c540102df569811aac074db2e2a1c6294bcf5`.
+- VAYRO CI [42775449887](https://github.com/gavad54/zelmira-one-/actions/runs/42775449887), run 1150: completed successfully; all 45 job steps succeeded.
+- CodeQL [42775450223](https://github.com/gavad54/zelmira-one-/actions/runs/42775450223), run 1113: completed successfully; all analysis steps succeeded.
+- Unit tests: 86 passed, 0 failed. PostgreSQL/production HTTP integration tests: 30 passed, 0 failed.
+- Isolated PostgreSQL 17 migration, dedicated auth/platform runtime role checks, tenant RLS isolation proof, locked dependency audit, lint, typecheck, Prisma validation, production build and Docker build passed.
+- PostgreSQL test-container log recorded serialization failures during concurrent `EmailContact.enabled` UPDATE and `AuditEvent` INSERT; the latter occurred in `vayro_platform_actor_is_owner`. PostgreSQL suggested retry. The full suite passed; this observation is not evidence of production failure. Retry behavior requires transaction-boundary review.
+
+All results above apply to disposable CI infrastructure only. They do not establish live Supabase security/migration correctness, offsite backup/restore, Railway deployment parity, or production application readiness.
