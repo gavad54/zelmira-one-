@@ -1,15 +1,15 @@
 # VAYRO task registry
-Snapshot: 2026-11-10 11:18 +03:30
+Snapshot: 2026-11-10 11:20 +03:30
 Fixed mission window: 2026-11-10 11:13:24+03:30 to 2026-11-12 11:13:24+03:30.
 
 Statuses: NOT_STARTED, IN_PROGRESS, IMPLEMENTED, TESTED, VERIFIED, BLOCKED. VERIFIED requires current evidence and a passing acceptance test. Disposable CI does not prove production safety.
 
 | ID | Activity / acceptance criteria | Priority | Dependencies | Status | Evidence / blocker |
 |---|---|---:|---|---|---|
-| GOV-001 | Reconcile PR head, branch, PR state and exact-head workflows | P1 | none | IN_PROGRESS | PR #12 open/draft/unmerged; latest source SHA 06f3e35; exact-head CI/CodeQL absent |
-| CI-001 | Unit, integration, migration, role-isolation, RLS, lint, typecheck, build and Docker pass on current candidate SHA | P0 | GOV-001 | IN_PROGRESS | Prior head 7d0edb7 passed 86 unit + 30 integration; latest source change awaits CI |
-| PROD-001 | Exactly seven approved family modules; DANA remains platform capability; independent products preserved | P1 | ARCH-001 | IMPLEMENTED | Product directory, homepage, type declaration and unit test changed in 06f3e35; test not yet run |
-| ARCH-001 | Architecture doc matches live DB/hosting and approved product boundaries | P1 | GOV-001 | IN_PROGRESS | Documentation reconciled; current code change awaits tests |
+| GOV-001 | Reconcile PR head, branch, PR state and exact-head workflows | P1 | none | IN_PROGRESS | PR #12 open/draft/unmerged; current head had zero Actions runs/status checks |
+| CI-001 | Unit, integration, migration, role-isolation, RLS, lint, typecheck, build and Docker pass on current candidate SHA | P0 | GOV-001 | IN_PROGRESS | Prior head 7d0edb7 passed 86 unit + 30 integration; current head not CI-verified |
+| PROD-001 | Exactly seven approved family modules; DANA remains platform capability; independent products preserved | P1 | ARCH-001 | TESTED | Product directory/homepage/type/test changed in 06f3e35; 3 focused Node tests passed locally against copied exact source/test files; no repository CI/build |
+| ARCH-001 | Architecture doc matches live DB/hosting and approved product boundaries | P1 | GOV-001 | IN_PROGRESS | Docs and homepage classification updated; full application review remains |
 | DB-001 | Reconcile live schema against Prisma and migration chain without mutation | P0 | BACKUP-001, RESTORE-001 | BLOCKED | Live schema drift; migration history empty; no safe restore |
 | BACKUP-001 | Encrypted offsite backup exists and checksum/object integrity is verified | P0 | authorized provider resources | BLOCKED | No bucket, protected secrets or actual backup object |
 | RESTORE-001 | Restore to independent isolated PostgreSQL 17 target and validate data/invariants | P0 | BACKUP-001 | BLOCKED | No independent restore target or restore evidence |
