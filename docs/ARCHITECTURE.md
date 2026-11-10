@@ -87,3 +87,7 @@ Routes and helpers do not prove complete endpoint coverage, production email del
 - Keep customer onboarding, real payments and production data collection disabled until release gates pass and the authorized owner approves release.
 
 See [INDEPENDENT-PRODUCT-ARCHITECTURE.md](INDEPENDENT-PRODUCT-ARCHITECTURE.md), [PRODUCT-BOUNDARIES.md](PRODUCT-BOUNDARIES.md), [PRODUCT-REPOSITORY-INVENTORY.md](PRODUCT-REPOSITORY-INVENTORY.md) and [RELEASE-GATES.md](RELEASE-GATES.md).
+
+## Live deployment clarification — 2026-11-10
+
+The current Railway account exposes projects `ARIA Web` and `LEADORA`; it does not expose a dedicated project named VAYRO. A service named `VAYRO` is live inside the `ARIA Web` production project, sourced from this repository's `main` branch, with domain `vayro-production.up.railway.app`. Its latest observed deployment is SUCCESS and the environment reports one online replica. This proves a running service endpoint, not an independent VAYRO hosting boundary, independent production database readiness, or product release. The architecture acceptance gate remains open until VAYRO has a dedicated, independently controlled project/runtime and failure boundary. Do not reuse ARIA/LEADORA infrastructure or apply staged Railway changes as a substitute for that boundary.
