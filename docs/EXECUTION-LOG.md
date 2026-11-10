@@ -11,3 +11,12 @@
 - Ran three focused Node tests locally (Node v22.16.0) against copied exact product-directory source and unit test from the branch: 3 passed, 0 failed. This does not replace GitHub CI, Next.js production build or TypeScript checking.
 - GitHub Actions query for current PR head 87e940774dedd3adf64610d7f9fc431657195a12 returned zero runs; combined commit status returned no checks. Current source/docs remain not verified on exact PR head.
 - No production DB mutation, actual backup/restore, Railway deployment, PR merge or release performed.
+
+
+## 2026-11-10 11:22 +03:30 — V3 exact-head verification
+- PR #12 live state: open, draft, unmerged; branch infra/backup-restore-b2; 46 ahead / 0 behind main.
+- Source candidate b2b78f3a9171eeddd53c4f11d740b8c54abd6a7d passed CI 42777954484 (#1160), all 45 steps; CodeQL 42777954612 (#1123) passed.
+- CI included unit tests, locked dependency audit, Prisma generation/validation, migrations on isolated PostgreSQL 17, auth/platform/tenant role isolation, tenant RLS SQL proof, lint, typecheck, production build, Docker build and PostgreSQL/HTTP integration.
+- Corrected session lifecycle documentation: password-change endpoint exists and revokes all sessions transactionally; MFA login creates a new MFA session without revoking other devices; rotation and privilege-change invalidation remain open.
+- Weighted registry includes all seven end-to-end product modules. VERIFIED weights: GOV 2 + CI 4 + PROD directory 3 = 9/100.
+- This docs-only follow-up changes the PR head and requires fresh exact-head CI/CodeQL. No production DB mutation, backup/restore, Railway deployment, PR merge or public release.

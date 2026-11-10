@@ -67,7 +67,7 @@ At the baseline commit, no MFA fields, enrollment/challenge/recovery models, TOT
 
 ## Verification status
 
-This document is a source inventory and authorization expectation, **not proof that all listed negative and positive tests have passed**. Per-operation evidence must be added to the security test report after execution. Current status: `SOURCE_INVENTORY_RECONCILED — TEST_EVIDENCE_INCOMPLETE`. The method inventory now covers 42 operations. Historical CI results on prior commits (including 60/60 unit tests and 19/19 PostgreSQL/production-HTTP integration tests) do not certify the current head or prove each matrix row has independent negative/positive evidence. Current-head CI/CodeQL and per-operation evidence must be refreshed.
+This document is a source inventory and authorization expectation, **not proof that every listed negative and positive test has passed**. The 42-operation inventory is reconciled at source level. Exact source candidate b2b78f3a9171eeddd53c4f11d740b8c54abd6a7d passed CI 42777954484 and CodeQL 42777954612, including aggregate unit and PostgreSQL/production-HTTP integration suites. This does not prove every matrix row has individually mapped negative and positive tests. Per-operation traceability and independent review remain incomplete. Current status: `SOURCE_INVENTORY_RECONCILED — AGGREGATE_CI_PASS — ROW_LEVEL_EVIDENCE_INCOMPLETE`.
 
 
 ## AI generation data boundary (2026-11-09)

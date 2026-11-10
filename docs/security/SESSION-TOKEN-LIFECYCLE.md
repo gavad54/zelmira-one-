@@ -23,7 +23,7 @@ The application does not currently issue JWT access tokens or separate refresh t
 - Expired absolute-TTL sessions are rejected. Idle sessions older than 30 minutes are revoked on authenticated session resolution; activity timestamps are refreshed at most once every five minutes.
 - Prisma schema and additive migration define `revokedAt`, `lastSeenAt`, `assurance`, and `mfaAuthenticatedAt`. `revokedAt` is enforced by identity, owner and tenant authorization; recent MFA assurance is required by platform owner and tenant OWNER/ADMIN authorization. Last-seen updates use a five-minute write throttle; device metadata and session-family/rotation state remain unimplemented.
 - `GET /api/auth/sessions` lists only the authenticated user's active sessions without token digests. `POST /api/auth/sessions/revoke` revokes one session only when it belongs to the authenticated user. `POST /api/auth/sessions/revoke-all` revokes all of that user's active sessions. Both mutation endpoints enforce same-origin and emit audit events.
-- No authenticated password-change endpoint was found.
+- `POST /api/auth/change-password` exists. It requires an active session, same-origin request, IP/user rate limits and current-password verification. Privileged or MFA-enabled accounts require recent MFA assurance. A transaction conditionally updates the password, revokes all active sessions and writes an audit event; the current cookie is then cleared.
 
 ## 3. Target lifecycle
 
@@ -33,7 +33,7 @@ Remaining required changes:
 - Add a central policy abstraction for MFA assurance and step-up freshness; current enforcement exists in platform owner and tenant owner/admin authorization helpers.
 - Make the current 30-minute idle timeout and five-minute activity-write interval configuration-backed with validated startup policy; currently these values are code constants.
 - Add device/session metadata (coarse device label and created-from context) only after a privacy review.
-- MFA enrollment, login verification and disablement revoke all previous sessions transactionally. Extend revocation to account disablement and privileged role/permission changes.
+- MFA enrollment and disablement revoke existing sessions transactionally. Successful MFA login verification creates a new MFA-assured session and consumes outstanding challenges; it does not revoke sessions on other devices. Extend revocation to account disablement and privileged role/permission changes.
 - Rotate the opaque session token after successful MFA step-up and other privilege-boundary transitions. Invalidate the previous token atomically.
 - Use transactional compare-and-swap semantics to prevent concurrent rotation/replay.
 - Never accept session identifiers or user IDs from client body/query as proof of ownership.
@@ -83,4 +83,4 @@ The final policy must define idle expiry, absolute expiry, step-up freshness and
 
 ## 7. Acceptance
 
-The session gate remains `BLOCKED` until the target behavior is implemented, the integration tests run against an isolated PostgreSQL test database, CI evidence is attached, and an independent review confirms the state transitions. Current source coverage is partial. The idle timeout and session management endpoints passed CI on the recorded branch head; independent review, production runtime key provisioning, production migration approval, privilege-change invalidation, password-change flow, and owner acceptance remain open.
+The session gate remains `BLOCKED` until the target behavior is implemented, the integration tests run against an isolated PostgreSQL test database, CI evidence is attached, and an independent review confirms the state transitions. Current source coverage is partial. The idle timeout and session management endpoints passed CI on the recorded branch head; independent review, production runtime key provisioning, production migration approval, privilege-change invalidation, privilege-change invalidation, session rotation, and owner acceptance remain open.

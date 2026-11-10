@@ -1,28 +1,44 @@
 # VAYRO project state — authoritative snapshot
-Updated: 2026-11-10 11:20 +03:30
-Deadline: 2026-11-12 11:13:24 +03:30 (fixed; no restart).
+Updated: 2026-11-10 11:22:46 +03:30 (2026-11-10T07:52:46Z)
+Fixed 48-hour window: 2026-11-10T07:43:24Z to 2026-11-12T07:43:24Z. No reset or extension.
 
-## Repository
-- Repository: gavad54/zelmira-one-
-- PR #12: open, draft, unmerged; branch infra/backup-restore-b2; last compare 45 commits ahead / 0 behind main.
-- Current documentation/governance head before this evidence-only commit: 87e940774dedd3adf64610d7f9fc431657195a12.
-- Last exact-head CI/CodeQL pass: source head 7d0edb71522c281b546011ae110f4501c6903c43, CI 42776421939 and CodeQL 42776421968. 86 unit + 30 integration passed; all 45 CI steps passed.
-- Current product-directory source commit 06f3e3528f12e1a76b801430788fa433ebeffef2 has three focused Node tests passed locally against copied exact source/test files (Node v22.16.0). This is not a repository CI run, Next.js build or TypeScript check. Current PR head has no GitHub Actions runs or status checks in the latest API query.
+## Repository and exact-head verification
+- PR #12: OPEN / DRAFT / UNMERGED; branch infra/backup-restore-b2; 46 commits ahead / 0 behind main.
+- Source candidate: b2b78f3a9171eeddd53c4f11d740b8c54abd6a7d.
+- Exact-SHA VAYRO CI 42777954484 (#1160): COMPLETED / SUCCESS; all 45 job steps passed. Unit tests, dependency audit, Prisma generation/validation, migrations on isolated PostgreSQL 17, auth/platform/tenant role-isolation, tenant RLS SQL proof, lint, typecheck, production build, Docker build and PostgreSQL/HTTP integration passed.
+- Exact-SHA CodeQL 42777954612 (#1123): COMPLETED / SUCCESS.
+- Links: https://github.com/gavad54/zelmira-one-/actions/runs/42777954484 and https://github.com/gavad54/zelmira-one-/actions/runs/42777954612.
+- The governance-only follow-up commit will require its own exact-head CI/CodeQL check. Do not transfer prior SHA results to a descendant.
+- Prior SHA 7d0edb7 had 86 unit and 30 integration tests pass. Do not transfer those counts to latest run; latest counts were not extracted.
 
 ## Product identity and boundaries
 - Mother app: VAYRO only.
-- Exactly seven approved family modules: ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA, PAYAM.
-- DANA is preserved as a platform-level AI capability, not an eighth family product.
-- ARIA excludes accounting/ERP; ARIANA owns accounting/ERP; LEADORA stays independent pending audit. Preserve existing capabilities until audited and approved for change.
-- Independent product databases; integrations only through reviewed, versioned APIs.
-- Persian RTL + English; mobile-first responsive UI.
+- Seven approved modules: ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA, PAYAM.
+- DANA remains a VAYRO platform AI capability, not an eighth family product.
+- ARIA excludes accounting/ERP; ARIANA owns accounting/ERP; LEADORA remains independent pending audit.
+- Preserve existing capabilities until audited and approved for change. Keep product data stores independent and integrate through reviewed, versioned APIs.
+- UI target: Persian RTL + English, mobile-first and responsive.
+- Product directory, homepage, declaration and tests changed in 06f3e3528f12e1a76b801430788fa433ebeffef2; exact candidate CI on b2b78f3 passed.
 
-## Production facts / release blockers
-- Live VAYRO-CORE last inspected: 11 public tables, RLS enabled on all 11, zero policies, zero FORCE RLS; migration history empty; Security Advisor had 11 RLS-without-policy findings.
-- Live schema drift includes missing UserMfa, MfaRecoveryCode, AuthChallenge and AiGeneration models, and missing Session fields revokedAt, lastSeenAt, assurance, mfaAuthenticatedAt.
-- No verified encrypted offsite backup, backup object, separate restore target or successful restore.
-- Railway VAYRO service remains in legacy ARIA Web project and last verified successful deployment used base commit f3abc61523cb7abbd0b0ab4559a34f40a068ddb5, not PR #12. /api/health is liveness only.
-- No production DB mutation, PR merge, deployment, public release or Android signing performed.
+## Repository capability scope
+Source includes authentication, password reset/change, MFA/TOTP, recovery codes, session lifecycle, owner/tenant authorization, tenant transaction/RLS boundary and a 42-operation endpoint inventory. These are source capabilities, not proof of production enforcement.
+Password-change route exists: verifies current password, requires recent MFA for privileged/MFA-enabled accounts, transactionally updates password, revokes all sessions and records an audit event.
 
-## Current disposition
+## Live production evidence — last verified inspection
+- VAYRO-CORE: 11 public tables; RLS enabled on all 11; zero policies; zero FORCE RLS; migration history empty.
+- Missing live tables: UserMfa, MfaRecoveryCode, AuthChallenge, AiGeneration. Live Session lacks revokedAt, lastSeenAt, assurance, mfaAuthenticatedAt.
+- Security Advisor reported 11 RLS-enabled/no-policy findings. Dedicated roles vayro_app, vayro_auth, vayro_platform and vayro_platform_bootstrap were absent at last inspection.
+- No actual encrypted offsite backup, protected backup secrets, separate restore target or successful restore exists.
+- No production DDL, grants, roles, policies or migrations have been applied.
+
+## Hosting and release
+- Railway service VAYRO: https://vayro-production.up.railway.app, in legacy project ARIA Web, not dedicated VAYRO project.
+- Last verified successful deployment ran base SHA f3abc61523cb7abbd0b0ab4559a34f40a068ddb5, not PR #12. /api/health is liveness only; a previous /api/ready probe returned 503 with cause unproven.
+- Dedicated Railway project creation was blocked by observed Free-plan resource limit. No paid upgrade authorized.
+- No merge, deployment of PR code, Android signing, UAT completion or public release.
+
+## Weighted progress
+The 100-point registry includes all seven end-to-end modules. VERIFIED: GOV-001 (2) + CI-001 (4) + PROD-001 (3) = 9/100 = 9%. This is evidence-weighted task completion, not source-code volume. All module end-to-end tasks remain open.
+
+## Disposition
 ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.

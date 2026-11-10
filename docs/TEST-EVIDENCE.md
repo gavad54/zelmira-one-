@@ -1,24 +1,19 @@
 # VAYRO test evidence
+## Exact source candidate b2b78f3a9171eeddd53c4f11d740b8c54abd6a7d
+- VAYRO CI 42777954484 (#1160): completed / success.
+- CodeQL 42777954612 (#1123): completed / success.
+- CI validate job 129700930780: all 45 steps succeeded.
+- Passed steps include unit tests, locked dependency audit, Prisma generate/validate, migration history on isolated PostgreSQL 17, auth/platform/tenant runtime-role isolation, tenant RLS SQL proof, lint, typecheck, production build, Docker build and PostgreSQL/production HTTP integration.
+- Exact-run unit/integration test counts were not extracted from logs; do not copy counts from older runs.
 
-## Last exact checked source head — 7d0edb71522c281b546011ae110f4501c6903c43
-Date: 2026-11-10
-- VAYRO CI run 42776421939: completed / success.
-- CodeQL run 42776421968: completed / success.
-- CI job 129695876471: all 45 steps succeeded.
-- Unit tests: 86 passed, 0 failed.
-- PostgreSQL / production HTTP integration tests: 30 passed, 0 failed.
-- Isolated PostgreSQL 17 migration history, auth/platform least-privilege role isolation, dedicated tenant runtime RLS isolation, locked dependency audit, Prisma generate/validate, lint, typecheck, production build and Docker image build passed.
-- PostgreSQL service logs recorded serializable conflicts during concurrent EmailContact.enabled UPDATE and AuditEvent INSERT in vayro_platform_actor_is_owner. Owner-contact PATCH/DELETE maps P2034 to HTTP 409; no automatic retry was added.
+## Prior exact source candidate 7d0edb71522c281b546011ae110f4501c6903c43
+- CI 42776421939 and CodeQL 42776421968 passed.
+- 86 unit tests and 30 PostgreSQL/production HTTP integration tests passed; all 45 steps succeeded. Historical evidence only.
 
-## Focused product-directory check — source commit 06f3e3528f12e1a76b801430788fa433ebeffef2
-- Extracted the exact product-directory module and unit-test source from the branch into a temporary isolated Node test folder.
-- Runtime: Node v22.16.0.
-- Result: 3 tests passed, 0 failed. Assertions cover seven approved family modules, three independent products, DANA as platform capability, non-production status labels and linked route inventory.
-- This is a local focused test of copied source, not a full repository checkout, GitHub Actions run, Next.js build or TypeScript check.
+## Product-directory focused test
+- Source commit 06f3e3528f12e1a76b801430788fa433ebeffef2; Node v22.16.0.
+- Three focused tests passed against exact extracted source/test files.
+- Later exact candidate CI b2b78f3 passed.
 
-## Current candidate head
-- Current PR head at evidence refresh: 87e940774dedd3adf64610d7f9fc431657195a12.
-- Exact-head GitHub Actions query returned zero runs and combined status returned no checks. Current candidate remains UNVERIFIED by repository CI.
-
-## Scope limitation
-Successful prior CI applies only to 7d0edb7 and disposable CI infrastructure. It does not prove live Supabase schema/policies, production secrets, offsite backup/restore, Railway deployment parity, real user UAT or public release.
+## Scope limitations
+CI uses disposable PostgreSQL, not live VAYRO-CORE. It does not prove production database policies/roles, backup/restore, production MFA key/configuration, Railway deployment parity, live email delivery, Android real-device behavior, UAT or public release.

@@ -12,3 +12,10 @@ Last reconciled: 2026-11-10 11:18 +03:30.
 | PROD-001 | approved family modules, product directory and homepage naming | DANA remains platform capability; do not rebuild or delete DANA routes. | Classification updated in 06f3e35; test pending |
 
 No repeated production migration, backup, restore, deploy, merge or release was performed.
+
+
+## Exact-head reconciliation — 2026-11-10
+- CI-001 on source candidate b2b78f3: CI 42777954484 and CodeQL 42777954612 passed. Do not repeat this exact source validation without a relevant source change.
+- The governance-only follow-up changes the PR head and must receive its own CI/CodeQL check.
+- SESSION-001 canonical scope includes opaque session lifecycle, expiry, single/all-session revocation, password reset/change, MFA assurance, rotation and privilege-change invalidation. Track these as acceptance criteria under SESSION-001 rather than creating duplicate tasks.
+- MODULE-* tasks are distinct end-to-end product scopes; product-directory listing is not evidence of module implementation.
