@@ -14,6 +14,7 @@ concurrency:
 
 jobs:
   backup:
+    if: github.ref == 'refs/heads/main'
     name: Dump, encrypt and upload private backup
     runs-on: ubuntu-latest
     timeout-minutes: 30
