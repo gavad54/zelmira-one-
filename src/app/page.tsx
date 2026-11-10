@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { VAYRO_PRODUCTS, INDEPENDENT_PRODUCTS } from "@/lib/product-directory.mjs";
+import { VAYRO_PRODUCTS, PLATFORM_CAPABILITIES, INDEPENDENT_PRODUCTS } from "@/lib/product-directory.mjs";
 
 export default function HomePage() {
   return (
@@ -36,7 +36,7 @@ export default function HomePage() {
 
       <section className="section" id="products">
         <div className="section-heading">
-          <div><span className="eyebrow">VAYRO PRODUCT FAMILY</span><h2>۱۱ اپلیکیشن تخصصی، یک اکوسیستم</h2></div>
+          <div><span className="eyebrow">VAYRO PRODUCT FAMILY</span><h2>۷ محصول تخصصی، یک اکوسیستم</h2></div>
           <p>هر محصول برای یک نیاز مشخص طراحی شده است؛ دسترسی و خرید محصولات مستقل خواهد بود.</p>
         </div>
         <div className="product-grid">
@@ -48,6 +48,25 @@ export default function HomePage() {
               <strong className="product-fa">{product.fa}</strong>
               <p>{product.detail}</p>
               <span className="card-foot">محصول خانواده وایرو <span aria-hidden="true">✦</span></span>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="section" aria-labelledby="platform-capabilities-title">
+        <div className="section-heading">
+          <div><span className="eyebrow">VAYRO PLATFORM CAPABILITIES</span><h2 id="platform-capabilities-title">قابلیت‌های هوشمند پلتفرم</h2></div>
+          <p>قابلیت‌های زیربنایی VAYRO از محصولات مستقل خانواده جدا نگه داشته می‌شوند.</p>
+        </div>
+        <div className="product-grid">
+          {PLATFORM_CAPABILITIES.map((capability) => (
+            <article className="product-card" key={capability.name}>
+              <span className="product-tag">{capability.tag}</span>
+              <span className={`product-status ${capability.statusClass}`}>{capability.status}</span>
+              <h3><Link href={capability.href}>{capability.name}</Link></h3>
+              <strong className="product-fa">{capability.fa}</strong>
+              <p>{capability.detail}</p>
+              <span className="card-foot">قابلیت پلتفرمی VAYRO <span aria-hidden="true">✦</span></span>
             </article>
           ))}
         </div>

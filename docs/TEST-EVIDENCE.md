@@ -1,0 +1,32 @@
+# VAYRO test evidence
+## Exact source candidate b2b78f3a9171eeddd53c4f11d740b8c54abd6a7d
+- VAYRO CI 42777954484 (#1160): completed / success.
+- CodeQL 42777954612 (#1123): completed / success.
+- CI validate job 129700930780: all 45 steps succeeded.
+- Passed steps include unit tests, locked dependency audit, Prisma generate/validate, migration history on isolated PostgreSQL 17, auth/platform/tenant runtime-role isolation, tenant RLS SQL proof, lint, typecheck, production build, Docker build and PostgreSQL/production HTTP integration.
+- Exact-run unit/integration test counts were not extracted from logs; do not copy counts from older runs.
+
+## Prior exact source candidate 7d0edb71522c281b546011ae110f4501c6903c43
+- CI 42776421939 and CodeQL 42776421968 passed.
+- 86 unit tests and 30 PostgreSQL/production HTTP integration tests passed; all 45 steps succeeded. Historical evidence only.
+
+## Product-directory focused test
+- Source commit 06f3e3528f12e1a76b801430788fa433ebeffef2; Node v22.16.0.
+- Three focused tests passed against exact extracted source/test files.
+- Later exact candidate CI b2b78f3 passed.
+
+## Scope limitations
+CI uses disposable PostgreSQL, not live VAYRO-CORE. It does not prove production database policies/roles, backup/restore, production MFA key/configuration, Railway deployment parity, live email delivery, Android real-device behavior, UAT or public release.
+
+
+## Exact source candidate b8abdfcb1f0a52bb3d58c5639b8ee7d26df5882f
+- VAYRO CI 42779145368 (#1162): completed success; all 45 steps passed.
+- CodeQL 42779145558 (#1125): completed success.
+- This run includes the bootstrap-role membership hardening in both directions.
+- It does not include the owner-dashboard/platform-role refactor now in the current candidate.
+
+## Current owner-dashboard/platform-role candidate
+- Added dashboard UI and OWNER post-MFA redirect.
+- Refactored owner product API to dedicated platform transaction role.
+- Product catalog now has seven family modules plus three independent products; DANA is a platform capability and excluded from Product rows.
+- Added owner dashboard/API integration assertions. Exact-head CI/CodeQL pending.

@@ -5,8 +5,12 @@ export const VAYRO_PRODUCTS = Object.freeze([
   { name: "NEGAH", fa: "نگاه", detail: "استودیو خلاقیت و تولید محتوا", tag: "خلاقیت", status: "نمونه اولیه؛ اتصال سرویس لازم", statusClass: "prototype", href: "/negah/creative-studio" },
   { name: "SEPEHR", fa: "سپهر", detail: "زیرساخت ابری و خدمات فناوری", tag: "زیرساخت", status: "در صف توسعه", statusClass: "planned" },
   { name: "NAMA", fa: "نما", detail: "ساخت وب‌سایت و صفحات فرود", tag: "وب‌ساز", status: "در صف توسعه", statusClass: "planned" },
-  { name: "PAYAM", fa: "پیام", detail: "بازاریابی و توسعه مشتری", tag: "رشد کسب‌وکار", status: "در صف توسعه", statusClass: "planned" },
-  { name: "DANA", fa: "دانا", detail: "هوش مصنوعی و هماهنگی هوشمند", tag: "هوش مصنوعی", status: "نمونه اولیه؛ اتصال سرویس لازم", statusClass: "prototype", href: "/dana/ai-workspace" }
+  { name: "PAYAM", fa: "پیام", detail: "بازاریابی و توسعه مشتری", tag: "رشد کسب‌وکار", status: "در صف توسعه", statusClass: "planned" }
+]);
+
+// DANA remains available as a VAYRO platform capability, not an eighth approved family product.
+export const PLATFORM_CAPABILITIES = Object.freeze([
+  { name: "DANA", fa: "دانا", detail: "هوش مصنوعی و هماهنگی هوشمند درون پلتفرم VAYRO", tag: "هوش مصنوعی", status: "نمونه اولیه؛ اتصال سرویس لازم", statusClass: "prototype", href: "/dana/ai-workspace" }
 ]);
 
 export const INDEPENDENT_PRODUCTS = Object.freeze([

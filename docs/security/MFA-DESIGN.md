@@ -1,7 +1,7 @@
 # VAYRO MFA Design
 
 **Design baseline:** 19f4834f601e793df7b33917f5e141155de2ba87  
-**Implementation branch:** security/mfa-session-endpoint-gates  
+**Implementation branch:** infra/backup-restore-b2  
 **Status:** IMPLEMENTED IN SOURCE — ISOLATED CI PASSED; SECURITY REVIEW PENDING
 
 ## 1. Baseline facts
@@ -57,7 +57,7 @@ Normal non-privileged accounts may continue password-only until a product risk p
 - Enrollment, successful verification, failed factor attempts, disablement and recovery-code rotation are audited without recording secrets or codes.
 - The login page now guides users through enrollment, second-factor verification and one-time recovery-code display.
 
-The above describes source implementation, not a claim of successful CI or production deployment. The current branch CI validated the Prisma schema/migration and passed the PostgreSQL-backed production-HTTP integration suite. Independent security review and production provisioning remain outstanding.
+The above describes source implementation. Exact source candidate b2b78f3a9171eeddd53c4f11d740b8c54abd6a7d passed VAYRO CI 42777954484 and CodeQL 42777954612. CI uses disposable PostgreSQL; it does not prove production schema/key provisioning or deployment. Independent security review and production provisioning remain outstanding.
 
 ## 6. MFA for sensitive operations
 
@@ -69,7 +69,7 @@ Privileged route authorization must validate server-side session assurance. OWNE
 - Regenerating recovery codes invalidates all previous recovery-code digests atomically.
 - MFA recovery must not use email as a sole factor.
 - Lost-factor recovery requires an independently verified owner-controlled procedure and manual audit; this process is not considered implemented until operational ownership and evidence are established.
-- MFA enrollment and disablement revoke all existing sessions and outstanding challenges. Recovery-code rotation atomically invalidates all prior recovery codes; it does not revoke otherwise valid sessions.
+- MFA enrollment and disablement revoke all existing sessions and outstanding challenges. Successful login verification issues a new MFA-assured session and consumes outstanding challenges, but does not revoke sessions on other devices. Recovery-code rotation atomically invalidates all prior recovery codes; it does not revoke otherwise valid sessions.
 
 ## 8. Required data concepts
 

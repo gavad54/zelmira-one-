@@ -32,6 +32,16 @@ export default function LoginPage() {
     return data;
   }
 
+  async function continueAfterAuthentication() {
+    try {
+      const response = await fetch("/api/auth/me", { cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
+      location.assign(response.ok && data.user?.platformRole === "OWNER" ? "/dashboard" : "/workspaces");
+    } catch {
+      location.assign("/workspaces");
+    }
+  }
+
   async function submitLogin(event: FormEvent) {
     event.preventDefault();
     setBusy(true); setMessage("");
@@ -50,7 +60,7 @@ export default function LoginPage() {
         return;
       }
       if (data.authenticated) {
-        location.assign("/workspaces");
+        await continueAfterAuthentication();
         return;
       }
       throw new Error("ورود کامل نشد. دوباره تلاش کنید.");
@@ -72,7 +82,7 @@ export default function LoginPage() {
         setStage("recovery");
       } else {
         await post("/api/auth/mfa/verify", { challengeToken, code });
-        location.assign("/workspaces");
+        await continueAfterAuthentication();
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "تأیید انجام نشد.");
@@ -116,7 +126,7 @@ export default function LoginPage() {
         {recoveryCodes.map(value=><code key={value}>{value}</code>)}
       </div>
       <button type="button" onClick={()=>navigator.clipboard?.writeText(recoveryCodes.join("\n"))}>کپی کدهای بازیابی</button>
-      <button type="button" onClick={()=>location.assign("/workspaces")}>ذخیره کردم؛ ادامه</button>
+      <button type="button" onClick={()=>void continueAfterAuthentication()}>ذخیره کردم؛ ادامه</button>
     </>}
     <p role="alert">{message}</p>
   </section></main>;

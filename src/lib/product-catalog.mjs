@@ -5,8 +5,7 @@ export const PRODUCT_FAMILY_CATALOG = Object.freeze([
   { key: "NEGAH", name: "NEGAH", description: "استودیو خلاقیت و تولید محتوا" },
   { key: "SEPEHR", name: "SEPEHR", description: "زیرساخت ابری و خدمات فناوری" },
   { key: "NAMA", name: "NAMA", description: "ساخت وب‌سایت و صفحات فرود" },
-  { key: "PAYAM", name: "PAYAM", description: "بازاریابی و توسعه مشتری" },
-  { key: "DANA", name: "DANA", description: "هوش مصنوعی و هماهنگی هوشمند" }
+  { key: "PAYAM", name: "PAYAM", description: "بازاریابی و توسعه مشتری" }
 ]);
 
 export const INDEPENDENT_PRODUCT_CATALOG = Object.freeze([
@@ -15,8 +14,8 @@ export const INDEPENDENT_PRODUCT_CATALOG = Object.freeze([
   { key: "ARIA", name: "ARIA", description: "جامعه، خدمات و بازارگاه؛ بدون حسابداری و ERP" }
 ]);
 
-// The mother-platform registry lists all eleven child applications. Registry membership
-// does not imply that an app is production-ready or that its data is hosted in VAYRO-CORE.
+// Ten independently catalogued products: seven approved VAYRO family modules and three independent products.
+// DANA is a VAYRO platform capability, not a child-product catalogue record.
 export const PRODUCT_CATALOG = Object.freeze([
   ...PRODUCT_FAMILY_CATALOG,
   ...INDEPENDENT_PRODUCT_CATALOG

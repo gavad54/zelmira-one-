@@ -13,14 +13,15 @@ BEGIN
     RAISE EXCEPTION 'vayro_platform_bootstrap role is missing';
   END IF;
 
-  -- A SECURITY DEFINER owner must not inherit or be able to SET ROLE into
-  -- unrelated privileges. Fail migration rather than silently accepting drift.
+  -- A SECURITY DEFINER owner must have no memberships in either direction:
+  -- no inherited roles and no other role may SET ROLE into this capability.
+  -- Checking only "member = bootstrap_oid" misses grants OF bootstrap TO another role.
   IF EXISTS (
     SELECT 1
     FROM pg_auth_members
-    WHERE member = bootstrap_oid
+    WHERE member = bootstrap_oid OR roleid = bootstrap_oid
   ) THEN
-    RAISE EXCEPTION 'vayro_platform_bootstrap has unexpected role memberships';
+    RAISE EXCEPTION 'vayro_platform_bootstrap must have no role memberships';
   END IF;
 END
 $$;
