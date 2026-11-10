@@ -110,8 +110,8 @@ jobs:
         run: |
           set -euo pipefail
           object_count="$(
-            docker run --rm --network host -e RESTORE_DATABASE_URL postgres:17-alpine \
-              sh -ceu 'psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -Atqc "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='''public''' AND c.relkind IN ('''r''','''p''','''v''','''m''','''S''','''f''')"'
+            docker run --rm --network host -e RESTORE_DATABASE_URL -e EMPTY_SCHEMA_SQL postgres:17-alpine \
+              sh -ceu 'psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -Atqc "$EMPTY_SCHEMA_SQL"'
           )"
           if [[ "$object_count" != "0" ]]; then
             echo "::error::Restore target public schema is not empty; refusing to overwrite anything"
