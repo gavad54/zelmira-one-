@@ -435,3 +435,17 @@ This addendum supersedes prior PR #6 head and CI references above where they con
 - The exact-head run resolves the previously failing production HTTP integration job after test-only proxy identity isolation was corrected. The test proxy configuration exists only in disposable CI; do not copy its proxy-hop count or IP behavior into production without verifying the real hosting ingress.
 
 **Current disposition remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Verification addendum — 2026-11-10 (PR #12 backup/restore engineering)
+
+- PR #12 branch `infra/backup-restore-b2`, source commit `dbbaf89d1d56b8faacead90bbfb87cf01f6341e3`.
+- Exact-source VAYRO CI run [42767999257](https://github.com/gavad54/zelmira-one-/actions/runs/42767999257): completed successfully. Inspected steps passed dependency audit, unit tests, Prisma generation/schema validation, isolated PostgreSQL migration, auth/platform/tenant role isolation and RLS tests, lint, typecheck, production build, Docker image build and PostgreSQL/HTTP integration tests.
+- Exact-source CodeQL run [42767999555](https://github.com/gavad54/zelmira-one-/actions/runs/42767999555): completed successfully. This records a successful scan execution, not a claim that every alert record is closed.
+- The backup workflow now checks B2 remote object metadata sizes after upload. The restore workflow checks the supplied object-key format, verifies checksum and decryption, validates the PostgreSQL archive, checks a different hostname and PostgreSQL 17 target, refuses a non-empty public schema, and restores without destructive cleanup flags.
+- Added persistent execution ledger files: `docs/PROJECT-STATE.md`, `docs/EXECUTION-LOG.md`, `docs/COMPLETED-TASKS.md`, `docs/REMAINING-TASKS.md`, and `docs/TEST-EVIDENCE.md`.
+- Subsequent documentation-only commits moved PR #12 head to `efff3ca0d4717cacbcb34e3a8d8a7fbbfe2c23fd`. No workflow run was returned for that latest documentation head at the time of inspection; do not treat it as exact-head verified until CI is observed on it.
+- No B2 resources, protected credentials, backup object, isolated restore database or actual backup/restore run have been provisioned or executed. This PR is still open, draft and unmerged.
+- No production database changes, Railway deployment, app release or owner UAT occurred in this workstream.
+
+**Release disposition remains: REPOSITORY CI + CODEQL PASS ON dbbaf89 — LATEST DOCS-ONLY HEAD AWAITS EXACT-HEAD VERIFICATION — REAL BACKUP/RESTORE AND ALL PRODUCTION GATES OPEN — DEPLOYMENT BLOCKED — NOT RELEASED.**
