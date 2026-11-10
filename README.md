@@ -2,11 +2,17 @@
 
 **INTELLIGENCE. WITHOUT LIMITS.**
 
-VAYRO is a Persian-first, mobile-first platform for discovering and coordinating independent specialist digital products. The application name shown to users is **وایرو** only.
+VAYRO is the central command and governance platform for a portfolio of independently operated applications. The application name shown to users is **وایرو** only.
 
-## Product family
+## VAYRO control plane
 
-| Product | Domain |
+VAYRO provides the central product directory, owner command center, portfolio visibility, identity and optional federation, entitlement governance, subscription/revenue visibility, integration approvals, AI/automation orchestration, infrastructure health, release governance and audit oversight.
+
+VAYRO is not a shared runtime or operational database for the portfolio. An outage or release of one product must not stop another product. Each application remains independently usable, deployable, supportable and saleable.
+
+## Independent applications
+
+| Application | Domain |
 |---|---|
 | ARVAND | International trade, import and export |
 | CHARSU | Marketplace and commerce network |
@@ -15,30 +21,35 @@ VAYRO is a Persian-first, mobile-first platform for discovering and coordinating
 | SEPEHR | Cloud and digital infrastructure |
 | NAMA | Website and landing-page builder |
 | PAYAM | Marketing and customer growth |
-| DANA | AI intelligence and orchestration |
+| LEADORA | Distribution and sales operations |
+| ARIANA | Accounting, finance and ERP |
+| ARIA | Social, services and marketplace; no accounting/ERP |
+| ARMIN MARKET | Buyer requests and supplier quotations |
 
-Independent products retain their own identity and deployment boundaries: LEADORA (distribution and sales operations), ARIANA (accounting and ERP), ARIA (social, services and marketplace; no accounting/ERP), and ARMIN MARKET (request and supplier quotation marketplace).
+DANA is a shared VAYRO AI/orchestration capability, not a separately catalogued application.
+
+Every application must own its codebase and release lifecycle, runtime/deployment, operational database, product identity, local authentication and authorization, versioned API contracts, backup/restore, support model and commercial terms. Optional VAYRO SSO and central entitlement checks must not create a runtime dependency. Product-to-product data exchange is permitted only through approved, versioned, least-privilege APIs with service identity, audit and revocation.
 
 ## Engineering status
 
-This repository contains an engineering foundation: public product directory, authentication routes and primitives, owner bootstrap, initial tenant authorization, PostgreSQL/Prisma schema, audit foundations, health/readiness checks and automated CI. These are not a production release or a security certification.
+This repository contains the VAYRO control-plane foundation and product governance registry. The product registry is metadata only; it does not mean the eleven applications are implemented, hosted, backed up or production-ready. The architecture and release gates are documented separately.
 
-A dedicated VAYRO-CORE PostgreSQL 17 project is provisioned on Supabase Free in eu-central-1, separate from ARIA. Its 11 initial tables have RLS enabled and client-role access revoked. The schema was provisioned directly and verified; the Prisma migration baseline is not yet registered, and migration forward/rollback testing remains open.
+The dedicated VAYRO-CORE PostgreSQL 17 project is separate from ARIA. A previous live catalog audit found 11 initial tables, RLS enabled but no policies and no FORCE RLS tables; the schema migration baseline remains unregistered. Do not treat RLS enabled as proof of tenant isolation. No production schema mutation is authorized until backup/restore and reconciliation gates pass.
 
-Production email, complete endpoint-level authorization coverage, full tenant-scoped product workflows, MFA, licensing/billing operations, independent backup/restore, dedicated application hosting, mobile acceptance, owner UAT and explicit release approval remain open gates. Customer onboarding, real payments and production data collection must remain disabled until those gates are evidenced.
+Production email, complete endpoint authorization, tenant isolation, privileged-user MFA/session controls, licensing/billing operations, independent backup/restore, dedicated application hosting, mobile acceptance, owner UAT and explicit release approval remain open gates. Customer onboarding, live payments and production data collection must remain disabled until those gates are evidenced.
 
 ## Stack
 
 - Next.js App Router, React and TypeScript
-- PostgreSQL 17 (dedicated Supabase Free project) and Prisma
+- PostgreSQL 17 (dedicated Supabase project) and Prisma
 - Zod input validation
 - GitHub Actions CI and CodeQL
-- Application hosting remains unresolved; Railway free-plan resource limit prevented provisioning. No VAYRO deployment exists.
+- Application hosting remains unresolved; no verified VAYRO production deployment exists.
 
 ## Local development
 
 1. Install Node.js 22 or later and PostgreSQL 16 or later.
-2. Copy `.env.example` to `.env` and configure a private `DATABASE_URL` for the dedicated VAYRO database.
+2. Copy `.env.example` to `.env` and configure a private `DATABASE_URL`.
 3. Run `npm ci`.
 4. Run `npm run db:generate`.
 5. Run `npm run dev`.
@@ -51,6 +62,6 @@ Production email, complete endpoint-level authorization coverage, full tenant-sc
 - `npm run typecheck`
 - `npm run build`
 - `npm run db:validate`
-- `npm run db:migrate:deploy` (only after the existing database baseline is reconciled and verified)
+- `npm run db:migrate:deploy` only after the existing database baseline is reconciled and verified
 
-Never commit secrets, production credentials, signing keys, customer data or backups.
+Never commit secrets, production credentials, signing keys, customer data or backups. See [docs/INDEPENDENT-PRODUCT-ARCHITECTURE.md](docs/INDEPENDENT-PRODUCT-ARCHITECTURE.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/PRODUCT-BOUNDARIES.md](docs/PRODUCT-BOUNDARIES.md) and [docs/RELEASE-GATES.md](docs/RELEASE-GATES.md).
