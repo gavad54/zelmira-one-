@@ -13,7 +13,7 @@ Never point a restore job at production. Never run schema migrations or DDL agai
 3. The runner encrypts the dump locally with age using a public recipient key. The plaintext dump is removed before upload.
 4. Only the encrypted dump and its SHA-256 checksum are uploaded to a private Backblaze B2 bucket through its S3-compatible endpoint.
 5. The backup job reads both uploaded objects' B2 HEAD metadata and compares remote ContentLength values with the local file sizes. This detects missing/truncated uploads; it is not a cryptographic verification of the stored object.
-6. A separately authorized manual restore drill downloads the selected object, verifies its SHA-256 checksum, decrypts it using the separately protected age identity, validates the decrypted PostgreSQL archive listing, checks that the target database host differs from production, requires PostgreSQL 17 and an empty target public schema, then restores without --clean or --create.
+6. A separately authorized manual restore drill downloads the selected object, verifies its SHA-256 checksum, decrypts it using the separately protected age identity, validates the decrypted PostgreSQL archive listing, checks that the target database host differs from production, requires PostgreSQL 17 and an empty target across all non-system schemas (relations, routines, user-defined types, non-default extensions and large objects), then restores without --clean or --create. After pg_restore exits successfully, the workflow confirms that user relations exist on the target.
 7. An operator validates schema/object counts, row counts, application invariants and representative records on the isolated clone. Record elapsed backup/restore times, dump size, checksum and observed recovery point.
 
 The checksum detects transfer corruption; it is not a substitute for authenticated encryption. The age identity must be held outside GitHub source and outside the backup bucket.
@@ -59,10 +59,15 @@ The restore workflow compares the production and restore database hostnames and 
 - [ ] Both remote object sizes match the runner's local files as recorded in the workflow summary.
 - [ ] The object is downloaded, checksum verified and decrypted in the isolated restore workflow.
 - [ ] The decrypted archive passes pg_restore --list validation.
+- [ ] Restore workflow confirms user relations exist after pg_restore completes.
 - [ ] Restore completes in a different-host, empty, disposable PostgreSQL 17 database.
 - [ ] Schema and object inventory are compared with the source snapshot; representative counts and application invariants are validated.
 - [ ] Backup duration, restore duration, backup timestamp, checksum, dump size, RPO and RTO are recorded.
 - [ ] A second independent restore drill succeeds before the release gate is closed.
+
+## Backup scope and exclusions
+
+This workflow is a PostgreSQL logical database backup only. It does not back up application-uploaded files or object-storage blobs, Railway volumes, deployment images, GitHub secrets, environment variables, provider-level project configuration, DNS, or external integrations. It also uses `--no-owner --no-acl`, so database roles and grants must be recreated and validated separately through a reviewed recovery procedure. Do not describe this as a complete VAYRO platform backup until file/object storage and configuration recovery are separately implemented and tested.
 
 ## Operational notes
 
