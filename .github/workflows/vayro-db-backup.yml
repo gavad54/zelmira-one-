@@ -104,7 +104,7 @@ jobs:
           echo "Encrypted backup uploaded and object sizes verified: s3://$B2_BUCKET/$key"
           {
             echo "## VAYRO encrypted backup upload"
-            echo "- Object: `s3://$B2_BUCKET/$key`"
+            echo "- Object: s3://$B2_BUCKET/$key"
             echo "- Encrypted object bytes: $remote_dump_size"
             echo "- Checksum sidecar bytes: $remote_checksum_size"
             echo "- B2 HEAD metadata size verification: passed"
