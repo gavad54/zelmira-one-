@@ -8,7 +8,9 @@ export interface VayroProduct {
   href?: string;
 }
 
-export interface PlatformCapability extends VayroProduct {}
+export interface PlatformCapability extends VayroProduct {
+  href: string;
+}
 
 export interface IndependentProduct {
   name: "LEADORA" | "ARIANA" | "ARIA";

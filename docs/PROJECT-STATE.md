@@ -1,17 +1,18 @@
 # VAYRO project state — authoritative snapshot
-Updated: 2026-11-10 11:15:28 +03:30
+Updated: 2026-11-10 11:18 +03:30
 Deadline: 2026-11-12 11:13:24 +03:30 (fixed; no restart).
 
 ## Repository
 - Repository: gavad54/zelmira-one-
-- PR #12: open, draft, unmerged; branch infra/backup-restore-b2; 32 commits ahead / 0 behind main at last compare.
-- Last fully checked code head before governance-doc commits: 7d0edb71522c281b546011ae110f4501c6903c43.
-- Exact-head CI run 42776421939 and CodeQL run 42776421968 both completed successfully. CI's 45 steps all succeeded; 86/86 unit tests and 30/30 PostgreSQL/production-HTTP integration tests passed.
-- Governance files were then added in commits ending f22be227; fresh exact-head CI/CodeQL must be checked for the resulting branch head before any latest-head verification claim.
+- PR #12: open, draft, unmerged; branch infra/backup-restore-b2. Last compare showed 43 commits ahead / 0 behind main before the latest code commit.
+- Latest source commit: 06f3e3528f12e1a76b801430788fa433ebeffef2.
+- Exact-head CI/CodeQL last passed on prior source head 7d0edb71522c281b546011ae110f4501c6903c43 (runs 42776421939 and 42776421968). Latest source commit and subsequent docs need fresh workflows; current-head checks not present in the connector result.
+- Latest source change aligns product directory to seven approved family modules, preserving DANA as a platform capability; matching type declaration, homepage and unit test updated.
 
 ## Product identity and boundaries
 - Mother app: VAYRO only.
 - Approved family modules: ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA, PAYAM.
+- DANA remains a VAYRO platform capability, not an eighth family product.
 - ARIA excludes accounting/ERP; ARIANA owns accounting/ERP; LEADORA stays independent pending audit. Preserve existing capabilities until audited and approved for change.
 - Independent product databases; integrations only through reviewed, versioned APIs.
 - Persian RTL + English; mobile-first responsive UI.
@@ -25,4 +26,3 @@ Deadline: 2026-11-12 11:13:24 +03:30 (fixed; no restart).
 
 ## Current disposition
 ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.
-See TASK-REGISTRY.md, SECURITY-REPORT.md, DEPLOYMENT-REPORT.md, RELEASE-GATES.md and TEST-EVIDENCE.md.

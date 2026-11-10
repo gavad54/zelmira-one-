@@ -1,10 +1,10 @@
 # VAYRO release gates — authoritative status
-Snapshot: 2026-11-10 11:16 +03:30
+Snapshot: 2026-11-10 11:18 +03:30.
 
 | Gate | Acceptance criteria | Status | Evidence / blocker |
 |---|---|---|---|
-| RG-01 Repository CI | All required CI steps pass on exact final candidate SHA | VERIFIED for 7d0edb7 only | Run 42776421939; 45/45 steps passed; new governance commits require fresh run |
-| RG-02 CodeQL | CodeQL passes on exact final candidate SHA | VERIFIED for 7d0edb7 only | Run 42776421968; new governance commits require fresh run |
+| RG-01 Repository CI | All required CI steps pass on exact final candidate SHA | IN_PROGRESS | Prior SHA 7d0edb7 passed; current source SHA 06f3e35 lacks fresh workflow |
+| RG-02 CodeQL | CodeQL passes on exact final candidate SHA | IN_PROGRESS | Prior SHA 7d0edb7 passed; current source SHA 06f3e35 lacks fresh workflow |
 | RG-03 Backup | Encrypted offsite object exists; checksum/size verified | BLOCKED | No provider bucket/keys, protected secrets or backup object |
 | RG-04 Restore | Independent PostgreSQL 17 restore and data/invariant checks pass | BLOCKED | No independent restore target or restore evidence |
 | RG-05 Schema reconciliation | Live DB and Prisma/migration chain reconciled object-by-object | BLOCKED | Live migration history empty; schema drift |
@@ -18,9 +18,9 @@ Snapshot: 2026-11-10 11:16 +03:30
 | RG-13 Android | If in release scope, signed build installs/runs on real device | NOT VERIFIED | No current real-device evidence |
 | RG-14 Legal/release approval | Legal/privacy/store checks and explicit authorized approval | BLOCKED | No release authorization |
 
-## Non-negotiable stop conditions
+## Stop conditions
 - No production schema, role, grant or RLS changes before RG-03 and RG-04 plus schema/recovery rehearsal.
 - No merge, production deployment, customer onboarding, payment activation or public release while P0 gates remain open.
-- Do not treat successful disposable CI as proof of production safety.
+- Disposable CI does not prove production safety.
 
 **Disposition: DEPLOYMENT BLOCKED — NOT RELEASED.**

@@ -1,8 +1,9 @@
 # VAYRO architecture — current evidence and approved boundaries
-Snapshot: 2026-11-10 11:16 +03:30.
+Snapshot: 2026-11-10 11:18 +03:30.
+Current product-directory implementation commit: 06f3e3528f12e1a76b801430788fa433ebeffef2 (not yet CI-verified).
 
 ## Product identity
-VAYRO is the mother application. The approved product-family modules in the current product brief are:
+VAYRO is the mother application. Exactly seven approved family modules:
 - ARVAND — international trade
 - CHARSU — marketplace
 - GANJINEH — digital store
@@ -11,19 +12,22 @@ VAYRO is the mother application. The approved product-family modules in the curr
 - NAMA — page builder
 - PAYAM — marketing
 
-Independent products remain separate:
+DANA is preserved as a VAYRO platform-level AI capability, not counted as an eighth family product. Its existing routes and AI capability registry are retained. This is a classification correction, not capability deletion.
+
+Independent products:
 - ARIA: social, services and marketplace; no accounting or ERP.
 - ARIANA: accounting and ERP.
-- LEADORA: distribution and sales operations; audit independently before any integration, merge, removal or change.
+- LEADORA: distribution and sales operations; audit independently before integration, merge, removal or change.
 - ARMIN MARKET: buyer requests and supplier quotations.
 
-Do not remove existing capabilities without an audit and explicit approval. Keep product data stores independent and integrate only through reviewed, versioned APIs. UI target: Persian RTL + English, mobile-first and responsive.
+Do not remove existing capabilities without audit and explicit approval. Keep product data stores independent and integrate only through reviewed, versioned APIs. UI target: Persian RTL + English, mobile-first and responsive.
 
 ## Technical foundation
 - Web: Next.js App Router, React, TypeScript; Prisma ORM; PostgreSQL 17.
-- VAYRO-CORE: separate Supabase PostgreSQL project in eu-central-1 (Free plan). It is not a substitute for verified backup/restore or production hardening.
-- Repository includes password hashing, server-side sessions, login/registration/logout, email verification/recovery primitives, rate limiting, audit events, tenant membership authorization helpers, health/readiness routes and related Prisma models.
-- Presence of code primitives does not certify complete route coverage, production MFA, email delivery, billing, tenant CRUD or operational readiness.
+- VAYRO-CORE: separate Supabase PostgreSQL project in eu-central-1 (Free plan).
+- Repository includes password hashing, server-side sessions, login/registration/logout, email verification/recovery primitives, MFA routes/services, rate limiting, audit events, tenant membership authorization helpers, health/readiness routes and related Prisma models.
+- Code presence and disposable CI tests do not certify production deployment, production MFA, email delivery, billing, live tenant isolation or operational readiness.
+- The home product directory now separates seven family modules, DANA platform capabilities and independent products. The associated test was updated but awaits fresh exact-head CI.
 
 ## Live database evidence (last inspected 2026-11-10)
 - 11 public tables; RLS enabled on all 11; zero RLS policies; zero FORCE RLS tables.
