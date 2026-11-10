@@ -70,8 +70,12 @@ BEGIN
   END IF;
   IF has_schema_privilege('vayro_platform_bootstrap', 'public', 'CREATE')
      OR (SELECT rolinherit FROM pg_roles WHERE oid = bootstrap_oid)
-     OR EXISTS (SELECT 1 FROM pg_auth_members WHERE member = bootstrap_oid) THEN
-    RAISE EXCEPTION 'bootstrap definer role has unnecessary schema or inherited privileges';
+     OR EXISTS (
+       SELECT 1 FROM pg_auth_members
+       WHERE member = bootstrap_oid OR roleid = bootstrap_oid
+     )
+     OR pg_has_role('vayro_platform', 'vayro_platform_bootstrap', 'MEMBER') THEN
+    RAISE EXCEPTION 'bootstrap definer role has unnecessary schema or role memberships';
   END IF;
 END $$;
 

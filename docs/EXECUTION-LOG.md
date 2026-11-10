@@ -20,3 +20,9 @@
 - Corrected session lifecycle documentation: password-change endpoint exists and revokes all sessions transactionally; MFA login creates a new MFA session without revoking other devices; rotation and privilege-change invalidation remain open.
 - Weighted registry includes all seven end-to-end product modules. VERIFIED weights: GOV 2 + CI 4 + PROD directory 3 = 9/100.
 - This docs-only follow-up changes the PR head and requires fresh exact-head CI/CodeQL. No production DB mutation, backup/restore, Railway deployment, PR merge or public release.
+
+
+## 2026-11-10 — P0 role-boundary review
+- Found a least-privilege assertion gap in the SECURITY DEFINER bootstrap owner role: the existing migration/test checked memberships held by the bootstrap role but not other roles granted membership in it.
+- Updated migration 20261109160000 and tests/sql/platform-db-role-boundary.sql to reject membership in either direction and explicitly reject platform runtime membership in the bootstrap role.
+- The fix is source-only and awaits exact-head CI/CodeQL. No production role, grant, schema or data was changed.

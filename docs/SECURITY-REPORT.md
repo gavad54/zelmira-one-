@@ -24,3 +24,10 @@ CI results are disposable-environment evidence only.
 
 ## Containment
 Keep onboarding, production data collection and real payments disabled until release gates pass. No production DB changes before independent backup/restore and schema/recovery rehearsal. Never expose secrets in source/logs/issues/chat. No public release or gate bypass.
+
+
+## Additional least-privilege hardening — 2026-11-10
+- Review of the SECURITY DEFINER owner role found the migration/test checked only memberships held BY `vayro_platform_bootstrap`, but did not check grants OF that role TO another role.
+- Tightened migration `20261109160000_platform_bootstrap_least_privilege` to reject membership edges in either direction (`pg_auth_members.roleid` or `member`).
+- Tightened the isolated PostgreSQL platform-role test to assert no role can inherit/SET ROLE into the bootstrap capability.
+- This is a repository-only hardening change; exact-head CI/CodeQL for the new commit is pending. No live database role or grant was changed.
