@@ -1,11 +1,11 @@
 # VAYRO Task Registry
-Snapshot: 2026-11-10T18:04:00Z. Status vocabulary: NOT_STARTED, IN_PROGRESS, IMPLEMENTED, TESTED, VERIFIED, BLOCKED. VERIFIED is evidence-scoped.
+Snapshot: 2026-11-10T18:15:00Z. Status vocabulary: NOT_STARTED, IN_PROGRESS, IMPLEMENTED, TESTED, VERIFIED, BLOCKED. VERIFIED is evidence-scoped.
 
 | ID | Task / acceptance criterion | Priority | Weight | Status | Evidence / dependency |
 |---|---|---:|---:|---|---|
 | GOV-001 | Eleven peer apps represented; DANA excluded from app registry; ARIA/ARIANA boundaries correct | P1 | 5 | VERIFIED (PR branch only) | PR #14 branch |
 | ARCH-001 | Control-plane/independent-plane contract and API-only integrations documented | P1 | 5 | VERIFIED (documentation scope) | docs/ARCHITECTURE.md, docs/PRODUCT-BOUNDARIES.md |
-| CI-001 | CI, dependency-audit step, CodeQL all pass on exact latest PR head | P1 | 5 | VERIFIED (exact PR head) | Head 1a79d51; CI run 42862934312 and CodeQL run 42862934113; all jobs passed |
+| CI-001 | CI, dependency-audit step, CodeQL all pass on exact latest PR head | P1 | 5 | VERIFIED (exact PR head) | Head be0fad260919131a8f1e13d21dde35ecfd4a377f; CI run 42871411769 and CodeQL run 42871411906; all jobs passed |
 | DB-001 | Reconcile live schema with versioned migrations on verified restored clone | P0 | 10 | BLOCKED | No migrations; schema differs from Prisma source |
 | RLS-001 | Runtime roles, policies, FORCE RLS and positive/negative cross-tenant tests pass on real non-owner path | P0 | 15 | BLOCKED | Live 0 policies / 0 FORCE RLS |
 | AUTH-001 | MFA, session expiry/revocation and owner controls verified against deployed schema | P0 | 7 | IN_PROGRESS | Source exists; live schema mismatch |
