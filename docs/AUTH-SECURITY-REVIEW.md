@@ -81,3 +81,12 @@ IP-based throttling must not trust an arbitrary `X-Forwarded-For` value. The app
 - Unit tests: 43 passed / 0 failed. PostgreSQL and production HTTP integration tests: 15 passed / 0 failed. The enforced npm audit reported 0 vulnerabilities; lint, typecheck, Prisma migration in isolated PostgreSQL and production build passed.
 - IP-only throttling now requires an explicit `TRUSTED_PROXY_HOPS` setting and parses the first untrusted hop from the right. Until the real ingress chain is verified, IP-only throttles are skipped; account/email/token-specific throttles remain active. The variable is intentionally unset in the example environment.
 - This change does not verify any live hosting proxy configuration and does not close production security review, MFA, tenant authorization coverage, or release gates.
+
+
+## Verification update — MFA cryptographic core (2026-11-10)
+
+- Added an isolated Node.js MFA cryptographic module using RFC 6238 TOTP (SHA-1, six digits, 30-second steps), a 160-bit random Base32 secret, bounded clock drift, constant-time code comparison and a caller-supplied monotonic replay watermark.
+- TOTP secrets can be protected at rest with AES-256-GCM using a separately provisioned 32-byte hexadecimal `VAYRO_MFA_ENCRYPTION_KEY`; each encryption uses a fresh 96-bit IV and authenticated 128-bit tag. The module fails closed when the key is missing or malformed.
+- Unit tests cover the RFC 6238 reference vector, drift and replay behavior, malformed inputs, encryption/decryption, authentication-tag tampering and authenticator URI encoding.
+- **This is not end-to-end MFA.** The helper is not yet connected to the Prisma schema, login challenge, session lifecycle, enrollment/disable endpoints, recovery codes, rate limiting, audit events or owner-route enforcement. No MFA encryption key has been provisioned. Do not treat owner accounts as MFA-protected and do not deploy this helper as an active control.
+- Next implementation slice: add versioned MFA credential/challenge/recovery-code persistence and transactional one-time verification, then integrate login and privileged-route enforcement with a tested owner recovery path. Production secret provisioning remains a separately authorized owner action.
