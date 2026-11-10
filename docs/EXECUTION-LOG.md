@@ -9,3 +9,12 @@
 - Current live service config uses `/api/health` as liveness healthcheck. This is not proof that database-backed features are ready.
 - Live service's direct variable-name list was empty; values were not accessed. Environment-shared variables remain unverified.
 - No live DB mutation, staged Railway patch acceptance, B2 setup, backup/restore execution, deployment, merge or release performed.
+
+
+## Execution update — 2026-11-10 (latest exact PR head)
+- Rechecked PR #12 metadata and compare: open, draft, unmerged, mergeable reported true; branch `infra/backup-restore-b2` is 24 commits ahead of `main`, 0 behind.
+- Exact head `33ef687486f7d4f64b292a3a283b808e54b2e72e`: VAYRO CI run 42774211321 and CodeQL run 42774211165 both completed successfully.
+- Inspected CI job and logs: 86 unit tests and 30 PostgreSQL/production HTTP integration tests passed; isolated PostgreSQL migration and role/RLS isolation checks, lint, typecheck, schema validation, production build and Docker build passed.
+- CI PostgreSQL logs recorded serialization conflicts under concurrent test activity; suite still passed. Track as a concurrency/retry observation.
+- No production DB mutation, offsite backup/restore, Railway deployment, merge or release was performed.
+- Next: owner-controlled backup provider/credentials and isolated restore host are prerequisites for a real restore drill; continue production schema reconciliation only after that safety gate.
