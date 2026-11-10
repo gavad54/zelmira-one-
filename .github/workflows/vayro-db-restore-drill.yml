@@ -89,16 +89,16 @@ jobs:
           chmod 700 "$RUNNER_TEMP/vayro-restore"
           aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
             s3 cp "s3://$B2_BUCKET/$BACKUP_OBJECT_KEY" \
-            "$RUNNER_TEMP/vayro-restore/backup.dump.age" --only-show-errors
+            "$RUNNER_TEMP/vayro-restore/vayro.dump.age" --only-show-errors
           aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
             s3 cp "s3://$B2_BUCKET/$BACKUP_OBJECT_KEY.sha256" \
-            "$RUNNER_TEMP/vayro-restore/backup.dump.age.sha256" --only-show-errors
+            "$RUNNER_TEMP/vayro-restore/vayro.dump.age.sha256" --only-show-errors
           cd "$RUNNER_TEMP/vayro-restore"
-          sha256sum --check backup.dump.age.sha256
+          sha256sum --check vayro.dump.age.sha256
           printf '%s\n' "$AGE_IDENTITY" > age-identity.txt
           chmod 600 age-identity.txt
           age --decrypt --identity age-identity.txt \
-            --output backup.dump backup.dump.age
+            --output backup.dump vayro.dump.age
           test -s backup.dump
           rm -f age-identity.txt
 
