@@ -87,7 +87,7 @@ jobs:
           umask 077
           mkdir -p "$RUNNER_TEMP/vayro-restore"
           chmod 700 "$RUNNER_TEMP/vayro-restore"
-          trap 'rm -f "$RUNNER_TEMP/vayro-restore/age-identity.txt" "$RUNNER_TEMP/vayro-restore/backup.dump"' EXIT
+          trap 'rm -f "$RUNNER_TEMP/vayro-restore/age-identity.txt"' EXIT
           aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
             s3 cp "s3://$B2_BUCKET/$BACKUP_OBJECT_KEY" \
             "$RUNNER_TEMP/vayro-restore/vayro.dump.age" --only-show-errors
@@ -113,6 +113,7 @@ jobs:
           EMPTY_SCHEMA_SQL: "SELECT (SELECT count(*) FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' AND nspname NOT IN ('information_schema','public')) + (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname <> 'information_schema' AND c.relkind IN ('r','p','v','m','S','f')) + (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname <> 'information_schema') + (SELECT count(*) FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname <> 'information_schema' AND t.typtype IN ('c','d','e','r')) + (SELECT count(*) FROM pg_extension WHERE extname <> 'plpgsql') + (SELECT count(*) FROM pg_largeobject_metadata)"
         run: |
           set -euo pipefail
+          trap 'rm -f "$RUNNER_TEMP/vayro-restore/backup.dump"' EXIT
           target_version="$(docker run --rm --network host -e RESTORE_DATABASE_URL postgres:17-alpine \
             sh -ceu 'psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -Atqc "SHOW server_version_num"')"
           if [[ ! "$target_version" =~ ^17[0-9]{4}$ ]]; then
