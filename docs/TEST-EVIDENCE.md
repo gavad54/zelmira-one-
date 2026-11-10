@@ -1,38 +1,12 @@
-# VAYRO test evidence
 
-## Exact-head repository verification
-Commit: dbbaf89d1d56b8faacead90bbfb87cf01f6341e3
-Pull request: #12
-- VAYRO CI run 42767999257 — completed, conclusion success.
-- CodeQL run 42767999555 — completed, conclusion success.
 
-Inspected CI job steps all completed successfully:
-- locked dependency install
-- enforced dependency security audit
-- unit tests
-- Prisma client generation and schema validation
-- least-privilege role setup in isolated PostgreSQL
-- real Prisma migration execution in isolated PostgreSQL
-- isolated authentication/platform role isolation
-- isolated tenant runtime login and RLS isolation test
-- lint and typecheck
-- production build
-- production Docker image build
-- PostgreSQL and production HTTP integration tests
+## Exact PR-head verification — 2026-11-10
+Source PR head: `e8a5fecb9bebbbac67919d805677fc71dceb2c08`.
+- VAYRO CI run [42769407953](https://github.com/gavad54/zelmira-one-/actions/runs/42769407953): completed successfully.
+- CodeQL run [42769407907](https://github.com/gavad54/zelmira-one-/actions/runs/42769407907): completed successfully.
+- Unit test runner: 86 tests passed, 0 failed.
+- Isolated PostgreSQL role setup, actual Prisma migration history, auth/platform least-privilege checks and dedicated tenant runtime RLS isolation proof passed.
+- Production HTTP/PostgreSQL integration runner: 30 tests passed, 0 failed.
+- Lint, typecheck, Prisma generation/schema validation, production build and Docker image build passed.
 
-## Scope limitations
-These are repository CI tests using isolated infrastructure. They do not prove:
-- production Supabase schema, role, grant, policy or data state
-- a real offsite backup object exists
-- a successful independent restore
-- Railway production hosting or deployed commit parity
-- production email, payment, Android device acceptance or UAT
-- zero open CodeQL alert records
-
-## Operational tests still required
-- [ ] Actual encrypted backup run and remote object verification
-- [ ] Independent restore and application-level data validation
-- [ ] Production DB schema/role/policy reconciliation and negative tenant tests
-- [ ] Production endpoint authorization and MFA/session lifecycle tests
-- [ ] Deployed web smoke, monitoring, rollback and commit parity
-- [ ] Android signed artifact installation and real-device acceptance
+These results validate the PR merge candidate in disposable CI PostgreSQL. They do not validate the live Supabase project, actual offsite backup/restore, production runtime secrets or Railway deployment parity. All operational-test items above remain open until independently evidenced.
