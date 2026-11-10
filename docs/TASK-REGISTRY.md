@@ -1,11 +1,11 @@
 # VAYRO Task Registry
-Snapshot: 2026-11-10T17:13:32Z. Status vocabulary: NOT_STARTED, IN_PROGRESS, IMPLEMENTED, TESTED, VERIFIED, BLOCKED. VERIFIED is evidence-scoped.
+Snapshot: 2026-11-10T18:04:00Z. Status vocabulary: NOT_STARTED, IN_PROGRESS, IMPLEMENTED, TESTED, VERIFIED, BLOCKED. VERIFIED is evidence-scoped.
 
 | ID | Task / acceptance criterion | Priority | Weight | Status | Evidence / dependency |
 |---|---|---:|---:|---|---|
 | GOV-001 | Eleven peer apps represented; DANA excluded from app registry; ARIA/ARIANA boundaries correct | P1 | 5 | VERIFIED (PR branch only) | PR #14 branch |
 | ARCH-001 | Control-plane/independent-plane contract and API-only integrations documented | P1 | 5 | VERIFIED (documentation scope) | docs/ARCHITECTURE.md, docs/PRODUCT-BOUNDARIES.md |
-| CI-001 | CI, dependency-audit step, CodeQL all pass on exact latest PR head | P1 | 5 | IN_PROGRESS | Prior head passed; latest docs commit requires fresh runs |
+| CI-001 | CI, dependency-audit step, CodeQL all pass on exact latest PR head | P1 | 5 | VERIFIED (exact PR head) | Head 1a79d51; CI run 42862934312 and CodeQL run 42862934113; all jobs passed |
 | DB-001 | Reconcile live schema with versioned migrations on verified restored clone | P0 | 10 | BLOCKED | No migrations; schema differs from Prisma source |
 | RLS-001 | Runtime roles, policies, FORCE RLS and positive/negative cross-tenant tests pass on real non-owner path | P0 | 15 | BLOCKED | Live 0 policies / 0 FORCE RLS |
 | AUTH-001 | MFA, session expiry/revocation and owner controls verified against deployed schema | P0 | 7 | IN_PROGRESS | Source exists; live schema mismatch |
@@ -21,4 +21,4 @@ Snapshot: 2026-11-10T17:13:32Z. Status vocabulary: NOT_STARTED, IN_PROGRESS, IMP
 | UAT-001 | Owner acceptance, regression and release evidence complete | P1 | 2 | NOT_STARTED | No signed acceptance |
 | RELEASE-001 | All mandatory release gates pass and release is explicitly authorized | P0 | 6 | BLOCKED | Dependent on all P0 gates |
 
-Planned weight total: 100. Verified weight: 10 (GOV-001 and ARCH-001; scoped to PR branch/documentation, not production readiness). Weighted verified progress: 10%. CI-001 is pending exact-head reruns. This is not a claim that the full product or portfolio is 10% commercially complete.
+Planned weight total: 100. Verified weight: 15 (GOV-001, ARCH-001 and CI-001; scoped to PR branch/documentation and exact-head CI, not production readiness). Weighted verified progress: 15%. This is not a claim that the full product or portfolio is 10% commercially complete.
