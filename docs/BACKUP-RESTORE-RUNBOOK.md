@@ -12,8 +12,9 @@ Never point a restore job at production. Never run schema migrations or DDL agai
 2. PostgreSQL 17 pg_dump creates a custom-format logical dump.
 3. The runner encrypts the dump locally with age using a public recipient key. The plaintext dump is removed before upload.
 4. Only the encrypted dump and its SHA-256 checksum are uploaded to a private Backblaze B2 bucket through its S3-compatible endpoint.
-5. A separately authorized manual restore drill downloads the selected object, verifies its checksum, decrypts it using the separately protected age identity, checks that the target database host differs from production and that the target public schema is empty, then restores without --clean or --create.
-6. An operator validates schema/object counts, row counts, application invariants and representative records on the isolated clone. Record elapsed backup/restore times, dump size, checksum and observed recovery point.
+5. The backup job reads both uploaded objects' B2 HEAD metadata and compares remote ContentLength values with the local file sizes. This detects missing/truncated uploads; it is not a cryptographic verification of the stored object.
+6. A separately authorized manual restore drill downloads the selected object, verifies its SHA-256 checksum, decrypts it using the separately protected age identity, validates the decrypted PostgreSQL archive listing, checks that the target database host differs from production, requires PostgreSQL 17 and an empty target public schema, then restores without --clean or --create.
+7. An operator validates schema/object counts, row counts, application invariants and representative records on the isolated clone. Record elapsed backup/restore times, dump size, checksum and observed recovery point.
 
 The checksum detects transfer corruption; it is not a substitute for authenticated encryption. The age identity must be held outside GitHub source and outside the backup bucket.
 
@@ -38,12 +39,12 @@ Create these repository Variables:
 | VAYRO_B2_S3_ENDPOINT | Region-specific B2 S3 endpoint displayed by Backblaze |
 | VAYRO_B2_REGION | Region identifier matching that endpoint |
 
-The restore workflow compares the production and restore database hostnames and refuses a same-host target. It also refuses a non-empty public schema. These are guardrails, not a complete substitute for human review: provision a separate disposable restore database on a separate host and verify the target URL before adding the secret.
+The restore workflow compares the production and restore database hostnames and refuses a same-host target. It also requires a backup object key matching the workflow's generated timestamped key format, PostgreSQL 17 on the target, a valid PostgreSQL archive and an empty public schema (relations, routines and user-defined types). These are guardrails, not a complete substitute for human review: provision a separate disposable restore database on a separate host and verify the target URL before adding the secret. Hostname comparison cannot detect every possible DNS alias or network-level route to the same underlying server; the operator must independently verify the target host.
 
 ## Workflow behavior
 
-- .github/workflows/vayro-db-backup.yml: manual run plus daily schedule at 02:17 UTC. Uses PostgreSQL 17 client tools, age encryption and the B2 S3 API. It does not delete old objects.
-- .github/workflows/vayro-db-restore-drill.yml: manual only. Requires the exact confirmation string RESTORE_TO_ISOLATED_VAYRO_TEST, a specific backup object key, valid credentials, a different target host and an empty target public schema.
+- .github/workflows/vayro-db-backup.yml: manual run plus daily schedule at 02:17 UTC. Uses PostgreSQL 17 client tools, age encryption and the B2 S3 API. It checks both uploaded objects' remote sizes. It does not delete old objects.
+- .github/workflows/vayro-db-restore-drill.yml: manual only. Requires the exact confirmation string RESTORE_TO_ISOLATED_VAYRO_TEST, a timestamp-format backup object key, valid credentials, a different target hostname, PostgreSQL 17 and an empty target public schema.
 - Neither workflow changes database schema, creates database roles, alters grants/RLS, or deploys the application.
 - Retention and lifecycle deletion are intentionally not automated. Configure and review retention only after confirming backup cadence, restore requirements and provider billing behavior.
 
@@ -55,7 +56,9 @@ The restore workflow compares the production and restore database hostnames and 
 - [ ] GitHub secrets and variables are configured by the authorized owner.
 - [ ] A manual backup workflow run succeeds on the protected default branch.
 - [ ] Encrypted object and checksum are visible in the private bucket; no plaintext dump was uploaded.
+- [ ] Both remote object sizes match the runner's local files as recorded in the workflow summary.
 - [ ] The object is downloaded, checksum verified and decrypted in the isolated restore workflow.
+- [ ] The decrypted archive passes pg_restore --list validation.
 - [ ] Restore completes in a different-host, empty, disposable PostgreSQL 17 database.
 - [ ] Schema and object inventory are compared with the source snapshot; representative counts and application invariants are validated.
 - [ ] Backup duration, restore duration, backup timestamp, checksum, dump size, RPO and RTO are recorded.
