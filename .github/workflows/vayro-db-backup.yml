@@ -53,6 +53,7 @@ jobs:
           umask 077
           mkdir -p "$RUNNER_TEMP/vayro-backup"
           chmod 700 "$RUNNER_TEMP/vayro-backup"
+          trap 'rm -f "$RUNNER_TEMP/vayro-backup/vayro.dump"' EXIT
           docker run --rm --network host \
             -e BACKUP_DATABASE_URL \
             -v "$RUNNER_TEMP/vayro-backup:/backup" \
