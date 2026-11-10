@@ -109,7 +109,7 @@ jobs:
         shell: bash
         env:
           RESTORE_DATABASE_URL: ${{ secrets.VAYRO_ISOLATED_RESTORE_DATABASE_URL }}
-          EMPTY_SCHEMA_SQL: "SELECT (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p','v','m','S','f')) + (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public') + (SELECT count(*) FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname='public' AND t.typtype IN ('c','d','e','r'))"
+          EMPTY_SCHEMA_SQL: "SELECT (SELECT count(*) FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' AND nspname NOT IN ('information_schema','public')) + (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname <> 'information_schema' AND c.relkind IN ('r','p','v','m','S','f')) + (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname <> 'information_schema') + (SELECT count(*) FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname <> 'information_schema' AND t.typtype IN ('c','d','e','r')) + (SELECT count(*) FROM pg_extension WHERE extname <> 'plpgsql') + (SELECT count(*) FROM pg_largeobject_metadata)"
         run: |
           set -euo pipefail
           target_version="$(docker run --rm --network host -e RESTORE_DATABASE_URL postgres:17-alpine \
@@ -124,7 +124,7 @@ jobs:
               sh -ceu 'psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -Atqc "$EMPTY_SCHEMA_SQL"'
           )"
           if [[ "$object_count" != "0" ]]; then
-            echo "::error::Restore target public schema is not empty; refusing to overwrite anything"
+            echo "::error::Restore target contains user schemas or objects outside PostgreSQL system catalogs; refusing to restore"
             exit 1
           fi
           docker run --rm --network host -e RESTORE_DATABASE_URL \
