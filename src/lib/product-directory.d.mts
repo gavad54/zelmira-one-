@@ -8,13 +8,24 @@ export interface VayroProduct {
   href?: string;
 }
 
+export interface PlatformCapability {
+  name: string;
+  fa: string;
+  detail: string;
+  tag: string;
+  status: string;
+  statusClass: "prototype";
+  href: string;
+}
+
 export interface IndependentProduct {
-  name: "LEADORA" | "ARIANA" | "ARIA";
+  name: "LEADORA" | "ARIANA" | "ARIA" | "ARMIN MARKET";
   detail: string;
   status: string;
   statusClass: "blocked";
 }
 
 export const VAYRO_PRODUCTS: readonly VayroProduct[];
+export const PLATFORM_CAPABILITIES: readonly PlatformCapability[];
 export const INDEPENDENT_PRODUCTS: readonly IndependentProduct[];
 export const ALL_PRODUCTS: readonly (VayroProduct | IndependentProduct)[];
