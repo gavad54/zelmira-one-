@@ -1,0 +1,124 @@
+name: VAYRO isolated database restore drill
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_object_key:
+        description: "Exact .dump.age object key in the private B2 bucket"
+        required: true
+        type: string
+      confirmation:
+        description: "Enter RESTORE_TO_ISOLATED_VAYRO_TEST to authorize this drill"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vayro-db-restore-drill
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    name: Verify, decrypt and restore to isolated PostgreSQL
+    if: ${{ inputs.confirmation == 'RESTORE_TO_ISOLATED_VAYRO_TEST' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Validate protected configuration and target separation
+        shell: bash
+        env:
+          PRODUCTION_DATABASE_URL: ${{ secrets.VAYRO_BACKUP_DATABASE_URL }}
+          RESTORE_DATABASE_URL: ${{ secrets.VAYRO_ISOLATED_RESTORE_DATABASE_URL }}
+          AGE_IDENTITY: ${{ secrets.VAYRO_BACKUP_AGE_IDENTITY }}
+          B2_KEY_ID: ${{ secrets.VAYRO_B2_KEY_ID }}
+          B2_APPLICATION_KEY: ${{ secrets.VAYRO_B2_APPLICATION_KEY }}
+          B2_BUCKET: ${{ vars.VAYRO_B2_BUCKET }}
+          B2_S3_ENDPOINT: ${{ vars.VAYRO_B2_S3_ENDPOINT }}
+          B2_REGION: ${{ vars.VAYRO_B2_REGION }}
+          BACKUP_OBJECT_KEY: ${{ inputs.backup_object_key }}
+        run: |
+          set -euo pipefail
+          for name in PRODUCTION_DATABASE_URL RESTORE_DATABASE_URL AGE_IDENTITY B2_KEY_ID B2_APPLICATION_KEY B2_BUCKET B2_S3_ENDPOINT B2_REGION BACKUP_OBJECT_KEY; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Missing protected configuration: $name"
+              exit 1
+            fi
+          done
+          if [[ "$BACKUP_OBJECT_KEY" != vayro/postgres/*/*.dump.age ]]; then
+            echo "::error::Backup key must be under vayro/postgres/ and end in .dump.age"
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os
+          from urllib.parse import urlparse
+          source = urlparse(os.environ["PRODUCTION_DATABASE_URL"])
+          target = urlparse(os.environ["RESTORE_DATABASE_URL"])
+          if not source.hostname or not target.hostname:
+              raise SystemExit("Both PostgreSQL URLs must contain a hostname")
+          if source.hostname.lower() == target.hostname.lower():
+              raise SystemExit("Restore target must use a different database host from production")
+          if not target.path or target.path == "/":
+              raise SystemExit("Restore target must name an explicit isolated database")
+          print("Restore target host differs from production; continuing.")
+          PY
+
+      - name: Install age and AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes age awscli
+
+      - name: Download, verify and decrypt selected backup
+        shell: bash
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.VAYRO_B2_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.VAYRO_B2_APPLICATION_KEY }}
+          AWS_EC2_METADATA_DISABLED: "true"
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          B2_BUCKET: ${{ vars.VAYRO_B2_BUCKET }}
+          B2_S3_ENDPOINT: ${{ vars.VAYRO_B2_S3_ENDPOINT }}
+          B2_REGION: ${{ vars.VAYRO_B2_REGION }}
+          BACKUP_OBJECT_KEY: ${{ inputs.backup_object_key }}
+          AGE_IDENTITY: ${{ secrets.VAYRO_BACKUP_AGE_IDENTITY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/vayro-restore"
+          chmod 700 "$RUNNER_TEMP/vayro-restore"
+          aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
+            s3 cp "s3://$B2_BUCKET/$BACKUP_OBJECT_KEY" \
+            "$RUNNER_TEMP/vayro-restore/backup.dump.age" --only-show-errors
+          aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
+            s3 cp "s3://$B2_BUCKET/$BACKUP_OBJECT_KEY.sha256" \
+            "$RUNNER_TEMP/vayro-restore/backup.dump.age.sha256" --only-show-errors
+          cd "$RUNNER_TEMP/vayro-restore"
+          sha256sum --check backup.dump.age.sha256
+          printf '%s\n' "$AGE_IDENTITY" > age-identity.txt
+          chmod 600 age-identity.txt
+          age --decrypt --identity age-identity.txt \
+            --output backup.dump backup.dump.age
+          test -s backup.dump
+          rm -f age-identity.txt
+
+      - name: Require an empty isolated target and restore
+        shell: bash
+        env:
+          RESTORE_DATABASE_URL: ${{ secrets.VAYRO_ISOLATED_RESTORE_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          object_count="$(
+            docker run --rm --network host -e RESTORE_DATABASE_URL postgres:17-alpine \
+              sh -ceu 'psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -Atqc "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='''public''' AND c.relkind IN ('''r''','''p''','''v''','''m''','''S''','''f''')"'
+          )"
+          if [[ "$object_count" != "0" ]]; then
+            echo "::error::Restore target public schema is not empty; refusing to overwrite anything"
+            exit 1
+          fi
+          docker run --rm --network host -e RESTORE_DATABASE_URL \
+            -v "$RUNNER_TEMP/vayro-restore:/backup:ro" \
+            postgres:17-alpine \
+            pg_restore --exit-on-error --no-owner --no-acl \
+              --dbname="$RESTORE_DATABASE_URL" /backup/backup.dump
+          echo "Restore command completed against the isolated target. Independent post-restore validation is still required."
