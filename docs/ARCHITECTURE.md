@@ -86,4 +86,4 @@ Routes and helpers do not prove complete endpoint coverage, production email del
 - No VAYRO production deployment, independent application fleet, owner UAT or public commercial release is verified.
 - Keep customer onboarding, real payments and production data collection disabled until release gates pass and the authorized owner approves release.
 
-See [INDEPENDENT-PRODUCT-ARCHITECTURE.md](INDEPENDENT-PRODUCT-ARCHITECTURE.md), [PRODUCT-BOUNDARIES.md](PRODUCT-BOUNDARIES.md) and [RELEASE-GATES.md](RELEASE-GATES.md).
+See [INDEPENDENT-PRODUCT-ARCHITECTURE.md](INDEPENDENT-PRODUCT-ARCHITECTURE.md), [PRODUCT-BOUNDARIES.md](PRODUCT-BOUNDARIES.md), [PRODUCT-REPOSITORY-INVENTORY.md](PRODUCT-REPOSITORY-INVENTORY.md) and [RELEASE-GATES.md](RELEASE-GATES.md).
