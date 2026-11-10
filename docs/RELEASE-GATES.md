@@ -21,3 +21,13 @@
 - Production backup/restore, production DB reconciliation, dedicated hosting, deployment parity, Android/UAT and release authorization remain open.
 
 **Disposition: EXACT-HEAD CI + CODEQL PASS — PRODUCTION GATES OPEN — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+## Latest exact-head release gate — 2026-11-10
+- PR #12 head `077c540102df569811aac074db2e2a1c6294bcf5`; open, draft, unmerged; 28 commits ahead of main, 0 behind.
+- Exact-head VAYRO CI [42775449887](https://github.com/gavad54/zelmira-one-/actions/runs/42775449887) and CodeQL [42775450223](https://github.com/gavad54/zelmira-one-/actions/runs/42775450223) passed. Inspected all CI/CodeQL job steps.
+- CI: 86/86 unit and 30/30 integration tests passed; isolated PostgreSQL 17 migration, auth/platform/tenant role isolation, dependency audit, lint, typecheck, Prisma validation, production build and Docker build passed.
+- CI PostgreSQL logs show serializable transaction conflicts on concurrent `EmailContact.enabled` update and `AuditEvent` insert, in context of `vayro_platform_actor_is_owner`; PostgreSQL suggests retry. Track for source-level transaction/retry review. No production defect inferred.
+- Railway service remains on base commit `f3abc61523cb7abbd0b0ab4559a34f40a068ddb5`, not PR head; current snapshot is online 1/1 but has five recent failures in 24 hours.
+- Actual B2 backup, independent restore, production DB schema/policy reconciliation, dedicated hosting/deployment parity, Android/UAT and release authorization remain open.
+
+**Disposition: EXACT-HEAD CI + CODEQL PASS; PRODUCTION RELEASE GATES OPEN; NOT RELEASED.**
