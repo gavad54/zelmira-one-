@@ -4,23 +4,26 @@ import {
   PRODUCT_CATALOG,
   PRODUCT_FAMILY_CATALOG,
   INDEPENDENT_PRODUCT_CATALOG,
+  PLATFORM_CAPABILITIES,
   validateProductConfiguration
 } from "../src/lib/product-catalog.mjs";
 
-test("the mother-platform registry contains the eight VAYRO products and three independent apps", () => {
+test("VAYRO catalogues eleven independent applications and keeps DANA as a platform capability", () => {
   assert.deepEqual(PRODUCT_FAMILY_CATALOG.map(product => product.key), [
-    "ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM", "DANA"
+    "ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM"
   ]);
   assert.deepEqual(INDEPENDENT_PRODUCT_CATALOG.map(product => product.key), [
-    "LEADORA", "ARIANA", "ARIA"
+    "LEADORA", "ARIANA", "ARIA", "ARMIN_MARKET"
   ]);
   assert.equal(PRODUCT_CATALOG.length, 11);
   assert.deepEqual(PRODUCT_CATALOG.map(product => product.key), [
-    "ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM", "DANA",
-    "LEADORA", "ARIANA", "ARIA"
+    "ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM",
+    "LEADORA", "ARIANA", "ARIA", "ARMIN_MARKET"
   ]);
   assert.equal(new Set(PRODUCT_CATALOG.map(product => product.key)).size, 11);
   assert.ok(PRODUCT_CATALOG.every(product => product.name && product.description));
+  assert.deepEqual(PLATFORM_CAPABILITIES.map(capability => capability.key), ["DANA"]);
+  assert.ok(!PRODUCT_CATALOG.some(product => product.key === "DANA"));
   assert.match(PRODUCT_CATALOG.find(product => product.key === "ARIA").description, /بدون حسابداری و ERP/);
   assert.match(PRODUCT_CATALOG.find(product => product.key === "ARIANA").description, /مستقل از ARIA/);
 });
