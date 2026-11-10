@@ -11,3 +11,13 @@
 - Actual B2 setup, encrypted offsite backup, isolated restore, production DB reconciliation, dedicated hosting project, deployment parity, Android/UAT and owner release approval remain open.
 
 **Disposition: CI + CodeQL PASS ON EXACT PR HEAD — PRODUCTION BACKUP/RESTORE AND DEPLOYMENT GATES OPEN — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Latest exact-head gate verification — 2026-11-10
+- Current PR #12 head `33ef687486f7d4f64b292a3a283b808e54b2e72e`; PR remains open, draft and unmerged.
+- VAYRO CI [42774211321](https://github.com/gavad54/zelmira-one-/actions/runs/42774211321) and CodeQL [42774211165](https://github.com/gavad54/zelmira-one-/actions/runs/42774211165) both completed successfully on this exact head.
+- Inspected CI job: 86/86 unit tests and 30/30 PostgreSQL/production HTTP integration tests passed; isolated PostgreSQL 17 migration and auth/platform/tenant role-isolation checks passed; lint, typecheck, Prisma validation, production build and Docker build passed.
+- CI database log included serialization-conflict errors during concurrent operations, while the overall test job succeeded. This is recorded for concurrency/retry follow-up; it does not establish a production defect.
+- Production backup/restore, production DB reconciliation, dedicated hosting, deployment parity, Android/UAT and release authorization remain open.
+
+**Disposition: EXACT-HEAD CI + CODEQL PASS — PRODUCTION GATES OPEN — DEPLOYMENT BLOCKED — NOT RELEASED.**
