@@ -31,3 +31,11 @@ Keep onboarding, production data collection and real payments disabled until rel
 - Tightened migration `20261109160000_platform_bootstrap_least_privilege` to reject membership edges in either direction (`pg_auth_members.roleid` or `member`).
 - Tightened the isolated PostgreSQL platform-role test to assert no role can inherit/SET ROLE into the bootstrap capability.
 - This is a repository-only hardening change; exact-head CI/CodeQL for the new commit is pending. No live database role or grant was changed.
+
+
+## Owner dashboard API trust-boundary correction — 2026-11-10
+- Source review found `/api/owner/products` used the default Prisma client directly, unlike owner email-contact routes which use `withPlatformOwnerTransaction`.
+- Current candidate refactors GET/POST/PATCH to `withPlatformOwnerTransaction`, which revalidates the MFA-assured owner session inside the transaction and uses the dedicated `PLATFORM_DATABASE_URL` role. Rate limiting and initial owner identity lookup use the dedicated auth role.
+- Catalog initialization uses INSERT-only `createMany(skipDuplicates)`, preserving existing product status/configuration rather than upserting/overwriting.
+- The new route, owner dashboard page, login redirect and integration assertions are committed but await exact-head CI/CodeQL. No production role or database was changed.
+- Repository branch-protection audit: main and all listed branches were unprotected. No settings changed; enforce branch protection before production release.

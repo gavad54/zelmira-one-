@@ -19,3 +19,16 @@ No repeated production migration, backup, restore, deploy, merge or release was 
 - The governance-only follow-up changes the PR head and must receive its own CI/CodeQL check.
 - SESSION-001 canonical scope includes opaque session lifecycle, expiry, single/all-session revocation, password reset/change, MFA assurance, rotation and privilege-change invalidation. Track these as acceptance criteria under SESSION-001 rather than creating duplicate tasks.
 - MODULE-* tasks are distinct end-to-end product scopes; product-directory listing is not evidence of module implementation.
+
+
+## Open PR and branch overlap audit — 2026-11-10
+| PR | Scope | Overlap / decision |
+|---|---|---|
+| #1 | Older VAYRO rebrand and product family | Overlaps current product naming/directory; old version counts DANA as an eighth family product. Current branch supersedes that classification. Do not merge wholesale. |
+| #3 | Earlier engineering baseline audit | Overlaps current PROJECT-STATE, RELEASE-GATES, SECURITY-REPORT and TEST-EVIDENCE. Retain as historical evidence; current live inspection and current-head evidence supersede stale snapshots. |
+| #5 | Owner dashboard and product catalog, based on experiment/cloudflare-free-hosting-audit | Dashboard UI source is reused and adapted. Its old owner API/catalog implementation is not merged; current API is refactored to the dedicated platform role and the catalog is corrected to seven + three. Do not merge PR #5 wholesale. |
+| #7–#11 | Dependabot dependency updates | Not duplicate feature work. Keep separate; Next 16 and Prisma 7 are major-version changes and require isolated compatibility validation before any merge. All were open and non-mergeable at audit. |
+
+- PR #12 is the active canonical engineering branch. No other PR was merged or closed.
+- No listed repository branch was protected at inspection; no branch-protection change was made.
+- The owner products API previously used the default Prisma client; the current candidate changes it to the platform transaction boundary. Do not reintroduce the old PR #5 route implementation.

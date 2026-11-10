@@ -26,3 +26,13 @@
 - Found a least-privilege assertion gap in the SECURITY DEFINER bootstrap owner role: the existing migration/test checked memberships held by the bootstrap role but not other roles granted membership in it.
 - Updated migration 20261109160000 and tests/sql/platform-db-role-boundary.sql to reject membership in either direction and explicitly reject platform runtime membership in the bootstrap role.
 - The fix is source-only and awaits exact-head CI/CodeQL. No production role, grant, schema or data was changed.
+
+
+## 2026-11-10 11:33 +03:30 — owner dashboard and product boundary correction
+- Rechecked all open PRs and branches. PR #1/#3/#5 overlap older product-family, audit and dashboard work; PR #7–#11 are independent Dependabot upgrades. None were merged or closed. See DUPLICATE-REGISTER.md.
+- Reused only the owner dashboard UI from PR #5; did not merge its old API/catalog implementation or its non-main base.
+- Found /api/owner/products used the default Prisma client rather than the dedicated platform role. Refactored GET/POST/PATCH to withPlatformOwnerTransaction, preserving auth-role rate limiting and owner-session revalidation.
+- Catalog corrected to seven approved family modules plus three independent products. DANA remains a platform capability and is no longer inserted as a Product row.
+- Added /dashboard owner control page and changed login/MFA completion to route OWNER users to /dashboard after checking /api/auth/me.
+- Added integration assertions for dashboard route, anonymous denial, platform-role reads, seven-plus-three catalogue and DANA exclusion.
+- This source/docs candidate awaits exact-head CI/CodeQL. No PR merge, production DB mutation, Railway deployment or public release.

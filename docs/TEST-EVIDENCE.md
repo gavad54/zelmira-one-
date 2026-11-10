@@ -17,3 +17,16 @@
 
 ## Scope limitations
 CI uses disposable PostgreSQL, not live VAYRO-CORE. It does not prove production database policies/roles, backup/restore, production MFA key/configuration, Railway deployment parity, live email delivery, Android real-device behavior, UAT or public release.
+
+
+## Exact source candidate b8abdfcb1f0a52bb3d58c5639b8ee7d26df5882f
+- VAYRO CI 42779145368 (#1162): completed success; all 45 steps passed.
+- CodeQL 42779145558 (#1125): completed success.
+- This run includes the bootstrap-role membership hardening in both directions.
+- It does not include the owner-dashboard/platform-role refactor now in the current candidate.
+
+## Current owner-dashboard/platform-role candidate
+- Added dashboard UI and OWNER post-MFA redirect.
+- Refactored owner product API to dedicated platform transaction role.
+- Product catalog now has seven family modules plus three independent products; DANA is a platform capability and excluded from Product rows.
+- Added owner dashboard/API integration assertions. Exact-head CI/CodeQL pending.

@@ -41,7 +41,7 @@ after(() => {
   if (server && server.exitCode === null) server.kill("SIGTERM");
 });
 
-test("owner product configuration writes are rate limited without weakening authorization or origin checks", async () => {
+test("owner product API uses the platform role boundary, preserves the seven-plus-three catalogue and rate limits writes", async () => {
   const db = new PrismaClient();
   const suffix = randomUUID();
   const token = randomBytes(32).toString("hex");
@@ -52,6 +52,13 @@ test("owner product configuration writes are rate limited without weakening auth
 
   try {
     await db.$connect();
+    const anonymousProducts = await fetch(`${origin}/api/owner/products`);
+    assert.equal(anonymousProducts.status, 401, "product operations must deny anonymous access");
+
+    const dashboardPage = await fetch(`${origin}/dashboard`);
+    assert.equal(dashboardPage.status, 200, "the owner dashboard route must be present");
+    assert.match(await dashboardPage.text(), /OWNER CONTROL CENTER/);
+
     const user = await db.user.create({
       data: {
         email: `owner-products-${suffix}@example.invalid`,
@@ -90,7 +97,7 @@ test("owner product configuration writes are rate limited without weakening auth
       body: JSON.stringify({ action: "initialize_catalog" })
     });
     assert.equal(initialized.status, 201, "an MFA-authenticated platform owner can initialize the complete product registry");
-    assert.deepEqual(await initialized.json(), { initialized: 11 });
+    assert.deepEqual(await initialized.json(), { initialized: 10 });
 
     const initializedAgain = await fetch(`${origin}/api/owner/products`, {
       method: "POST",
@@ -98,14 +105,23 @@ test("owner product configuration writes are rate limited without weakening auth
       body: JSON.stringify({ action: "initialize_catalog" })
     });
     assert.equal(initializedAgain.status, 201, "catalog initialization remains safely repeatable");
-    assert.deepEqual(await initializedAgain.json(), { initialized: 11 });
+    assert.deepEqual(await initializedAgain.json(), { initialized: 10 });
 
     const catalog = await db.product.findMany({
-      where: { key: { in: ["ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM", "DANA", "LEADORA", "ARIANA", "ARIA"] } },
+      where: { key: { in: ["ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM", "LEADORA", "ARIANA", "ARIA"] } },
       select: { key: true, status: true }
     });
-    assert.equal(catalog.length, 11, "the owner operation persists all eleven child apps");
+    assert.equal(catalog.length, 10, "the owner operation persists seven family modules and three independent products");
+    assert.equal(await db.product.count({ where: { key: "DANA" } }), 0, "DANA remains a platform capability, not a product catalogue row");
     assert.ok(catalog.every(item => item.status === ProductStatus.PLANNED), "catalog registration must not falsely mark incomplete apps as active");
+
+    const ownerProductsResponse = await fetch(`${origin}/api/owner/products`, { headers: { Cookie: `vayro_session=${token}` } });
+    assert.equal(ownerProductsResponse.status, 200, "the MFA owner must read products through the platform database role");
+    assert.match(ownerProductsResponse.headers.get("cache-control") ?? "", /no-store/);
+    const ownerProducts = await ownerProductsResponse.json();
+    assert.equal(ownerProducts.metrics.totalProducts, 11, "dashboard metrics include the ten catalog entries and the isolated test product");
+    assert.ok(ownerProducts.products.some(item => item.key === "ARVAND"));
+    assert.ok(!ownerProducts.products.some(item => item.key === "DANA"));
 
     const crossOrigin = await fetch(`${origin}/api/owner/products`, {
       method: "PATCH",

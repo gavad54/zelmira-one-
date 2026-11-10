@@ -3,23 +3,29 @@ import { z } from "zod";
 import { ProductStatus } from "@prisma/client";
 import { isSameOriginRequest } from "@/lib/auth-core.mjs";
 import { authorizeOwnerSession } from "@/lib/owner-session.mjs";
-import { PRODUCT_CATALOG, validateProductConfiguration } from "@/lib/product-catalog.mjs";
-import { allowAttempt, noStoreJson, sha256 } from "@/lib/auth-service";
 import { authPrisma, assertAuthRuntimeRole } from "@/lib/auth-prisma";
 import { withPlatformOwnerTransaction } from "@/lib/platform-request-transaction";
+import { allowAttempt, noStoreJson, sha256 } from "@/lib/auth-service";
+import { PRODUCT_CATALOG, validateProductConfiguration } from "@/lib/product-catalog.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+async function sessionToken() {
+  return (await cookies()).get("vayro_session")?.value;
+}
+
 async function authorizedOwnerId() {
   await assertAuthRuntimeRole();
-  const token = (await cookies()).get("vayro_session")?.value;
-  const result = await authorizeOwnerSession({ sessionToken: token, db: authPrisma });
+  const result = await authorizeOwnerSession({
+    sessionToken: await sessionToken(),
+    db: authPrisma
+  });
   return result.authorized ? result.userId : null;
 }
 
-async function sessionToken() {
-  return (await cookies()).get("vayro_session")?.value;
+function unauthorized() {
+  return noStoreJson({ error: "unauthorized" }, 401);
 }
 
 const updateSchema = z.object({
@@ -27,42 +33,41 @@ const updateSchema = z.object({
   status: z.enum(Object.values(ProductStatus) as [string, ...string[]]),
   baseUrl: z.union([
     z.string().url().max(2048).refine(value => {
-      try { return new URL(value).protocol === "https:" && !new URL(value).username && !new URL(value).password; }
-      catch { return false; }
+      try {
+        const url = new URL(value);
+        return url.protocol === "https:" && !url.username && !url.password;
+      } catch {
+        return false;
+      }
     }),
     z.null()
   ]).optional()
 }).strict();
 
 export async function GET() {
-  const token = await sessionToken();
   try {
     const result = await withPlatformOwnerTransaction({
-      sessionToken: token,
+      sessionToken: await sessionToken(),
       callback: async tx => {
-        const [products, tenantRows, activeRows, allRows, licenseCounts] = await Promise.all([
+        const [products, tenants, activeLicenses, allLicenses] = await Promise.all([
           tx.product.findMany({
             orderBy: { key: "asc" },
-            select: { id: true, key: true, name: true, description: true, status: true, baseUrl: true, updatedAt: true }
+            select: {
+              id: true, key: true, name: true, description: true, status: true,
+              baseUrl: true, updatedAt: true, _count: { select: { licenses: true } }
+            }
           }),
-          tx.$queryRaw<Array<{ count: bigint }>>`SELECT COUNT("id")::bigint AS count FROM public."Tenant"`,
-          tx.$queryRaw<Array<{ count: bigint }>>`SELECT COUNT("id")::bigint AS count FROM public."License" WHERE "active" = true AND ("endsAt" IS NULL OR "endsAt" > now())`,
-          tx.$queryRaw<Array<{ count: bigint }>>`SELECT COUNT("id")::bigint AS count FROM public."License"`,
-          tx.$queryRaw<Array<{ productId: string; count: bigint }>>`SELECT "productId", COUNT("id")::bigint AS count FROM public."License" GROUP BY "productId"`
+          tx.tenant.count(),
+          tx.license.count({ where: { active: true, OR: [{ endsAt: null }, { endsAt: { gt: new Date() } }] } }),
+          tx.license.count()
         ]);
-        const counts = new Map(licenseCounts.map(row => [row.productId, Number(row.count)]));
         return {
-          products: products.map(product => ({ ...product, licenseCount: counts.get(product.id) ?? 0 })),
-          metrics: {
-            totalProducts: products.length,
-            totalTenants: Number(tenantRows[0]?.count ?? 0n),
-            activeLicenses: Number(activeRows[0]?.count ?? 0n),
-            allLicenses: Number(allRows[0]?.count ?? 0n)
-          }
+          products: products.map(({ _count, ...product }) => ({ ...product, licenseCount: _count.licenses })),
+          metrics: { totalProducts: products.length, totalTenants: tenants, activeLicenses, allLicenses }
         };
       }
     });
-    if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
+    if (!result.authorized) return unauthorized();
     return noStoreJson(result.value);
   } catch {
     return noStoreJson({ error: "dashboard_unavailable" }, 503);
@@ -71,7 +76,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const actorId = await authorizedOwnerId();
-  if (!actorId) return noStoreJson({ error: "unauthorized" }, 401);
+  if (!actorId) return unauthorized();
   if (!isSameOriginRequest(request)) return noStoreJson({ error: "invalid_origin" }, 403);
   if (!await allowAttempt(sha256("owner-products-initialize:" + actorId), 20, 60 * 60 * 1000)) {
     return noStoreJson({ error: "rate_limited" }, 429);
@@ -85,15 +90,9 @@ export async function POST(request: Request) {
     const result = await withPlatformOwnerTransaction({
       sessionToken: await sessionToken(),
       callback: async (tx, actor) => {
-        // INSERT ... ON CONFLICT DO UPDATE requires UPDATE privileges on the
-        // conflict columns even when Prisma receives an empty update object.
-        // The platform role intentionally has column-scoped INSERT only.
-        // INSERT ... ON CONFLICT DO NOTHING preserves that least-privilege boundary.
+        // Insert missing catalogue entries only. Existing statuses/configuration are never overwritten.
         await tx.product.createMany({
-          data: PRODUCT_CATALOG.map(product => ({
-            ...product,
-            status: ProductStatus.PLANNED
-          })),
+          data: PRODUCT_CATALOG.map(product => ({ ...product, status: ProductStatus.PLANNED })),
           skipDuplicates: true
         });
         await tx.auditEvent.create({
@@ -102,14 +101,14 @@ export async function POST(request: Request) {
             action: "owner.product_catalog_initialized",
             resource: "ProductCatalog",
             resourceId: "vayro-core",
-            metadata: { productKeys: PRODUCT_CATALOG.map(product => product.key), operation: "idempotent_upsert" }
+            metadata: { productKeys: PRODUCT_CATALOG.map(product => product.key), operation: "insert_missing_only" }
           },
           select: { id: true }
         });
         return { initialized: PRODUCT_CATALOG.length };
       }
     });
-    if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
+    if (!result.authorized) return unauthorized();
     return noStoreJson(result.value, 201);
   } catch {
     return noStoreJson({ error: "catalog_initialization_failed" }, 503);
@@ -118,7 +117,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   const actorId = await authorizedOwnerId();
-  if (!actorId) return noStoreJson({ error: "unauthorized" }, 401);
+  if (!actorId) return unauthorized();
   if (!isSameOriginRequest(request)) return noStoreJson({ error: "invalid_origin" }, 403);
   if (!await allowAttempt(sha256("owner-products-update:" + actorId), 20, 60 * 60 * 1000)) {
     return noStoreJson({ error: "rate_limited" }, 429);
@@ -163,8 +162,7 @@ export async function PATCH(request: Request) {
         return updated;
       }
     });
-
-    if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
+    if (!result.authorized) return unauthorized();
     if (!result.value) return noStoreJson({ error: "product_not_found" }, 404);
     return noStoreJson({ product: result.value });
   } catch (error) {
