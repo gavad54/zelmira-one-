@@ -46,8 +46,8 @@ jobs:
               exit 1
             fi
           done
-          if [[ "$BACKUP_OBJECT_KEY" != vayro/postgres/* || "$BACKUP_OBJECT_KEY" != *.dump.age || "$BACKUP_OBJECT_KEY" == *..* ]]; then
-            echo "::error::Backup key must be under vayro/postgres/ and end in .dump.age"
+          if [[ ! "$BACKUP_OBJECT_KEY" =~ ^vayro/postgres/[0-9]{4}/[0-9]{2}/[0-9]{2}/[0-9]{6}/vayro\.dump\.age$ ]]; then
+            echo "::error::Backup key does not match the generated VAYRO backup object format"
             exit 1
           fi
           python3 - <<'PY'
@@ -100,15 +100,25 @@ jobs:
           age --decrypt --identity age-identity.txt \
             --output backup.dump vayro.dump.age
           test -s backup.dump
+          docker run --rm -v "$RUNNER_TEMP/vayro-restore:/backup:ro" postgres:17-alpine \
+            pg_restore --list /backup/backup.dump > "$RUNNER_TEMP/vayro-restore/archive-list.txt"
+          test -s "$RUNNER_TEMP/vayro-restore/archive-list.txt"
           rm -f age-identity.txt
 
-      - name: Require an empty isolated target and restore
+      - name: Require an empty isolated PostgreSQL 17 target and restore
         shell: bash
         env:
           RESTORE_DATABASE_URL: ${{ secrets.VAYRO_ISOLATED_RESTORE_DATABASE_URL }}
-          EMPTY_SCHEMA_SQL: "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p','v','m','S','f')"
+          EMPTY_SCHEMA_SQL: "SELECT (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p','v','m','S','f')) + (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public') + (SELECT count(*) FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname='public' AND t.typtype IN ('c','d','e','r'))"
         run: |
           set -euo pipefail
+          target_version="$(docker run --rm --network host -e RESTORE_DATABASE_URL postgres:17-alpine \
+            sh -ceu 'psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -Atqc "SHOW server_version_num"')"
+          if [[ ! "$target_version" =~ ^17[0-9]{4}$ ]]; then
+            echo "::error::Restore target must be PostgreSQL 17; detected server_version_num=$target_version"
+            exit 1
+          fi
+
           object_count="$(
             docker run --rm --network host -e RESTORE_DATABASE_URL -e EMPTY_SCHEMA_SQL postgres:17-alpine \
               sh -ceu 'psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -Atqc "$EMPTY_SCHEMA_SQL"'
@@ -122,4 +132,4 @@ jobs:
             postgres:17-alpine \
             pg_restore --exit-on-error --no-owner --no-acl \
               --dbname="$RESTORE_DATABASE_URL" /backup/backup.dump
-          echo "Restore command completed against the isolated target. Independent post-restore validation is still required."
+          echo "Restore command completed against the isolated PostgreSQL 17 target. Independent post-restore validation is still required."
