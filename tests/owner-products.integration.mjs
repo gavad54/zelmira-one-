@@ -101,10 +101,10 @@ test("owner product configuration writes are rate limited without weakening auth
     assert.deepEqual(await initializedAgain.json(), { initialized: 11 });
 
     const catalog = await db.product.findMany({
-      where: { key: { in: ["ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM", "DANA", "LEADORA", "ARIANA", "ARIA"] } },
+      where: { key: { in: ["ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM", "LEADORA", "ARIANA", "ARIA", "ARMIN_MARKET"] } },
       select: { key: true, status: true }
     });
-    assert.equal(catalog.length, 11, "the owner operation persists all eleven child apps");
+    assert.equal(catalog.length, 11, "the owner operation persists all eleven independent applications");
     assert.ok(catalog.every(item => item.status === ProductStatus.PLANNED), "catalog registration must not falsely mark incomplete apps as active");
 
     const crossOrigin = await fetch(`${origin}/api/owner/products`, {
