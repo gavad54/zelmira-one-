@@ -48,6 +48,7 @@ test("owner product configuration writes are rate limited without weakening auth
   const tokenHash = createHash("sha256").update(token).digest("hex");
   let userId;
   let productId;
+  let legacyDanaProductId;
   let actualRateLimitKey;
 
   try {
@@ -63,6 +64,21 @@ test("owner product configuration writes are rate limited without weakening auth
     });
     userId = user.id;
     actualRateLimitKey = createHash("sha256").update("owner-products-update:" + userId).digest("hex");
+
+    // Preserve a pre-existing DANA row as legacy metadata while excluding it from
+    // the independent product portfolio. Do not delete or rewrite this record.
+    const existingDana = await db.product.findUnique({ where: { key: "DANA" }, select: { id: true } });
+    if (!existingDana) {
+      const legacyDana = await db.product.create({
+        data: {
+          key: "DANA",
+          name: "DANA",
+          description: "Legacy internal AI capability record",
+          status: ProductStatus.PLANNED
+        }
+      });
+      legacyDanaProductId = legacyDana.id;
+    }
 
     await db.session.create({
       data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000), assurance: "MFA", mfaAuthenticatedAt: new Date() }
@@ -101,11 +117,19 @@ test("owner product configuration writes are rate limited without weakening auth
     assert.deepEqual(await initializedAgain.json(), { initialized: 11 });
 
     const catalog = await db.product.findMany({
-      where: { key: { in: ["ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM", "DANA", "LEADORA", "ARIANA", "ARIA"] } },
+      where: { key: { in: ["ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM", "LEADORA", "ARIANA", "ARIA", "ARMIN_MARKET"] } },
       select: { key: true, status: true }
     });
-    assert.equal(catalog.length, 11, "the owner operation persists all eleven child apps");
+    assert.equal(catalog.length, 11, "the owner operation persists exactly the eleven approved products");
     assert.ok(catalog.every(item => item.status === ProductStatus.PLANNED), "catalog registration must not falsely mark incomplete apps as active");
+    assert.ok(await db.product.findUnique({ where: { key: "DANA" } }), "the legacy DANA record must be preserved rather than deleted");
+
+    const portfolioResponse = await fetch(`${origin}/api/owner/products`, { headers });
+    assert.equal(portfolioResponse.status, 200);
+    const portfolio = await portfolioResponse.json();
+    assert.equal(portfolio.products.length, 11, "the owner portfolio must expose exactly eleven products");
+    assert.ok(!portfolio.products.some(item => item.key === "DANA"), "DANA must not be exposed as an independent product");
+    assert.ok(portfolio.products.some(item => item.key === "ARMIN_MARKET"), "ARMIN MARKET must appear in the independent product portfolio");
 
     const crossOrigin = await fetch(`${origin}/api/owner/products`, {
       method: "PATCH",
@@ -134,6 +158,7 @@ test("owner product configuration writes are rate limited without weakening auth
   } finally {
     if (actualRateLimitKey) await db.authRateLimit.deleteMany({ where: { keyHash: actualRateLimitKey } });
     if (productId) await db.product.deleteMany({ where: { id: productId } });
+    if (legacyDanaProductId) await db.product.deleteMany({ where: { id: legacyDanaProductId } });
     if (userId) {
       await db.auditEvent.deleteMany({ where: { actorUserId: userId } });
       await db.session.deleteMany({ where: { userId } });
