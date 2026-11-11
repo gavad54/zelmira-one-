@@ -1,26 +1,9 @@
-"use client";
-import { FormEvent,useCallback,useEffect,useState } from "react";
-type Proposal={id:string;title:string;summary:string;area:string;impact:string;createdAt:string;decision?:string;decisionNote?:string};
-const labels:Record<string,string>={SUBMITTED:"ثبت‌شده",APPROVED_FOR_RESEARCH:"تأیید بررسی",NEEDS_REVISION:"نیازمند اصلاح",REJECTED:"ردشده"};
-export default function FutureLabPage(){
- const [items,setItems]=useState<Proposal[]>([]),[title,setTitle]=useState(""),[summary,setSummary]=useState(""),[area,setArea]=useState("PRODUCT"),[impact,setImpact]=useState("LOW"),[busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
- const load=useCallback(async()=>{setError("");try{const r=await fetch("/api/owner/future-lab",{cache:"no-store"});const d=await r.json();if(r.status===401){window.location.assign("/login");return;}if(!r.ok)throw new Error("دریافت پیشنهادها ممکن نشد.");setItems(d.proposals||[]);}catch(e){setError(e instanceof Error?e.message:"خطا در دریافت اطلاعات.");}},[]);
- useEffect(()=>{void load();},[load]);
- async function submit(e:FormEvent){e.preventDefault();setBusy(true);setError("");setNotice("");try{const r=await fetch("/api/owner/future-lab",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title,summary,area,impact})});const d=await r.json();if(r.status===401){window.location.assign("/login");return;}if(!r.ok)throw new Error("ثبت پیشنهاد انجام نشد.");setTitle("");setSummary("");setNotice("پیشنهاد در دفتر ممیزی ثبت شد؛ مجوز اجرای تولیدی صادر نشده است.");await load();}catch(e){setError(e instanceof Error?e.message:"ثبت پیشنهاد ناموفق بود.");}finally{setBusy(false);}}
- async function decide(id:string,decision:string){const note=window.prompt("یادداشت تصمیم مالک (اختیاری):")||"";setBusy(true);setError("");try{const r=await fetch("/api/owner/future-lab",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({proposalId:id,decision,note})});if(r.status===401){window.location.assign("/login");return;}if(!r.ok)throw new Error("ثبت تصمیم انجام نشد.");setNotice("تصمیم مالک به‌صورت رویداد ممیزی ثبت شد.");await load();}catch(e){setError(e instanceof Error?e.message:"ثبت تصمیم ناموفق بود.");}finally{setBusy(false);}}
- return <main className="vayro-console" dir="rtl">
- <header className="console-heading"><span className="eyebrow">VAYRO · FUTURE DEVELOPMENT LAB</span><h1>آزمایشگاه توسعه و آینده</h1><p>مسیر رسمی ثبت ایده، بررسی اثر، نمونه‌سازی ایزوله و تصمیم‌گیری برای توسعه‌های آینده. این محیط مستقیماً به تولید یا داده‌های مشتریان دسترسی نمی‌دهد.</p></header>
- <div className="lab-governance"><strong>قاعده ایمنی تغییرات</strong><p>ثبت پیشنهاد یا تأیید بررسی، مجوز تغییر کد، مهاجرت داده، هزینه‌کرد، استقرار یا انتشار نیست. هر اجرا نیازمند طرح فنی، آزمون، بازبینی امنیتی، برنامه بازگشت و مجوز جداگانه است.</p></div>
- {notice&&<p className="owner-notice" role="status">{notice}</p>}{error&&<p className="owner-error" role="alert">{error}</p>}
- <section className="lab-layout"><form className="lab-form" onSubmit={submit}><span className="eyebrow">IDEA INTAKE</span><h2>ثبت پیشنهاد جدید</h2>
- <label>عنوان پیشنهاد<input value={title} onChange={e=>setTitle(e.target.value)} minLength={4} maxLength={120} required /></label>
- <label>شرح و مسئله<textarea value={summary} onChange={e=>setSummary(e.target.value)} minLength={20} maxLength={5000} rows={6} required placeholder="مسئله، کاربران هدف و نتیجه مورد انتظار را توضیح دهید." /></label>
- <label>حوزه<select value={area} onChange={e=>setArea(e.target.value)}><option value="PRODUCT">محصول</option><option value="PLATFORM">هسته و معماری</option><option value="SECURITY">امنیت و حریم خصوصی</option><option value="COMMERCIAL">تجاری و درآمد</option><option value="UX">رابط و تجربه کاربری</option><option value="AI">هوش مصنوعی</option></select></label>
- <label>اثر احتمالی<select value={impact} onChange={e=>setImpact(e.target.value)}><option value="LOW">کم</option><option value="MEDIUM">متوسط</option><option value="HIGH">زیاد</option><option value="CRITICAL">بحرانی</option></select></label>
- <button disabled={busy||title.trim().length<4||summary.trim().length<20}>{busy?"در حال ثبت…":"ثبت در آزمایشگاه"}</button></form>
- <section className="lab-process"><span className="eyebrow">CONTROLLED CHANGE PIPELINE</span><h2>چرخه کنترل‌شده توسعه</h2>{["ثبت ایده و کنترل تکراری‌بودن","تحلیل اثر بر محصولات، داده و هزینه","پیشنهاد طراحی و نمونه‌سازی ایزوله","آزمون خودکار و بازبینی امنیتی","تصمیم صریح مالک و ثبت ممیزی","استقرار مرحله‌ای و امکان بازگشت"].map((s,i)=><div className="lab-step" key={s}><b>{i+1}</b><span>{s}</span></div>)}</section></section>
- <section className="command-section"><div className="command-section-title"><div><span className="eyebrow">AUDITABLE PROPOSALS</span><h2>دفتر پیشنهادها و تصمیم‌ها</h2></div><button className="lab-refresh" onClick={()=>void load()}>به‌روزرسانی</button></div>
- {!items.length?<p className="workspace-muted">پیشنهادی ثبت نشده است.</p>:<div className="lab-proposals">{items.map(p=><article key={p.id}><div className="lab-proposal-heading"><strong>{p.title}</strong><small>{labels[p.decision||"SUBMITTED"]||"ثبت‌شده"}</small></div><p>{p.summary}</p><div className="lab-meta"><span>حوزه: {p.area}</span><span>اثر: {p.impact}</span><span>{new Date(p.createdAt).toLocaleString("fa-IR")}</span></div>{!p.decision&&<div className="lab-actions"><button disabled={busy} onClick={()=>void decide(p.id,"APPROVED_FOR_RESEARCH")}>تأیید بررسی</button><button disabled={busy} onClick={()=>void decide(p.id,"NEEDS_REVISION")}>نیازمند اصلاح</button><button disabled={busy} onClick={()=>void decide(p.id,"REJECTED")}>رد پیشنهاد</button></div>}{p.decisionNote&&<small>یادداشت تصمیم: {p.decisionNote}</small>}</article>)}</div>}</section>
- <p className="console-footnote">دفتر پیشنهادها از رویدادهای ممیزی append-only استفاده می‌کند؛ تصمیم‌ها سابقه قبلی را بازنویسی نمی‌کنند.</p>
- </main>;
+import { requireOwnerPage } from "@/lib/require-owner-page";
+import FutureLabClient from "./future-lab-client.tsx";
+
+export const dynamic = "force-dynamic";
+
+export default async function FutureLabPage() {
+  await requireOwnerPage();
+  return <FutureLabClient />;
 }
