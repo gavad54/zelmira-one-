@@ -32,7 +32,7 @@ Routes and helpers do not prove complete endpoint coverage, production email del
 6. Unknown entitlement, identity or authorization state fails closed.
 7. Database access is server-only; do not grant browser roles table privileges.
 
-## Product family
+## Approved product family — 11 independent products
 - ARVAND: international trade, import and export.
 - CHARSU: marketplace and commerce network.
 - GANJINEH: digital stores and e-commerce.
@@ -40,10 +40,18 @@ Routes and helpers do not prove complete endpoint coverage, production email del
 - SEPEHR: cloud and digital infrastructure.
 - NAMA: website and landing-page builder.
 - PAYAM: marketing and customer growth.
-- DANA: AI intelligence and orchestration.
+- LEADORA: distribution, sales, inventory and commercial operations.
+- ARIANA: accounting, finance and ERP.
+- ARIA: social, communications, services and listings; explicitly excludes accounting and ERP.
+- ARMIN MARKET: buyer requests and supplier quotations.
 
-## Independent products
-LEADORA is distribution and sales operations; ARIANA is accounting and ERP; ARIA is social, services and marketplace without accounting/ERP; ARMIN MARKET is request and supplier quotation marketplace. Keep their data stores separate. Integrate only through separately reviewed, versioned APIs. Purchasing one product must not require another.
+DANA is the central AI intelligence/orchestration capability within VAYRO Command Center, not a twelfth product. Its data and tools are task-scoped, authorized, logged and revocable.
+
+## Independent product boundaries
+Each product retains its own domain rules, data ownership, authorization, integrations and release evidence. Keep product data stores separate. Integrate only through separately reviewed, versioned APIs/events with scoped service identities and audit records. Purchasing one product must not require another. ARIANA alone owns accounting/ERP; ARIA must not contain accounting/ERP; LEADORA owns distribution and sales operations within its defined scope.
+
+## Command Center and Future Development Lab
+The Command Center provides portfolio oversight, people/access, commercial operations, platform/integrations, security/audit, backup/recovery, release governance and DANA orchestration. The Future Development Lab is the governed path for ideas, impact assessment, design proposals, isolated prototypes, testing/security review, explicit owner decisions, staged rollout and rollback. It has no direct production-write credentials and does not bypass release gates.
 
 ## Reliability and release boundary
 - Review migrations and test forward/rollback in isolated environments.
