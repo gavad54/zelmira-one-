@@ -3,6 +3,7 @@ import { z } from "zod";
 import { isSameOriginRequest } from "@/lib/auth-core.mjs";
 import { allowAttempt, noStoreJson, sha256 } from "@/lib/auth-service";
 import { withPlatformOwnerTransaction } from "@/lib/platform-request-transaction";
+import { PRODUCT_CATALOG } from "@/lib/product-catalog.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,7 +42,7 @@ export async function GET() {
             select: { id: true, name: true, slug: true }
           }),
           tx.product.findMany({
-            where: { status: "ACTIVE", key: { not: "DANA" } }, orderBy: { name: "asc" },
+            where: { status: "ACTIVE", key: { in: PRODUCT_CATALOG.map(product => product.key) } }, orderBy: { name: "asc" },
             select: { id: true, key: true, name: true }
           })
         ]);
