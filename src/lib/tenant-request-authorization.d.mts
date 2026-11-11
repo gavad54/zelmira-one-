@@ -3,8 +3,18 @@ export type TenantRequestAuthorizationResult =
   | { authorized: false };
 
 type SessionLookup = {
+  id: string;
+  createdAt: Date;
   expiresAt: Date;
-  user: { id: string; disabledAt: Date | null };
+  revokedAt: Date | null;
+  lastSeenAt: Date | null;
+  assurance: string;
+  mfaAuthenticatedAt: Date | null;
+  user: {
+    id: string;
+    emailVerifiedAt: Date | null;
+    disabledAt: Date | null;
+  };
 } | null;
 
 type MembershipLookup = {
@@ -14,6 +24,18 @@ type MembershipLookup = {
   tenant: { id: string; status: string };
 } | null;
 
+type SessionUpdateManyArgs = {
+  where: {
+    id: string;
+    revokedAt: null;
+    expiresAt?: { gt: Date };
+  };
+  data: {
+    revokedAt?: Date;
+    lastSeenAt?: Date;
+  };
+};
+
 export function authorizeTenantRequest(input: {
   sessionToken?: string | null;
   tenantId: string;
@@ -22,8 +44,17 @@ export function authorizeTenantRequest(input: {
     session: {
       findUnique(args: {
         where: { tokenHash: string };
-        include: { user: { select: { id: true; disabledAt: true } } };
+        include: {
+          user: {
+            select: {
+              id: true;
+              emailVerifiedAt: true;
+              disabledAt: true;
+            };
+          };
+        };
       }): Promise<SessionLookup>;
+      updateMany(args: SessionUpdateManyArgs): Promise<{ count: number }>;
     };
     membership: {
       findUnique(args: {
