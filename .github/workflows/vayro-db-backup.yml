@@ -1,0 +1,115 @@
+name: VAYRO encrypted offsite database backup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 2 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vayro-db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    if: github.ref == 'refs/heads/main'
+    environment: vayro-backup
+    name: Dump, encrypt and upload private backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Validate required protected configuration
+        shell: bash
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.VAYRO_BACKUP_DATABASE_URL }}
+          AGE_RECIPIENT: ${{ vars.VAYRO_BACKUP_AGE_RECIPIENT }}
+          B2_KEY_ID: ${{ secrets.VAYRO_B2_KEY_ID }}
+          B2_APPLICATION_KEY: ${{ secrets.VAYRO_B2_APPLICATION_KEY }}
+          B2_BUCKET: ${{ vars.VAYRO_B2_BUCKET }}
+          B2_S3_ENDPOINT: ${{ vars.VAYRO_B2_S3_ENDPOINT }}
+          B2_REGION: ${{ vars.VAYRO_B2_REGION }}
+        run: |
+          set -euo pipefail
+          for name in BACKUP_DATABASE_URL AGE_RECIPIENT B2_KEY_ID B2_APPLICATION_KEY B2_BUCKET B2_S3_ENDPOINT B2_REGION; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Missing protected configuration: $name"
+              exit 1
+            fi
+          done
+
+      - name: Install age and AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes age awscli
+
+      - name: Create and encrypt PostgreSQL 17 dump
+        shell: bash
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.VAYRO_BACKUP_DATABASE_URL }}
+          AGE_RECIPIENT: ${{ vars.VAYRO_BACKUP_AGE_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/vayro-backup"
+          chmod 700 "$RUNNER_TEMP/vayro-backup"
+          trap 'rm -f "$RUNNER_TEMP/vayro-backup/vayro.dump"' EXIT
+          docker run --rm --network host \
+            -e BACKUP_DATABASE_URL \
+            -v "$RUNNER_TEMP/vayro-backup:/backup" \
+            postgres:17-alpine \
+            sh -ceu 'pg_dump --format=custom --no-owner --no-acl "$BACKUP_DATABASE_URL" > /backup/vayro.dump'
+          test -s "$RUNNER_TEMP/vayro-backup/vayro.dump"
+          age --recipient "$AGE_RECIPIENT" \
+            --output "$RUNNER_TEMP/vayro-backup/vayro.dump.age" \
+            "$RUNNER_TEMP/vayro-backup/vayro.dump"
+          cd "$RUNNER_TEMP/vayro-backup"
+          sha256sum vayro.dump.age > vayro.dump.age.sha256
+          rm -f "$RUNNER_TEMP/vayro-backup/vayro.dump"
+
+      - name: Upload and verify encrypted backup objects in private B2 bucket
+        id: upload
+        shell: bash
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.VAYRO_B2_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.VAYRO_B2_APPLICATION_KEY }}
+          AWS_EC2_METADATA_DISABLED: "true"
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          B2_BUCKET: ${{ vars.VAYRO_B2_BUCKET }}
+          B2_S3_ENDPOINT: ${{ vars.VAYRO_B2_S3_ENDPOINT }}
+          B2_REGION: ${{ vars.VAYRO_B2_REGION }}
+        run: |
+          set -euo pipefail
+          stamp="$(date -u +%Y/%m/%d/%H%M%S)"
+          key="vayro/postgres/$stamp/vayro.dump.age"
+          dump_file="$RUNNER_TEMP/vayro-backup/vayro.dump.age"
+          checksum_file="$RUNNER_TEMP/vayro-backup/vayro.dump.age.sha256"
+          aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
+            s3 cp "$dump_file" "s3://$B2_BUCKET/$key" --only-show-errors
+          aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
+            s3 cp "$checksum_file" "s3://$B2_BUCKET/$key.sha256" --only-show-errors
+
+          remote_dump_size="$(aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
+            s3api head-object --bucket "$B2_BUCKET" --key "$key" --query ContentLength --output text)"
+          remote_checksum_size="$(aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
+            s3api head-object --bucket "$B2_BUCKET" --key "$key.sha256" --query ContentLength --output text)"
+          local_dump_size="$(wc -c < "$dump_file" | tr -d ' ')"
+          local_checksum_size="$(wc -c < "$checksum_file" | tr -d ' ')"
+
+          if [[ "$remote_dump_size" != "$local_dump_size" || "$remote_checksum_size" != "$local_checksum_size" ]]; then
+            echo "::error::B2 object size verification failed; backup must not be treated as accepted"
+            exit 1
+          fi
+
+          echo "Encrypted backup uploaded and object sizes verified: s3://$B2_BUCKET/$key"
+          {
+            echo "## VAYRO encrypted backup upload"
+            echo "- Object: s3://$B2_BUCKET/$key"
+            echo "- Encrypted object bytes: $remote_dump_size"
+            echo "- Checksum sidecar bytes: $remote_checksum_size"
+            echo "- B2 HEAD metadata size verification: passed"
+            echo "- This does not replace an independent restore drill."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "object_key=$key" >> "$GITHUB_OUTPUT"
