@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 type Tenant = { id: string; name: string; slug: string };
 type Product = { id: string; key: string; name: string };
@@ -32,7 +32,7 @@ export default function OwnerLicensesClient() {
     } catch(e){setError(e instanceof Error?e.message:"خطای دریافت اطلاعات.");}
   },[tenantId,productId]);
   useEffect(()=>{void load();},[load]);
-  async function issue(e:React.FormEvent){
+  async function issue(e:FormEvent){
     e.preventDefault();setBusy("issue");setError("");setNotice("");
     try{
       const r=await fetch("/api/owner/licenses",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tenantId,productId,...(endsAt?{endsAt:new Date(endsAt).toISOString()}: {})})});
