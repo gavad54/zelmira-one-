@@ -103,3 +103,28 @@ Important: RLS enabled with no policies is not tenant isolation. Do not add gene
 ## Limitations
 
 This checkpoint is a GitHub audit document only. It does not change application behavior, production data, secrets, GitHub administrative settings, or Railway infrastructure. The available integration cannot write repository branch-protection settings or inspect GitHub Environment secrets/reviewer configuration. Continuous background work after this conversation is not available.
+
+
+## Pull-request and documentation reconciliation — 2026-11-11 09:10 +03:30
+
+A fresh repository-wide pull-request listing supersedes stale PR-state statements in older documents:
+
+| PR | Current GitHub state | Head | Disposition |
+|---|---|---|---|
+| #2 — VAYRO rebrand | CLOSED / MERGED (2026-11-09) | 255f6d9a521e5e29ecbac7f11ab66ff7f25baa9d | Already in main; do not repeat |
+| #6 — MFA/session/authorization | CLOSED / MERGED (2026-11-09) | 93108e0d95ff940e9855f8fdc3ef4f37063b1043 | Already merged; re-audit production behavior, do not treat PR description as live proof |
+| #12 — backup/restore engineering | OPEN / DRAFT / UNMERGED | 73e8bdaf117ab264c69cb9739e1f525bdaa0632d | Keep separate; do not merge wholesale |
+| #13 — ARVAND product definition | OPEN / DRAFT / UNMERGED | b5edb5b79f26d615e53a2975e7dcc3cbe208243d | Documentation/specification only; no operational product proof |
+| #14 — product governance | OPEN / DRAFT / UNMERGED | 06fad29c312718507747a18cf057b97e0697678a | Keep separate pending review |
+| #15 — backup/restore workflow bootstrap | CLOSED / MERGED (2026-11-11) | 945a1c9a53f505ea4e562bb1d4b3cebd4baf2683 | Already in main; do not repeat |
+| #16 — execution checkpoint | OPEN / DRAFT / UNMERGED | 271869564e8cffb701a8cd2822d1c5a28195f79a | This checkpoint; CI and CodeQL passed on this exact head before this addendum |
+
+The current docs/RELEASE-GATES.md still contains obsolete statements that PR #2 is open/draft and references older source heads. Treat it as historical until corrected against live GitHub state. The live PR metadata is authoritative for merge state.
+
+Exact PR #16 head evidence before this addendum:
+- VAYRO CI run 42952219998, run number 1197: completed / success.
+- CodeQL run 42952219849, run number 1160: completed / success.
+- Combined commit status endpoint returned no separate status contexts; workflow-run records above are the positive evidence.
+- Any update to this document creates a new PR head and requires fresh exact-head CI/CodeQL verification. Prior successful runs do not certify a later commit.
+
+Additional finding: the repository PR listing exposes PR #13, which was not included in the previous short PR inventory. It is a product definition/specification and does not establish an operational ARVAND runtime.
