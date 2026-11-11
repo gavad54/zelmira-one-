@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 type Tenant = { id: string; name: string; slug: string };
@@ -47,7 +46,7 @@ export default function OwnerLicensesClient() {
     setBusy(license.id);setError("");setNotice("");
     try{
       const r=await fetch("/api/owner/licenses",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({licenseId:license.id,active})});
-      const d=await r.json();if(r.status===401){window.location.assign("/login");return;}
+      if(r.status===401){window.location.assign("/login");return;}
       if(!r.ok)throw new Error("تغییر وضعیت مجوز انجام نشد.");
       setNotice(active?"مجوز دوباره فعال شد.":"مجوز لغو شد.");await load();
     }catch(e){setError(e instanceof Error?e.message:"خطای تغییر مجوز.");}finally{setBusy("");}
