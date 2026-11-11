@@ -25,7 +25,7 @@ export async function GET() {
   try {
     const result = await withPlatformOwnerTransaction({
       sessionToken: await sessionToken(),
-      callback: async tx => tx.license.findMany({
+      callback: async tx => {\n        const [licenses, tenants, products] = await Promise.all([\n          tx.license.findMany({
         orderBy: { createdAt: "desc" },
         take: 500,
         select: {
@@ -36,7 +36,7 @@ export async function GET() {
       })
     });
     if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
-    return noStoreJson({ licenses: result.value });
+    return noStoreJson(result.value);
   } catch {
     return noStoreJson({ error: "license_list_unavailable" }, 503);
   }
