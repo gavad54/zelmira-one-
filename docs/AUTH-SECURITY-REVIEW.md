@@ -90,3 +90,13 @@ IP-based throttling must not trust an arbitrary `X-Forwarded-For` value. The app
 - Unit tests cover the RFC 6238 reference vector, drift and replay behavior, malformed inputs, encryption/decryption, authentication-tag tampering and authenticator URI encoding.
 - **This is not end-to-end MFA.** The helper is not yet connected to the Prisma schema, login challenge, session lifecycle, enrollment/disable endpoints, recovery codes, rate limiting, audit events or owner-route enforcement. No MFA encryption key has been provisioned. Do not treat owner accounts as MFA-protected and do not deploy this helper as an active control.
 - Next implementation slice: add versioned MFA credential/challenge/recovery-code persistence and transactional one-time verification, then integrate login and privileged-route enforcement with a tested owner recovery path. Production secret provisioning remains a separately authorized owner action.
+
+
+## Verification update — MFA persistence foundation (2026-11-11)
+
+- Added versioned Prisma persistence for one encrypted TOTP credential per user, short-lived login challenge hashes, and one-time recovery-code hashes.
+- Added a forward-only migration. The three MFA tables have row-level security enabled, no client policies, and no table privileges granted to `anon`, `authenticated` or `service_role`. They are intended for server-only access through the application database role.
+- The credential stores a monotonic `lastAcceptedStep` watermark. The integration test verifies an atomic conditional update accepts a step once, including a concurrent replay attempt. Challenge and recovery-code consumption are likewise tested as one-time conditional updates.
+- The integration test also verifies expiry rejection, per-user credential uniqueness, RLS enablement, absence of client policies and absence of client-role SELECT/INSERT/UPDATE/DELETE grants in isolated CI PostgreSQL.
+- **This is persistence groundwork, not end-to-end MFA.** Login still does not issue or validate MFA challenges; enrollment, verification, recovery, audit events, rate limits, owner/administrator enforcement and a tested recovery procedure remain unimplemented. The encryption key has not been provisioned.
+- This migration is included only in the repository's disposable CI migration history. It has not been applied to VAYRO-CORE or any production database.
