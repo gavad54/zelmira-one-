@@ -450,3 +450,28 @@ This addendum supersedes earlier product-count and product-catalogue wording abo
 - These design documents do not implement screens, certify code, authorize production migrations, enable payments, deploy services or approve public/commercial release.
 
 **Current release posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.** All previously recorded technical release blockers remain applicable until independently rechecked and closed with current evidence.
+
+
+## Exact-main implementation and live infrastructure check — 2026-11-11
+
+- PR #24 was merged. Main is `ef71857074968a639aed484df030be6d630d8539`.
+- VAYRO CI [43042296724](https://github.com/gavad54/zelmira-one-/actions/runs/43042296724): **success** on exact main commit. The validate job completed successfully, including dependency audit, unit tests, Prisma client generation/schema validation, isolated PostgreSQL migrations and auth/platform/tenant role isolation, tenant RLS tests, lint, typecheck, production build, Docker image build, and PostgreSQL/production HTTP integration tests.
+- CodeQL [43042296836](https://github.com/gavad54/zelmira-one-/actions/runs/43042296836): **success** on exact main commit. This proves scan execution, not that all alert records are closed.
+- The owner license lifecycle and tenant entitlement APIs are merged. Their code is CI-verified; production runtime behavior remains unverified until the application is configured against the secured live database.
+- Railway inventory: only projects `ARIA Web` and `LEADORA` are present. A service named `VAYRO` is inside `ARIA Web`; it is not an independent VAYRO project. Latest deployment status is `SUCCESS`, but there are zero configured service variable names, zero mounted volumes, and no custom domain. Do not treat this as production readiness or move/reuse ARIA resources.
+- VAYRO-CORE is `ACTIVE_HEALTHY`, PostgreSQL 17.11. Live migration history is empty; all 11 public tables have RLS enabled but zero policies; all 11 are reported by the Security Advisor. Current table inventory reports zero rows. No production DDL, role creation, grants, policies, or data writes were performed.
+- No encrypted off-provider backup and isolated restore proof was verified.
+
+### Remaining hard blockers
+
+- [ ] Independently encrypted backup and successful isolated restore, with checksum, RPO/RTO and recovery evidence.
+- [ ] Reconcile all live database objects against the complete Prisma migration chain; review baseline and rehearse forward/recovery on a restored clone.
+- [ ] Provision separate production auth, tenant and platform LOGIN roles; verify role memberships, NOBYPASSRLS, table ownership, grants, policies and FORCE RLS.
+- [ ] Configure VAYRO hosting independently of ARIA, runtime secrets/database URLs, health checks, monitoring, TLS/domain and rollback. Do not copy credentials into source or chat.
+- [ ] Verify live HTTP health/readiness and production database connectivity after configuration.
+- [ ] Configure durable object storage, production email and privileged-owner MFA/recovery.
+- [ ] Complete billing/payment integration with webhook idempotency, reconciliation and legal/privacy review. Manual license administration is not payment processing.
+- [ ] Complete product integrations, product-specific UAT, Android signing/device acceptance, backup restore drills and owner acceptance.
+- [ ] Verify deployed commit parity and obtain explicit release approval.
+
+**Decision: EXACT-MAIN CI PASS + CODEQL EXECUTION PASS — LIVE DATABASE SECURITY/BASELINE AND HOSTING CONFIGURATION OPEN — DEPLOYMENT/COMMERCIAL RELEASE BLOCKED.**
