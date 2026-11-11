@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 const links = [
   { href: "/", label: "خانه" },
   { href: "/products", label: "محصولات" },
-  { href: "/command-center", label: "مرکز فرماندهی" },\n  { href: "/owner/licenses", label: "مجوزها" },
+  { href: "/command-center", label: "مرکز فرماندهی" },
+  { href: "/owner/licenses", label: "مجوزها" },
   { href: "/dana/ai-workspace", label: "دانا" },
   { href: "/future-lab", label: "آزمایشگاه آینده" }
 ];
