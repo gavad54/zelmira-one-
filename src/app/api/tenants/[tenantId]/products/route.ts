@@ -3,7 +3,7 @@ import { noStoreJson } from "@/lib/auth-service";
 import { authPrisma, assertAuthRuntimeRole } from "@/lib/auth-prisma";
 import { getTenantPrisma } from "@/lib/tenant-prisma";
 import { withTenantRequestTransaction } from "@/lib/tenant-request-transaction.mjs";
-import { resolveProductAccess } from "@/lib/product-access.mjs";
+import { resolveProductAccess } from "@/lib/product-access.mjs";\nimport { PRODUCT_CATALOG } from "@/lib/product-catalog.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +24,7 @@ export async function GET(_request: Request, context: RouteContext) {
       callback: async tx => {
         const [products, licenses] = await Promise.all([
           tx.product.findMany({
-            where: { key: { not: "DANA" } },
+            where: { key: { in: PRODUCT_CATALOG.map(product => product.key) } },
             orderBy: { key: "asc" },
             select: { id: true, key: true, name: true, description: true, status: true, baseUrl: true }
           }),
