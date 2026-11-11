@@ -1,4 +1,7 @@
--- Owner-only tenant display fields required for license administration.\nGRANT SELECT ("id", "name", "slug", "status") ON public."Tenant" TO vayro_platform;\n\n-- Owner-governed license lifecycle. Tenant runtime retains tenant-scoped RLS;
+-- Owner-only tenant display fields required for license administration.
+GRANT SELECT ("id", "name", "slug", "status") ON public."Tenant" TO vayro_platform;
+
+-- Owner-governed license lifecycle. Tenant runtime retains tenant-scoped RLS;
 -- the platform role receives only the columns required to issue/revoke licenses.
 GRANT SELECT ("id", "tenantId", "productId", "startsAt", "endsAt", "active", "createdAt")
   ON public."License" TO vayro_platform;
