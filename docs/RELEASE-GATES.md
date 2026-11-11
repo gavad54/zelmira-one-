@@ -435,3 +435,43 @@ This addendum supersedes prior PR #6 head and CI references above where they con
 - The exact-head run resolves the previously failing production HTTP integration job after test-only proxy identity isolation was corrected. The test proxy configuration exists only in disposable CI; do not copy its proxy-hop count or IP behavior into production without verifying the real hosting ingress.
 
 **Current disposition remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Live verification addendum — 2026-11-11 (supersedes conflicting historical entries)
+
+This addendum is the current status snapshot. Earlier dated entries below are retained as history and must not be treated as current where they conflict with this section.
+
+### Repository
+- PR #2 (VAYRO rebrand/product-family foundation) was merged before this snapshot; do not report it as open or draft.
+- PR #18 tenant authorization declaration correction was merged as `65335176a86313acd59e899f181bdeaa20d5ac26`. Exact-head CI and CodeQL passed.
+- PR #19 live platform audit documentation was merged as `fb4e8852d04f6dafc5788cd74bbb48489888a04a`. Exact-head CI run [42991910077](https://github.com/gavad54/zelmira-one-/actions/runs/42991910077) completed successfully.
+- Current main at this snapshot: `fb4e8852d04f6dafc5788cd74bbb48489888a04a`.
+
+### Railway
+- The VAYRO service is online in the `ARIA Web` Railway project; it is not yet an independently hosted VAYRO project.
+- Latest deployment `0b90c87c-5f0a-4f3c-b668-2a303b367968` is SUCCESS on the current main commit, with 1/1 replica running and no active warnings, critical issues or recent failures at inspection.
+- The service has no attached volume. Its service configuration currently lists no application variables; only Railway-generated system variables are present. Do not infer database readiness from container startup.
+- A separate staged patch remains pending in the ARIA Web production environment and must not be accepted as a VAYRO fix without review.
+- Railway HTTP logs show successful requests to the homepage and several routes in prior traffic, alongside 404s for `/favicon.ico` and `/vayro-mark.svg`. Recheck/fix static assets in a separate reviewed change.
+
+### VAYRO-CORE database
+- Live read-only inspection on 2026-11-11 found 11 public tables with RLS enabled, zero public RLS policies, no recorded applied migrations, no `vayro_*` runtime roles, and no application table grants for `anon`, `authenticated` or `service_role`.
+- Security Advisor reports 11 `rls_enabled_no_policy` findings. This is not proof of tenant isolation.
+- The repository has eight Prisma migration files; their presence in Git does not prove they have been applied to VAYRO-CORE.
+- Do not execute production migrations, baseline resolution, role grants, RLS policies or seed data until an independently encrypted backup, successful separate-host PostgreSQL 17 restore, schema reconciliation and reviewed execution plan are evidenced.
+
+### Backup and restore
+- Backup and isolated-restore workflow files exist, but no successful encrypted backup artifact, checksum-verified independent restore, application-level validation, or measured RPO/RTO was evidenced at this inspection.
+- Keep backup and restore gates OPEN. The runbooks require owner-provisioned protected GitHub Environments, scoped B2 credentials, age encryption keys and a separate disposable PostgreSQL 17 restore host. Never paste secret values into chat or source control.
+
+### Product delivery
+- The main repository does not prove that all 11 products are independently operational. Catalogue entries and route responses are not proof of complete product workflows.
+- DANA and NEGAH have implementation areas; other products require independent evidence for runtime, data boundary, security, tests, backup, mobile acceptance and commercial operations.
+- Preserve product boundaries: ARIA must not include accounting/ERP; ARIANA owns accounting/ERP; LEADORA remains a separate distribution-operations product.
+
+### Current release decision
+**ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT COMMERCIALLY RELEASED.**
+
+Open gates include: dedicated VAYRO hosting and protected runtime configuration; database baseline/least-privilege role and RLS validation; encrypted offsite backup and isolated restore; privileged MFA and complete endpoint authorization tests; trusted proxy/security headers/CSP; email; licensing/payments/legal review; independently operational product modules; Android build/signing/device UAT; owner UAT; and explicit release approval.
+
+No production database mutation, secret change, payment activation, customer onboarding or public commercial release is authorized by green CI or a successful Railway container deployment alone.
