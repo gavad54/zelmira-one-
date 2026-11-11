@@ -15,7 +15,7 @@ UNION ALL SELECT 'challenge_select', has_table_privilege('vayro_platform','publi
 UNION ALL SELECT 'actionToken_select', has_table_privilege('vayro_platform','public."AuthActionToken"','SELECT')
 UNION ALL SELECT 'rateLimit_select', has_table_privilege('vayro_platform','public."AuthRateLimit"','SELECT');
 
-DO $
+DO $vayro$
 DECLARE
   platform_oid OID;
   bootstrap_oid OID;
@@ -100,7 +100,7 @@ BEGIN
      OR EXISTS (SELECT 1 FROM pg_auth_members WHERE member = bootstrap_oid) THEN
     RAISE EXCEPTION 'bootstrap definer role has unnecessary schema or inherited privileges';
   END IF;
-END $$;
+END $vayro$;
 
 SET ROLE vayro_platform;
 SELECT id FROM public."Product" LIMIT 0;
