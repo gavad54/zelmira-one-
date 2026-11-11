@@ -26,7 +26,6 @@ DANA is VAYRO's internal AI intelligence, analysis and orchestration capability,
 The Command Center governs the portfolio, access, commercial operations, integrations, security/audit, backup/recovery and release evidence. The Future Development Lab handles idea intake, duplication/scope checks, impact analysis, design proposals, isolated prototypes, automated tests, security review, owner decision, staged rollout and rollback. It must not write directly to production or bypass product release gates.
 
 ## Integration rules
-
 - Each of the eleven products retains independently governed domain logic, data ownership, authorization and release evidence.
 - Each product remains independently deployable where its deployment model supports it.
 - Shared login or navigation does not imply shared database ownership.
