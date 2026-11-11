@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { VAYRO_PRODUCTS, INDEPENDENT_PRODUCTS } from "@/lib/product-directory.mjs";
+import { VAYRO_PRODUCTS, PLATFORM_CAPABILITIES, INDEPENDENT_PRODUCTS } from "@/lib/product-directory.mjs";
 
 export default function HomePage() {
   return (
@@ -15,16 +15,16 @@ export default function HomePage() {
       </header>
 
       <section className="hero">
-        <div className="eyebrow"><span className="status-dot" /> اکوسیستم فناوری وایرو</div>
-        <h1>یک جهان هوشمند،<br /><span>در یک تجربه.</span></h1>
+        <div className="eyebrow"><span className="status-dot" /> مرکز فرماندهی اکوسیستم وایرو</div>
+        <h1>یک مرکز فرماندهی،<br /><span>یازده محصول مستقل.</span></h1>
         <p className="hero-copy">
-          وایرو نقطه اتصال محصولات تخصصی برای تجارت، بازار، خلاقیت و فناوری است.
-          هر محصول مستقل عمل می‌کند و در صورت نیاز، با دسترسی کنترل‌شده به اکوسیستم متصل می‌شود.
+          وایرو مدیریت و راهبری کل مجموعه را بر عهده دارد؛ هر اپلیکیشن مالک نرم‌افزار،
+          داده، زیرساخت، امنیت و چرخه انتشار مستقل خود است.
         </p>
         <div className="hero-actions">
           <a className="primary-action" href="#products">کشف محصولات <span aria-hidden="true">←</span></a>
           <Link className="secondary-action" href="/growth">راهکارهای رشد کسب‌وکار</Link>
-          <Link className="secondary-action" href="/ai-business-suite">۵۰ قابلیت هوشمند وایرو</Link>
+          <Link className="secondary-action" href="/ai-business-suite">قابلیت‌های هوشمند وایرو</Link>
           <Link className="secondary-action" href="/dana/ai-workspace">فضای کار هوشمند دانا</Link>
           <Link className="secondary-action" href="/dana/prompt-studio">استودیوی پرامپت دانا</Link>
           <Link className="secondary-action" href="/negah/creative-studio">استودیوی تولید تصویر نگاه</Link>
@@ -36,8 +36,8 @@ export default function HomePage() {
 
       <section className="section" id="products">
         <div className="section-heading">
-          <div><span className="eyebrow">VAYRO PRODUCT FAMILY</span><h2>۱۱ اپلیکیشن تخصصی، یک اکوسیستم</h2></div>
-          <p>هر محصول برای یک نیاز مشخص طراحی شده است؛ دسترسی و خرید محصولات مستقل خواهد بود.</p>
+          <div><span className="eyebrow">INDEPENDENT APPLICATION PORTFOLIO</span><h2>یازده اپلیکیشن مستقل</h2></div>
+          <p>هر محصول به‌صورت مستقل قابل توسعه، استقرار، استفاده، پشتیبانی و عرضه است.</p>
         </div>
         <div className="product-grid">
           {VAYRO_PRODUCTS.map((product) => (
@@ -47,7 +47,7 @@ export default function HomePage() {
               <h3>{product.href ? <Link href={product.href}>{product.name}</Link> : product.name}</h3>
               <strong className="product-fa">{product.fa}</strong>
               <p>{product.detail}</p>
-              <span className="card-foot">محصول خانواده وایرو <span aria-hidden="true">✦</span></span>
+              <span className="card-foot">اپلیکیشن مستقل <span aria-hidden="true">✦</span></span>
             </article>
           ))}
         </div>
@@ -55,8 +55,8 @@ export default function HomePage() {
 
       <section className="section independent-section">
         <div className="section-heading">
-          <div><span className="eyebrow">INDEPENDENT PRODUCTS</span><h2>محصولات مستقل و متصل</h2></div>
-          <p>محصولات تخصصی موجود، هویت و مرز داده‌ای مستقل خود را حفظ می‌کنند.</p>
+          <div><span className="eyebrow">INDEPENDENT PRODUCTS</span><h2>سایر اپلیکیشن‌های مستقل</h2></div>
+          <p>این محصولات نیز هم‌سطح سایر اپلیکیشن‌ها هستند و زیرمجموعه اجرایی یکدیگر نیستند.</p>
         </div>
         <div className="independent-grid">
           {INDEPENDENT_PRODUCTS.map((product) => (
@@ -67,10 +67,29 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="section" aria-labelledby="platform-capabilities-title">
+        <div className="section-heading">
+          <div><span className="eyebrow">VAYRO PLATFORM CAPABILITIES</span><h2 id="platform-capabilities-title">قابلیت‌های مرکزی وایرو</h2></div>
+          <p>قابلیت‌های مشترک پلتفرم با اپلیکیشن‌های مستقل اشتباه گرفته نمی‌شوند.</p>
+        </div>
+        <div className="product-grid">
+          {PLATFORM_CAPABILITIES.map((capability) => (
+            <article className="product-card" key={capability.name}>
+              <span className="product-tag">{capability.tag}</span>
+              <span className={`product-status ${capability.statusClass}`}>{capability.status}</span>
+              <h3><Link href={capability.href}>{capability.name}</Link></h3>
+              <strong className="product-fa">{capability.fa}</strong>
+              <p>{capability.detail}</p>
+              <span className="card-foot">قابلیت پلتفرمی VAYRO <span aria-hidden="true">✦</span></span>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="vision" id="vision">
-        <span className="eyebrow">VAYRO INTELLIGENCE</span>
-        <h2>فناوری در خدمت تصمیم بهتر.</h2>
-        <p>وایرو مسیر یکپارچه‌ای برای کشف و مدیریت محصولات فراهم می‌کند؛ بدون ادغام ناخواسته داده‌ها یا حذف استقلال هر کسب‌وکار.</p>
+        <span className="eyebrow">VAYRO COMMAND & GOVERNANCE</span>
+        <h2>مدیریت یکپارچه؛ استقلال کامل محصولات.</h2>
+        <p>وایرو وضعیت و حاکمیت مجموعه را مدیریت می‌کند، اما داده و عملیات تخصصی هر محصول را در اختیار همان محصول باقی می‌گذارد.</p>
       </section>
 
       <footer className="footer">
