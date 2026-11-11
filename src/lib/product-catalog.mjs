@@ -5,18 +5,22 @@ export const PRODUCT_FAMILY_CATALOG = Object.freeze([
   { key: "NEGAH", name: "NEGAH", description: "استودیو خلاقیت و تولید محتوا" },
   { key: "SEPEHR", name: "SEPEHR", description: "زیرساخت ابری و خدمات فناوری" },
   { key: "NAMA", name: "NAMA", description: "ساخت وب‌سایت و صفحات فرود" },
-  { key: "PAYAM", name: "PAYAM", description: "بازاریابی و توسعه مشتری" },
-  { key: "DANA", name: "DANA", description: "هوش مصنوعی و هماهنگی هوشمند" }
+  { key: "PAYAM", name: "PAYAM", description: "بازاریابی و توسعه مشتری" }
 ]);
 
 export const INDEPENDENT_PRODUCT_CATALOG = Object.freeze([
   { key: "LEADORA", name: "LEADORA", description: "توزیع، فروش و عملیات تجاری؛ با پایگاه داده و استقرار مستقل" },
   { key: "ARIANA", name: "ARIANA", description: "حسابداری، مالی و ERP؛ مستقل از ARIA" },
-  { key: "ARIA", name: "ARIA", description: "جامعه، خدمات و بازارگاه؛ بدون حسابداری و ERP" }
+  { key: "ARIA", name: "ARIA", description: "جامعه، خدمات و بازارگاه؛ بدون حسابداری و ERP" },
+  { key: "ARMIN_MARKET", name: "ARMIN MARKET", description: "درخواست خریدار، پیشنهاد تأمین‌کننده و استعلام؛ بدون نگهداری وجوه طرفین" }
 ]);
 
-// The mother-platform registry lists all eleven child applications. Registry membership
-// does not imply that an app is production-ready or that its data is hosted in VAYRO-CORE.
+// DANA is an internal VAYRO AI/orchestration capability, not a product registry entry.
+export const VAYRO_CAPABILITIES = Object.freeze([
+  { key: "DANA", name: "DANA", description: "هوش مصنوعی مرکزی و هماهنگی کنترل‌شده در مرکز فرماندهی" }
+]);
+
+// Registry membership does not imply production readiness or shared product data ownership.
 export const PRODUCT_CATALOG = Object.freeze([
   ...PRODUCT_FAMILY_CATALOG,
   ...INDEPENDENT_PRODUCT_CATALOG
