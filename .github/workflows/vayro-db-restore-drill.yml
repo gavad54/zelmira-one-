@@ -22,6 +22,7 @@ concurrency:
 jobs:
   restore:
     name: Verify, decrypt and restore to isolated PostgreSQL
+    environment: vayro-restore
     if: ${{ github.ref == 'refs/heads/main' && inputs.confirmation == 'RESTORE_TO_ISOLATED_VAYRO_TEST' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
