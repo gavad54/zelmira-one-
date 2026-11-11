@@ -1,5 +1,5 @@
 import { requireOwnerPage } from "@/lib/require-owner-page";
-import CommandCenterClient from "./command-center-client.tsx";
+import CommandCenterClient from "./command-center-client";
 
 export const dynamic = "force-dynamic";
 
