@@ -1,5 +1,5 @@
 import { requireOwnerPage } from "@/lib/require-owner-page";
-import FutureLabClient from "./future-lab-client.tsx";
+import FutureLabClient from "./future-lab-client";
 
 export const dynamic = "force-dynamic";
 
