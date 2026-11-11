@@ -435,3 +435,18 @@ This addendum supersedes prior PR #6 head and CI references above where they con
 - The exact-head run resolves the previously failing production HTTP integration job after test-only proxy identity isolation was corrected. The test proxy configuration exists only in disposable CI; do not copy its proxy-hop count or IP behavior into production without verifying the real hosting ingress.
 
 **Current disposition remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+
+## Approved product and design baseline addendum — 2026-11-11
+
+This addendum supersedes earlier product-count and product-catalogue wording above where it conflicts. Historical engineering and release evidence is intentionally retained.
+
+- Owner-approved product-family baseline: exactly eleven independent products — ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA, PAYAM, LEADORA, ARIANA, ARIA and ARMIN MARKET.
+- DANA is VAYRO's internal AI intelligence/orchestration capability within the Command Center, not a twelfth product.
+- ARIANA owns accounting/finance/ERP. ARIA explicitly excludes accounting and ERP. LEADORA owns distribution, sales, inventory and commercial operations within its defined boundary.
+- The UI/UX and solution-architecture specification is recorded in PR #21, branch `design/vayro-uiux-architecture-spec-v1`, currently documentation-only and not merged. It defines the application shell, eleven product workspaces, Command Center, DANA, Future Development Lab, responsive RTL/English design system, service/domain ownership, API/event conventions, security, data and release acceptance.
+- The Future Development Lab is the governed route for future proposals and prototypes. It must remain isolated from production credentials/data by default and cannot bypass owner approval, security review, product boundaries or release gates.
+- These design documents do not implement screens, certify code, authorize production migrations, enable payments, deploy services or approve public/commercial release.
+
+**Current release posture remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.** All previously recorded technical release blockers remain applicable until independently rechecked and closed with current evidence.
