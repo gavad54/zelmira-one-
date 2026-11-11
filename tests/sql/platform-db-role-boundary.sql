@@ -1,5 +1,21 @@
 -- Execute after migrations as the isolated CI database administrator.
-DO $$
+-- Diagnostic privilege matrix; values are emitted in CI logs to make any
+-- least-privilege regression attributable to one exact grant.
+SELECT 'license_delete' AS check_name, has_table_privilege('vayro_platform','public."License"','DELETE') AS granted
+UNION ALL SELECT 'license_active_update', has_column_privilege('vayro_platform','public."License"','active','UPDATE')
+UNION ALL SELECT 'license_endsAt_update', has_column_privilege('vayro_platform','public."License"','endsAt','UPDATE')
+UNION ALL SELECT 'license_startsAt_update', has_column_privilege('vayro_platform','public."License"','startsAt','UPDATE')
+UNION ALL SELECT 'license_tenantId_update', has_column_privilege('vayro_platform','public."License"','tenantId','UPDATE')
+UNION ALL SELECT 'license_productId_update', has_column_privilege('vayro_platform','public."License"','productId','UPDATE')
+UNION ALL SELECT 'membership_select', has_table_privilege('vayro_platform','public."Membership"','SELECT')
+UNION ALL SELECT 'session_update', has_table_privilege('vayro_platform','public."Session"','UPDATE')
+UNION ALL SELECT 'userMfa_select', has_table_privilege('vayro_platform','public."UserMfa"','SELECT')
+UNION ALL SELECT 'recovery_select', has_table_privilege('vayro_platform','public."MfaRecoveryCode"','SELECT')
+UNION ALL SELECT 'challenge_select', has_table_privilege('vayro_platform','public."AuthChallenge"','SELECT')
+UNION ALL SELECT 'actionToken_select', has_table_privilege('vayro_platform','public."AuthActionToken"','SELECT')
+UNION ALL SELECT 'rateLimit_select', has_table_privilege('vayro_platform','public."AuthRateLimit"','SELECT');
+
+DO $
 DECLARE
   platform_oid OID;
   bootstrap_oid OID;
