@@ -1,5 +1,21 @@
 -- Execute after migrations as the isolated CI database administrator.
-DO $$
+-- Diagnostic privilege matrix; values are emitted in CI logs to make any
+-- least-privilege regression attributable to one exact grant.
+SELECT 'license_delete' AS check_name, has_table_privilege('vayro_platform','public."License"','DELETE') AS granted
+UNION ALL SELECT 'license_active_update', has_column_privilege('vayro_platform','public."License"','active','UPDATE')
+UNION ALL SELECT 'license_endsAt_update', has_column_privilege('vayro_platform','public."License"','endsAt','UPDATE')
+UNION ALL SELECT 'license_startsAt_update', has_column_privilege('vayro_platform','public."License"','startsAt','UPDATE')
+UNION ALL SELECT 'license_tenantId_update', has_column_privilege('vayro_platform','public."License"','tenantId','UPDATE')
+UNION ALL SELECT 'license_productId_update', has_column_privilege('vayro_platform','public."License"','productId','UPDATE')
+UNION ALL SELECT 'membership_select', has_table_privilege('vayro_platform','public."Membership"','SELECT')
+UNION ALL SELECT 'session_update', has_table_privilege('vayro_platform','public."Session"','UPDATE')
+UNION ALL SELECT 'userMfa_select', has_table_privilege('vayro_platform','public."UserMfa"','SELECT')
+UNION ALL SELECT 'recovery_select', has_table_privilege('vayro_platform','public."MfaRecoveryCode"','SELECT')
+UNION ALL SELECT 'challenge_select', has_table_privilege('vayro_platform','public."AuthChallenge"','SELECT')
+UNION ALL SELECT 'actionToken_select', has_table_privilege('vayro_platform','public."AuthActionToken"','SELECT')
+UNION ALL SELECT 'rateLimit_select', has_table_privilege('vayro_platform','public."AuthRateLimit"','SELECT');
+
+DO $vayro$
 DECLARE
   platform_oid OID;
   bootstrap_oid OID;
@@ -38,7 +54,18 @@ BEGIN
   IF has_column_privilege('vayro_platform','public."User"','passwordHash','SELECT')
      OR has_table_privilege('vayro_platform','public."Session"','UPDATE')
      OR has_table_privilege('vayro_platform','public."Membership"','SELECT')
-     OR has_table_privilege('vayro_platform','public."License"','UPDATE')
+     OR has_table_privilege('vayro_platform','public."License"','DELETE')
+     OR NOT has_column_privilege('vayro_platform','public."License"','active','UPDATE')
+     OR NOT has_column_privilege('vayro_platform','public."License"','endsAt','UPDATE')
+     OR NOT has_column_privilege('vayro_platform','public."License"','startsAt','SELECT')
+     OR NOT has_column_privilege('vayro_platform','public."License"','tenantId','SELECT')
+     OR NOT has_column_privilege('vayro_platform','public."Tenant"','name','SELECT')
+     OR NOT has_column_privilege('vayro_platform','public."Tenant"','status','SELECT')
+     OR NOT has_column_privilege('vayro_platform','public."License"','tenantId','INSERT')
+     OR NOT has_column_privilege('vayro_platform','public."License"','productId','INSERT')
+     OR has_column_privilege('vayro_platform','public."License"','startsAt','UPDATE')
+     OR has_column_privilege('vayro_platform','public."License"','tenantId','UPDATE')
+     OR has_column_privilege('vayro_platform','public."License"','productId','UPDATE')
      OR has_table_privilege('vayro_platform','public."UserMfa"','SELECT')
      OR has_table_privilege('vayro_platform','public."MfaRecoveryCode"','SELECT')
      OR has_table_privilege('vayro_platform','public."AuthChallenge"','SELECT')
@@ -73,12 +100,13 @@ BEGIN
      OR EXISTS (SELECT 1 FROM pg_auth_members WHERE member = bootstrap_oid) THEN
     RAISE EXCEPTION 'bootstrap definer role has unnecessary schema or inherited privileges';
   END IF;
-END $$;
+END $vayro$;
 
 SET ROLE vayro_platform;
 SELECT id FROM public."Product" LIMIT 0;
 SELECT id FROM public."Tenant" LIMIT 0;
 SELECT id FROM public."License" LIMIT 0;
+SELECT "tenantId", "startsAt", "active" FROM public."License" LIMIT 0;
 SELECT email FROM public."EmailContact" LIMIT 0;
 SELECT "tokenHash" FROM public."EmailContactVerificationToken" LIMIT 0;
 SELECT id FROM public."AuditEvent" LIMIT 0;

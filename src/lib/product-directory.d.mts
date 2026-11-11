@@ -9,12 +9,21 @@ export interface VayroProduct {
 }
 
 export interface IndependentProduct {
-  name: "LEADORA" | "ARIANA" | "ARIA";
+  name: "LEADORA" | "ARIANA" | "ARIA" | "ARMIN MARKET";
   detail: string;
   status: string;
   statusClass: "blocked";
 }
 
+export interface VayroCapability {
+  name: "DANA";
+  fa: string;
+  detail: string;
+  href: string;
+  status: string;
+}
+
 export const VAYRO_PRODUCTS: readonly VayroProduct[];
 export const INDEPENDENT_PRODUCTS: readonly IndependentProduct[];
+export const VAYRO_CAPABILITIES: readonly VayroCapability[];
 export const ALL_PRODUCTS: readonly (VayroProduct | IndependentProduct)[];

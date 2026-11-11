@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import VayroNavigation from "@/components/vayro-navigation";
 
 // Per-request CSP nonces require dynamic rendering; static HTML cannot carry fresh nonces.
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="fa" dir="rtl">
-      <body>{children}</body>
+      <body><VayroNavigation />{children}</body>
     </html>
   );
 }
