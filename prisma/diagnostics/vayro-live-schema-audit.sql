@@ -56,12 +56,14 @@ ORDER BY grantee, table_name, privilege_type;
 
 -- 7) Prisma migration history. An absent table or zero rows is a STOP condition,
 -- not permission to mark migrations applied or to baseline automatically.
+-- First inspect to_regclass. Execute the following SELECT only if it is non-NULL;
+-- otherwise record the table as absent and continue with the remaining audit.
 SELECT to_regclass('public."_prisma_migrations"') AS prisma_migrations_table;
 
-SELECT migration_name, started_at, finished_at, rolled_back_at,
-       logs
-FROM public."_prisma_migrations"
-ORDER BY started_at, migration_name;
+-- Conditional follow-up (run only when the preceding result is non-NULL):
+-- SELECT migration_name, started_at, finished_at, rolled_back_at, logs
+-- FROM public."_prisma_migrations"
+-- ORDER BY started_at, migration_name;
 
 -- 8) Public enum types and labels.
 SELECT t.typname AS enum_name, e.enumsortorder, e.enumlabel
