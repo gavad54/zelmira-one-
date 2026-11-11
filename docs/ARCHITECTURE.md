@@ -58,3 +58,14 @@ The Command Center provides portfolio oversight, people/access, commercial opera
 - Store encrypted backups outside the hosting provider and prove an isolated restore.
 - AI tools require allowlists, scoped identities, budgets, approval for consequential actions and audit trails.
 - No VAYRO application deployment, independent backup/restore drill, owner UAT or public commercial release is verified. Keep customer onboarding, real payments and production data collection disabled until release gates pass and the authorized owner approves release.
+
+
+## Implementation verification addendum — 2026-11-11
+
+- Main branch includes the owner Command Center, eleven-product portfolio, Future Development Lab, owner license lifecycle API and tenant-scoped product entitlement API.
+- The owner license endpoints require a fresh owner/MFA session, validate same-origin mutations, apply request limits, and append audit events. The tenant product endpoint derives membership/session authorization and executes data reads through the tenant-scoped PostgreSQL transaction/RLS boundary. Product access fails closed unless the product is ACTIVE and its license is current.
+- The Future Development Lab stores append-only proposal/decision events. A research approval is not a production execution authorization.
+- Exact main commit `ef71857074968a639aed484df030be6d630d8539` passed VAYRO CI run [43042296724](https://github.com/gavad54/zelmira-one-/actions/runs/43042296724) and CodeQL run [43042296836](https://github.com/gavad54/zelmira-one-/actions/runs/43042296836). CI included dependency audit, unit tests, Prisma validation, isolated PostgreSQL role/RLS tests, lint, typecheck, production build, Docker build and PostgreSQL/production-HTTP integration tests.
+- A Railway service named `VAYRO` exists in project `ARIA Web`, not in an independently controlled VAYRO project. Its latest deployment reports SUCCESS on 2026-11-11, but the service has no configured variable names, no mounted volumes and no custom domain. Deployment success alone does not prove the application can connect to VAYRO-CORE or pass runtime readiness.
+- VAYRO-CORE remains ACTIVE_HEALTHY (PostgreSQL 17.11), but its live Prisma migration history is empty. The live catalog contains 11 public tables, all with RLS enabled, but no RLS policies; Supabase Security Advisor reports 11 RLS-enabled/no-policy findings. The tables currently report zero rows.
+- Repository migrations and isolated CI prove the intended schema works in disposable PostgreSQL; they do not reconcile or secure the live database. Do not apply migrations or grants to production until encrypted external backup, successful isolated restore, schema/object reconciliation, and rehearsed recovery are evidenced.
