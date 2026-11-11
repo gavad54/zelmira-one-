@@ -25,15 +25,28 @@ export async function GET() {
   try {
     const result = await withPlatformOwnerTransaction({
       sessionToken: await sessionToken(),
-      callback: async tx => {\n        const [licenses, tenants, products] = await Promise.all([\n          tx.license.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 500,
-        select: {
-          id: true, tenantId: true, productId: true, startsAt: true, endsAt: true, active: true, createdAt: true,
-          tenant: { select: { name: true, slug: true, status: true } },
-          product: { select: { key: true, name: true, status: true } }
-        }
-      })
+      callback: async tx => {
+        const [licenses, tenants, products] = await Promise.all([
+          tx.license.findMany({
+            orderBy: { createdAt: "desc" },
+            take: 500,
+            select: {
+              id: true, tenantId: true, productId: true, startsAt: true, endsAt: true, active: true, createdAt: true,
+              tenant: { select: { name: true, slug: true, status: true } },
+              product: { select: { key: true, name: true, status: true } }
+            }
+          }),
+          tx.tenant.findMany({
+            where: { status: "ACTIVE" }, orderBy: { name: "asc" },
+            select: { id: true, name: true, slug: true }
+          }),
+          tx.product.findMany({
+            where: { status: "ACTIVE", key: { not: "DANA" } }, orderBy: { name: "asc" },
+            select: { id: true, key: true, name: true }
+          })
+        ]);
+        return { licenses, tenants, products };
+      }
     });
     if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
     return noStoreJson(result.value);
