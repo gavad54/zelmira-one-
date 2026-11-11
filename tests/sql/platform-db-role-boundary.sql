@@ -38,7 +38,18 @@ BEGIN
   IF has_column_privilege('vayro_platform','public."User"','passwordHash','SELECT')
      OR has_table_privilege('vayro_platform','public."Session"','UPDATE')
      OR has_table_privilege('vayro_platform','public."Membership"','SELECT')
-     OR has_table_privilege('vayro_platform','public."License"','UPDATE')
+     OR has_table_privilege('vayro_platform','public."License"','DELETE')
+     OR NOT has_column_privilege('vayro_platform','public."License"','active','UPDATE')
+     OR NOT has_column_privilege('vayro_platform','public."License"','endsAt','UPDATE')
+     OR NOT has_column_privilege('vayro_platform','public."License"','startsAt','SELECT')
+     OR NOT has_column_privilege('vayro_platform','public."License"','tenantId','SELECT')
+     OR NOT has_column_privilege('vayro_platform','public."Tenant"','name','SELECT')
+     OR NOT has_column_privilege('vayro_platform','public."Tenant"','status','SELECT')
+     OR NOT has_column_privilege('vayro_platform','public."License"','tenantId','INSERT')
+     OR NOT has_column_privilege('vayro_platform','public."License"','productId','INSERT')
+     OR has_column_privilege('vayro_platform','public."License"','startsAt','UPDATE')
+     OR has_column_privilege('vayro_platform','public."License"','tenantId','UPDATE')
+     OR has_column_privilege('vayro_platform','public."License"','productId','UPDATE')
      OR has_table_privilege('vayro_platform','public."UserMfa"','SELECT')
      OR has_table_privilege('vayro_platform','public."MfaRecoveryCode"','SELECT')
      OR has_table_privilege('vayro_platform','public."AuthChallenge"','SELECT')
@@ -79,6 +90,7 @@ SET ROLE vayro_platform;
 SELECT id FROM public."Product" LIMIT 0;
 SELECT id FROM public."Tenant" LIMIT 0;
 SELECT id FROM public."License" LIMIT 0;
+SELECT "tenantId", "startsAt", "active" FROM public."License" LIMIT 0;
 SELECT email FROM public."EmailContact" LIMIT 0;
 SELECT "tokenHash" FROM public."EmailContactVerificationToken" LIMIT 0;
 SELECT id FROM public."AuditEvent" LIMIT 0;
