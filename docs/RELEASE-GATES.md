@@ -435,3 +435,33 @@ This addendum supersedes prior PR #6 head and CI references above where they con
 - The exact-head run resolves the previously failing production HTTP integration job after test-only proxy identity isolation was corrected. The test proxy configuration exists only in disposable CI; do not copy its proxy-hop count or IP behavior into production without verifying the real hosting ingress.
 
 **Current disposition remains: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Live-state supersession — 2026-11-11
+
+This dated addendum supersedes older PR-state, repository-head, and deployment statements above wherever they conflict. Historical entries are retained for audit history.
+
+### Current repository state
+- Default branch `main` HEAD: `cbad8640f033eecb456c91f282ca4e819bab1409`.
+- PR #2 (VAYRO rebrand): CLOSED / MERGED on 2026-11-09.
+- PR #6 (MFA/session/authorization foundation): CLOSED / MERGED on 2026-11-09. Merge is not proof that production MFA/session flows or endpoint authorization have passed live tests.
+- PR #12 (backup/restore engineering): OPEN / DRAFT / UNMERGED; head `73e8bdaf117ab264c69cb9739e1f525bdaa0632d`.
+- PR #13 (ARVAND product definition): OPEN / DRAFT / UNMERGED; specification only, not an operational product.
+- PR #14 (product governance): OPEN / DRAFT / UNMERGED; pending review.
+- PR #15 (backup/restore workflow bootstrap): CLOSED / MERGED on 2026-11-11; merge commit is the current main HEAD above.
+- PR #16 (execution checkpoint): OPEN / DRAFT / UNMERGED; documentation-only changes.
+
+### Exact-head CI evidence
+On PR #16 head `5e3e66f1c0c77eea9d47ad8d3bd4dfdb4f8471a5`:
+- VAYRO CI run [42967382861](https://github.com/gavad54/zelmira-one-/actions/runs/42967382861), run #1198: completed successfully.
+- CodeQL run [42967382856](https://github.com/gavad54/zelmira-one-/actions/runs/42967382856), run #1161: completed successfully.
+- These results apply only to this exact head. Any later commit requires fresh exact-head checks.
+
+### Current deployment and data gates
+- Railway VAYRO service `ea06b2d7-b28e-462e-9251-2613af769d8e` in project `ARIA Web` reports deployment `63069f8a-bec0-4572-969a-5ef079ce7a19` SUCCESS for commit `cbad8640f033eecb456c91f282ca4e819bab1409`. This confirms deployment status only; user-facing application flows have not been verified.
+- The inspected VAYRO Railway service has no attached volume or bucket and no service-level variables listed. This does not rule out project-level variables.
+- VAYRO-CORE read-only audit on 2026-11-11: 11 public tables, all with RLS enabled; Security Advisor reports 11 `rls_enabled_no_policy` findings; migration history is empty; inspected tables report zero rows. No schema/data writes were made.
+- No real encrypted B2 backup, verified remote object, or independent restore drill is evidenced. Workflow files merged by PR #15 are scaffolding, not operational proof.
+
+### Release decision
+**ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.** Do not run production migrations, declare tenant isolation complete, enable customer onboarding/payments, or announce release until the relevant backup/restore, schema, access-control, product, UAT, legal and owner-approval gates have current evidence.
