@@ -128,3 +128,40 @@ Exact PR #16 head evidence before this addendum:
 - Any update to this document creates a new PR head and requires fresh exact-head CI/CodeQL verification. Prior successful runs do not certify a later commit.
 
 Additional finding: the repository PR listing exposes PR #13, which was not included in the previous short PR inventory. It is a product definition/specification and does not establish an operational ARVAND runtime.
+
+
+## Follow-up repository and PR audit — 2026-11-11 10:45 +03:30
+
+### PR #16 exact-head verification
+Current PR #16 head is `844b7e68b434f6fe9d8e0577dbe48bd8f0aa137c` (OPEN / DRAFT / UNMERGED; base `main` at `cbad8640f033eecb456c91f282ca4e819bab1409`).
+- VAYRO CI run [42969798363](https://github.com/gavad54/zelmira-one-/actions/runs/42969798363), run #1199: completed / success on this exact SHA.
+- CodeQL run [42969798398](https://github.com/gavad54/zelmira-one-/actions/runs/42969798398), run #1162: completed / success on this exact SHA.
+- The changed file in the latest commit is documentation-only: `docs/RELEASE-GATES.md`. No production application code or runtime configuration was changed.
+
+### PR #12 review disposition
+Live metadata: OPEN / DRAFT / UNMERGED; 57 commits; 43 changed files; base SHA `f3abc61523cb7abbd0b0ab4559a34f40a068ddb5`, which is behind current `main`; GitHub reports `mergeable=false`.
+- Its two backup/restore workflow files duplicate the workflows already merged through PR #15. The merged PR #15 versions include GitHub Environment targets `vayro-backup` and `vayro-restore`; do not replace them with the older PR #12 variants.
+- PR #12 changes application code and owner-product/dashboard flows, so it is not merely a documentation or backup patch.
+- Its diff replaces `docs/RELEASE-GATES.md` with a 436-line deletion and only 20 additions. This would remove historical release-gate evidence and conflicts with the audit-history preservation requirement.
+- No PR review submissions or inline review threads were returned.
+- Disposition: do not merge wholesale. Keep the branch as a source for selective, separately rebased and reviewed changes only.
+
+### PR #14 review disposition
+Live metadata: OPEN / DRAFT / UNMERGED; 27 commits; 28 changed files; base SHA `f3abc61523cb7abbd0b0ab4559a34f40a068ddb5`; GitHub reports `mergeable=true`.
+- Exact current head `06fad29c312718507747a18cf057b97e0697678a`: VAYRO CI run [42878558335] and CodeQL run [42878558361] both completed successfully.
+- Scope includes product-governance and architecture documentation plus application code for the home page/product registry, DANA action classification, and related tests. The DANA classifier explicitly classifies actions; it is not itself an authorization enforcement mechanism.
+- No PR review submissions or inline review threads were returned.
+- Disposition: retain as DRAFT pending human/code review and a fresh comparison against current `main`. CI success and mergeability do not authorize merging or prove production readiness.
+
+### Connected GitHub repository inventory
+The connected GitHub account currently exposes eight repositories: `aria-android`, `aria-app`, `aria-app-1293`, `Armin_market`, `Armin_market1`, `LEADORA`, `zelmira`, and `zelmira-one-`.
+- This inventory does not establish eleven independent product repositories.
+- Existing evidence continues to identify `LEADORA`, `ARIA` and `ARMIN MARKET` source candidates; `ARIANA` source/archive was not located in the accessible repository inventory.
+- Repositories with placeholder/duplicate names are not counted as separate operational products without source, runtime, data and test evidence.
+
+### Updated disposition
+- PR #16 exact-head CI and CodeQL: PASS.
+- PR #12: retain unmerged; duplicate workflows and destructive documentation replacement make wholesale merge unacceptable.
+- PR #14: retain draft; code-bearing governance change awaits review and current-main reconciliation.
+- Product independence: NOT VERIFIED for the eleven-app portfolio.
+- Overall release status: **ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED**.
