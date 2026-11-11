@@ -27,6 +27,8 @@ export type AuthenticatedTransactionResult<T = unknown> =
   | { authorized: false }
   | { authorized: true; userId: string; value: T };
 
+export function assertTenantRuntimeRole(tx: Pick<Prisma.TransactionClient, "$queryRaw">): Promise<void>;
+
 export function withTenantRequestTransaction<T = unknown>(input: {
   authDb: unknown;
   tenantDb: unknown;
