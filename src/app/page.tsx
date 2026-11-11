@@ -53,6 +53,17 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="section capability-section" aria-labelledby="dana-capability-title">
+        <div className="capability-card">
+          <div>
+            <span className="eyebrow">VAYRO CENTRAL INTELLIGENCE</span>
+            <h2 id="dana-capability-title">DANA · هوش مصنوعی مرکزی وایرو</h2>
+            <p>دانا قابلیت داخلی تحلیل و هماهنگی مرکز فرماندهی است؛ محصول مستقل دوازدهم نیست و دسترسی آن به اطلاعات و عملیات هر محصول محدود، مجاز و قابل ممیزی خواهد بود.</p>
+          </div>
+          <Link className="secondary-action" href="/dana/ai-workspace">ورود به فضای هوشمند دانا</Link>
+        </div>
+      </section>
+
       <section className="section independent-section">
         <div className="section-heading">
           <div><span className="eyebrow">INDEPENDENT PRODUCTS</span><h2>محصولات مستقل و متصل</h2></div>

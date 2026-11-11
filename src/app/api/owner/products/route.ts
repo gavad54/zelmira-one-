@@ -42,6 +42,9 @@ export async function GET() {
       callback: async tx => {
         const [products, tenantRows, activeRows, allRows, licenseCounts] = await Promise.all([
           tx.product.findMany({
+            // DANA may remain as a legacy registry record for preservation, but it is
+            // an internal capability and must not appear in the eleven-product portfolio.
+            where: { key: { not: "DANA" } },
             orderBy: { key: "asc" },
             select: { id: true, key: true, name: true, description: true, status: true, baseUrl: true, updatedAt: true }
           }),
