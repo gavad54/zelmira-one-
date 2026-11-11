@@ -41,6 +41,16 @@ Create these repository Variables:
 
 The restore workflow compares the production and restore database hostnames and refuses a same-host target. It also requires a backup object key matching the workflow's generated timestamped key format, PostgreSQL 17 on the target, a valid PostgreSQL archive and an empty public schema (relations, routines and user-defined types). These are guardrails, not a complete substitute for human review: provision a separate disposable restore database on a separate host and verify the target URL before adding the secret. Hostname comparison cannot detect every possible DNS alias or network-level route to the same underlying server; the operator must independently verify the target host.
 
+## Mandatory GitHub Environment approval gates
+
+Before either workflow is enabled, create two GitHub Actions Environments in repository Settings → Environments:
+
+- `vayro-backup`: configure required reviewers so the repository owner explicitly approves every backup job before production database and B2 credentials are released to the runner.
+- `vayro-restore`: configure the repository owner as a required reviewer, enable prevention of self-review where GitHub offers that control, and restrict deployment branches to `main`. Every restore must receive a separate human approval.
+- Store the workflow's required secrets and variables in the matching Environment rather than broad repository-level scope where possible. The same production connection and B2 credentials are needed in both environments; the private age identity and isolated restore connection are needed only in `vayro-restore`.
+- Do not treat the workflow's typed confirmation input as authorization. It is only an additional guard; the Environment approval is the authorization gate.
+- If the Environment protections and scoped values are not configured and verified by the owner, do not run either workflow and keep the release gate open.
+
 ## Workflow behavior
 
 - .github/workflows/vayro-db-backup.yml: manual run plus daily schedule at 02:17 UTC. Uses PostgreSQL 17 client tools, age encryption and the B2 S3 API. It checks both uploaded objects' remote sizes. It does not delete old objects.
