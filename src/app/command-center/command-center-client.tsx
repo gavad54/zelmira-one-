@@ -4,7 +4,7 @@ import { useCallback,useEffect,useState } from "react";
 type Product={id:string;key:string;name:string;description:string;status:string;baseUrl:string|null;licenseCount:number};
 type Metrics={totalProducts:number;totalTenants:number;activeLicenses:number;allLicenses:number};
 const areas=[
-{title:"مدیریت محصولات",desc:"وضعیت، نشانی امن و مجوزهای یازده محصول",href:"/owner",label:"مدیریت کاتالوگ"},
+{title:"مدیریت محصولات",desc:"وضعیت و نشانی امن یازده محصول",href:"/owner",label:"مدیریت کاتالوگ"},\n{title:"مجوز و اشتراک",desc:"صدور، لغو و پیگیری مجوزهای سازمان‌ها",href:"/owner/licenses",label:"مدیریت مجوزها"},
 {title:"کاربران و سازمان‌ها",desc:"فضاهای کاری و عضویت‌ها",href:"/workspaces",label:"فضاهای کاری"},
 {title:"هوش مصنوعی DANA",desc:"دستیار و هماهنگی هوشمند در محدوده مجوزها",href:"/dana/ai-workspace",label:"ورود به دانا"},
 {title:"آزمایشگاه توسعه و آینده",desc:"ثبت پیشنهاد، ارزیابی، تصمیم مالک و پیگیری",href:"/future-lab",label:"ورود به آزمایشگاه"},
