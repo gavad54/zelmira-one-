@@ -77,6 +77,7 @@ test("login verification performs the approved scrypt check for unknown accounts
 
   const unknownAccount = await verifyLoginPassword("a-long-and-valid-password", null);
   assert.equal(unknownAccount, false);
+  assert.equal(await verifyLoginPassword("a-long-and-valid-password", "not-a-supported-hash"), false);
 
   const password = "a-long-and-unique-password-42";
   const passwordHash = await hashPassword(password);

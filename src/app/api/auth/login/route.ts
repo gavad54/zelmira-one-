@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isSameOriginRequest,verifyPassword } from "@/lib/auth-core.mjs";
+import { isSameOriginRequest,verifyLoginPassword } from "@/lib/auth-core.mjs";
 import { allowIpAttempt,allowAttempt,issueSession,noStoreJson,requestFingerprint } from "@/lib/auth-service";
 import { prisma } from "@/lib/prisma";
 export const runtime="nodejs";
@@ -11,7 +11,7 @@ export async function POST(request:Request){
  const limits=await Promise.all([allowIpAttempt("login-ip",8,900000),allowAttempt(await requestFingerprint("login-email",email),8,900000)]);
  if(limits.some(x=>!x))return noStoreJson({error:"try_again_later"},429);
  const user=await prisma.user.findUnique({where:{email}});
- const valid=user?await verifyPassword(p.data.password,user.passwordHash):false;
+ const valid=await verifyLoginPassword(p.data.password,user?.passwordHash);
  if(!user||!valid||user.disabledAt)return noStoreJson({error:"invalid_credentials"},401);
  if(!user.emailVerifiedAt)return noStoreJson({error:"invalid_credentials"},401);
  await issueSession(user.id);
