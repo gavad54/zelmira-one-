@@ -29,11 +29,10 @@ public final class MainActivity extends Activity {
         }
         appHost = appUri.getHost();
 
+        webView = new WebView(this);
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
-        cookies.setAcceptThirdPartyCookies(null, false);
-
-        webView = new WebView(this);
+        cookies.setAcceptThirdPartyCookies(webView, false);
         webView.setBackgroundColor(Color.rgb(9, 11, 18));
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -43,12 +42,13 @@ public final class MainActivity extends Activity {
         settings.setJavaScriptCanOpenWindowsAutomatically(false);
         settings.setSupportMultipleWindows(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        settings.setSafeBrowsingEnabled(true);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            settings.setSafeBrowsingEnabled(true);
+        }
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                if (!request.isForMainFrame()) return false;
                 return handleNavigation(request.getUrl().toString());
             }
 
@@ -85,7 +85,8 @@ public final class MainActivity extends Activity {
     private boolean handleNavigation(String rawUrl) {
         Uri target = Uri.parse(rawUrl);
         if ("https".equalsIgnoreCase(target.getScheme())
-                && appHost.equalsIgnoreCase(target.getHost())) {
+                && appHost.equalsIgnoreCase(target.getHost())
+                && Uri.parse(BuildConfig.VAYRO_APP_URL).getPort() == target.getPort()) {
             return false;
         }
         if ("https".equalsIgnoreCase(target.getScheme())) {
