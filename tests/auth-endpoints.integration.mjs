@@ -40,8 +40,8 @@ before(async () => {
   server.stderr.on("data", chunk => { serverError += chunk.toString(); });
 
   for (let attempt = 0; attempt < 60; attempt += 1) {
-    if (server.exitCode !== null) {
-      throw new Error(`Next.js production server exited early: ${serverError}`);
+    if (server.exitCode !== null || server.signalCode !== null) {
+      throw new Error(`Next.js production server exited early (code=${server.exitCode}, signal=${server.signalCode}): ${serverError}`);
     }
     try {
       const response = await fetch(`${origin}/api/health`);
@@ -52,7 +52,8 @@ before(async () => {
     await delay(500);
   }
   server.kill("SIGTERM");
-  throw new Error(`Next.js production server did not become ready: ${serverError}`);
+  await delay(100);
+  throw new Error(`Next.js production server did not become ready (code=${server.exitCode}, signal=${server.signalCode}): ${serverError}`);
 });
 
 after(() => {
