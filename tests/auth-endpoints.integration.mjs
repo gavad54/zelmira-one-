@@ -25,6 +25,7 @@ globalThis.fetch = (input, init = {}) => {
 const bootstrapToken = randomBytes(48).toString("hex");
 let server;
 let serverError = "";
+let lastHealthCheck = "no HTTP response received";
 
 before(async () => {
   server = spawn(
@@ -46,14 +47,17 @@ before(async () => {
     try {
       const response = await fetch(`${origin}/api/health`);
       if (response.ok) return;
-    } catch {
+      const body = await response.text().catch(() => "");
+      lastHealthCheck = `HTTP ${response.status}: ${body.slice(0, 256)}`;
+    } catch (error) {
+      lastHealthCheck = `fetch error: ${error instanceof Error ? error.message : "unknown"}`;
       // The production server is still starting.
     }
     await delay(500);
   }
   server.kill("SIGTERM");
   await delay(100);
-  throw new Error(`Next.js production server did not become ready (code=${server.exitCode}, signal=${server.signalCode}): ${serverError}`);
+  throw new Error(`Next.js production server did not become ready (code=${server.exitCode}, signal=${server.signalCode}; last health check: ${lastHealthCheck}): ${serverError}`);
 });
 
 after(() => {
