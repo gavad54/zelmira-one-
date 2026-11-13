@@ -33,9 +33,10 @@ before(async () => {
     {
       env: { ...process.env, NODE_ENV: "production", PORT: String(port), HOSTNAME: "127.0.0.1", NEXT_PUBLIC_APP_URL: origin, TRUSTED_PROXY_HOPS: "1", VAYRO_OWNER_BOOTSTRAP_TOKEN: bootstrapToken, VAYRO_MFA_ENCRYPTION_KEY: "ab".repeat(32), EMAIL_PROVIDER: "disabled-for-test" },
       cwd: join(process.cwd(), ".next/standalone"),
-      stdio: ["ignore", "ignore", "pipe"]
+      stdio: ["ignore", "pipe", "pipe"]
     }
   );
+  server.stdout.on("data", chunk => { serverError += chunk.toString(); });
   server.stderr.on("data", chunk => { serverError += chunk.toString(); });
 
   for (let attempt = 0; attempt < 60; attempt += 1) {
