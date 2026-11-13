@@ -31,8 +31,9 @@ before(async () => {
       VAYRO_MFA_ENCRYPTION_KEY: "ef".repeat(32), EMAIL_PROVIDER: "disabled-for-test"
     },
     cwd: join(process.cwd(), ".next/standalone"),
-    stdio: ["ignore", "ignore", "pipe"]
+    stdio: ["ignore", "pipe", "pipe"]
   });
+  server.stdout.on("data", chunk => { serverError += chunk.toString(); });
   server.stderr.on("data", chunk => { serverError += chunk.toString(); });
   for (let attempt = 0; attempt < 60; attempt += 1) {
     if (server.exitCode !== null) throw new Error(`Next.js production server exited early: ${serverError}`);
