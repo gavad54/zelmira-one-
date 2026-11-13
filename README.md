@@ -33,7 +33,9 @@ Production email, complete endpoint-level authorization coverage, full tenant-sc
 - PostgreSQL 17 (dedicated Supabase Free project) and Prisma
 - Zod input validation
 - GitHub Actions CI and CodeQL
-- Application hosting remains unresolved; Railway free-plan resource limit prevented provisioning. No VAYRO deployment exists.
+- Application hosting is **not independently provisioned**. A Railway service named VAYRO currently exists inside the **ARIA Web** project at `vayro-production.up.railway.app`, but it has no service environment variables, no attached volume and no custom domain. Its reported deployment/replica state is online; this does not establish database connectivity, readiness, independent ownership or production approval.
+- A second VAYRO-named service exists inside the **LEADORA** project, but it has no public domain or service variables. Neither service is an independent VAYRO hosting environment. Do not use either as a production or Android APK target, and do not reuse ARIA or LEADORA infrastructure for VAYRO.
+- The dedicated VAYRO Railway project and independent application host remain unresolved; Railway's free-plan resource limit previously blocked separate provisioning.
 
 ## Local development
 
