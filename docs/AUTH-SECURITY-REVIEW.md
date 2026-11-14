@@ -81,3 +81,31 @@ IP-based throttling must not trust an arbitrary `X-Forwarded-For` value. The app
 - Unit tests: 43 passed / 0 failed. PostgreSQL and production HTTP integration tests: 15 passed / 0 failed. The enforced npm audit reported 0 vulnerabilities; lint, typecheck, Prisma migration in isolated PostgreSQL and production build passed.
 - IP-only throttling now requires an explicit `TRUSTED_PROXY_HOPS` setting and parses the first untrusted hop from the right. Until the real ingress chain is verified, IP-only throttles are skipped; account/email/token-specific throttles remain active. The variable is intentionally unset in the example environment.
 - This change does not verify any live hosting proxy configuration and does not close production security review, MFA, tenant authorization coverage, or release gates.
+
+
+## Verification update — MFA cryptographic core (2026-11-10)
+
+- Added an isolated Node.js MFA cryptographic module using RFC 6238 TOTP (SHA-1, six digits, 30-second steps), a 160-bit random Base32 secret, bounded clock drift, constant-time code comparison and a caller-supplied monotonic replay watermark.
+- TOTP secrets can be protected at rest with AES-256-GCM using a separately provisioned 32-byte hexadecimal `VAYRO_MFA_ENCRYPTION_KEY`; each encryption uses a fresh 96-bit IV and authenticated 128-bit tag. The module fails closed when the key is missing or malformed.
+- Unit tests cover the RFC 6238 reference vector, drift and replay behavior, malformed inputs, encryption/decryption, authentication-tag tampering and authenticator URI encoding.
+- **This is not end-to-end MFA.** The helper is not yet connected to the Prisma schema, login challenge, session lifecycle, enrollment/disable endpoints, recovery codes, rate limiting, audit events or owner-route enforcement. No MFA encryption key has been provisioned. Do not treat owner accounts as MFA-protected and do not deploy this helper as an active control.
+- Next implementation slice: add versioned MFA credential/challenge/recovery-code persistence and transactional one-time verification, then integrate login and privileged-route enforcement with a tested owner recovery path. Production secret provisioning remains a separately authorized owner action.
+
+
+## Verification update — MFA persistence foundation (2026-11-11)
+
+- Added versioned Prisma persistence for one encrypted TOTP credential per user, short-lived login challenge hashes, and one-time recovery-code hashes.
+- Added a forward-only migration. The three MFA tables have row-level security enabled, no client policies, and no table privileges granted to `anon`, `authenticated` or `service_role`. They are intended for server-only access through the application database role.
+- The credential stores a monotonic `lastAcceptedStep` watermark. The integration test verifies an atomic conditional update accepts a step once, including a concurrent replay attempt. Challenge and recovery-code consumption are likewise tested as one-time conditional updates.
+- The integration test also verifies expiry rejection, per-user credential uniqueness, RLS enablement, absence of client policies and absence of client-role SELECT/INSERT/UPDATE/DELETE grants in isolated CI PostgreSQL.
+- **This is persistence groundwork, not end-to-end MFA.** Login still does not issue or validate MFA challenges; enrollment, verification, recovery, audit events, rate limits, owner/administrator enforcement and a tested recovery procedure remain unimplemented. The encryption key has not been provisioned.
+- This migration is included only in the repository's disposable CI migration history. It has not been applied to VAYRO-CORE or any production database.
+
+
+## Verification update — constant-work login password verification (2026-11-12)
+
+- On PR #5 branch head `393c2f53dc2e5024a386ae29bfc18ddb698b2cf0`, login password verification was changed to run the approved scrypt verifier for missing or unsupported stored hashes using a fixed dummy hash. The result can authenticate only when a supported stored hash exists and matches; the dummy hash is never sufficient to issue a session.
+- The regression test was added first and observed failing on workflow run [43182038789](https://github.com/gavad54/zelmira-one-/actions/runs/43182038789) because the verifier was not yet implemented. After implementation and declaration updates, the unit test passed.
+- Final code-head evidence: [VAYRO CI 43182818211](https://github.com/gavad54/zelmira-one-/actions/runs/43182818211), [Dashboard Validation 43182818183](https://github.com/gavad54/zelmira-one-/actions/runs/43182818183), and [CodeQL 43182818383](https://github.com/gavad54/zelmira-one-/actions/runs/43182818383) all completed successfully on `393c2f53dc2e5024a386ae29bfc18ddb698b2cf0`. CI reported 55/55 unit tests, 19/19 PostgreSQL/production-HTTP integration tests, and 0 dependency vulnerabilities; lint, typecheck, Prisma validation/migrations in isolated PostgreSQL and production build passed.
+- **This does not close privileged MFA.** PR #5 still contains the older password-only session-issuance route for privileged users. The current `main` branch contains the MFA challenge gate and related endpoints, while PR #5 remains divergent and 17 commits behind `main` at this inspection. Keep PR #5 open/draft and do not merge until its authentication/session/database-role changes are reconciled with the tested `main` implementation.
+- No production secret, database, deployment or public release was changed by this work.

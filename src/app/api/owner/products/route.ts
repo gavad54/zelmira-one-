@@ -6,6 +6,7 @@ import { authorizeOwnerSession } from "@/lib/owner-session.mjs";
 import { PRODUCT_CATALOG, validateProductConfiguration } from "@/lib/product-catalog.mjs";
 import { allowAttempt, noStoreJson, sha256 } from "@/lib/auth-service";
 import { prisma } from "@/lib/prisma";
+import { currentActiveLicenseWhere } from "@/lib/owner-metrics.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,7 +43,7 @@ export async function GET() {
         }
       }),
       prisma.tenant.count(),
-      prisma.license.count({ where: { active: true, OR: [{ endsAt: null }, { endsAt: { gt: new Date() } }] } }),
+      prisma.license.count({ where: currentActiveLicenseWhere(new Date()) }),
       prisma.license.count()
     ]);
     return noStoreJson({

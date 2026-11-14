@@ -65,7 +65,13 @@ test("owner product configuration writes are rate limited without weakening auth
     actualRateLimitKey = createHash("sha256").update("owner-products-update:" + userId).digest("hex");
 
     await db.session.create({
-      data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+      data: {
+        userId,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        assurance: "MFA",
+        mfaAuthenticatedAt: new Date()
+      }
     });
     const product = await db.product.create({
       data: {

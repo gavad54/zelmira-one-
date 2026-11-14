@@ -15,6 +15,11 @@ const KEY_LENGTH = 64;
 const MAX_PASSWORD_BYTES = 1024;
 const SESSION_TOKEN_BYTES = 32;
 
+const DUMMY_PASSWORD_HASH =
+  "scrypt$32768$8$1$00112233445566778899aabbccddeeff$c5cb515c28b24f440f7c9fca611f8e48ae2c88209ce84f735d8190d330e38fa9a2c6cbcd377b372607b9dded9f7cb42d43b6b53307e1a84d1037db476fc39fe3";
+
+const SUPPORTED_PASSWORD_HASH = /^scrypt\$32768\$8\$1\$[a-f0-9]{32}\$[a-f0-9]{128}$/;
+
 function validPassword(password) {
   return typeof password === "string" &&
     password.length >= 12 &&
@@ -82,6 +87,17 @@ export async function verifyPassword(password, encodedHash) {
   } catch {
     return false;
   }
+}
+
+
+/**
+ * Verify login passwords with equivalent scrypt work for missing or malformed
+ * account hashes. A dummy match can never authenticate an account.
+ */
+export async function verifyLoginPassword(password, encodedHash) {
+  const hasSupportedHash = typeof encodedHash === "string" && SUPPORTED_PASSWORD_HASH.test(encodedHash);
+  const matched = await verifyPassword(password, hasSupportedHash ? encodedHash : DUMMY_PASSWORD_HASH);
+  return hasSupportedHash && matched;
 }
 
 /** Generate a 256-bit opaque bearer token. Store only hashSessionToken(token). */

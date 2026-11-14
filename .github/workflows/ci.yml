@@ -2,9 +2,9 @@ name: VAYRO CI
 
 on:
   push:
-    branches: [main, brand/vayro-name-only]
+    branches: [main, brand/vayro-name-only, feature/vayro-real-dashboard]
   pull_request:
-    branches: [main]
+    branches: [main, experiment/cloudflare-free-hosting-audit]
 
 permissions:
   contents: read

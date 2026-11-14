@@ -68,7 +68,13 @@ test("owner email APIs enforce authorization, same-origin writes, audit, throttl
     userId = user.id;
 
     await db.session.create({
-      data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+      data: {
+        userId,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        assurance: "MFA",
+        mfaAuthenticatedAt: new Date()
+      }
     });
     const cookie = `vayro_session=${token}`;
     const writeHeaders = {
