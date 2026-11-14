@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       app_url:
-        description: "HTTPS address of the deployed VAYRO web application"
+        description: "HTTPS address used for internal VAYRO wrapper testing"
         required: false
         type: string
 
@@ -20,10 +20,10 @@ concurrency:
 
 jobs:
   build-debug-apk:
-    if: ${{ true }}
     runs-on: ubuntu-latest
     steps:
-      - name: Validate deployment URL
+      - name: Resolve and validate deployment URL
+        id: app-url
         shell: bash
         env:
           VAYRO_APP_URL: ${{ github.event.inputs.app_url || vars.VAYRO_APP_URL || 'https://vayro-production.up.railway.app' }}
@@ -32,6 +32,7 @@ jobs:
             echo "A valid HTTPS VAYRO deployment URL is required."
             exit 1
           fi
+          echo "value=$VAYRO_APP_URL" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,7 +55,7 @@ jobs:
 
       - name: Build installable debug APK
         env:
-          VAYRO_APP_URL: ${{ github.event.inputs.app_url || vars.VAYRO_APP_URL }}
+          VAYRO_APP_URL: ${{ steps.app-url.outputs.value }}
         run: |
           gradle --no-daemon --stacktrace :app:assembleDebug -PVAYRO_APP_URL="$VAYRO_APP_URL"
 
@@ -65,16 +66,3 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7
-
-  awaiting-hosting:
-    if: ${{ github.event.inputs.app_url == '' && vars.VAYRO_APP_URL == '' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Explain deployment prerequisite
-        run: |
-          {
-            echo "## APK build waiting for VAYRO hosting"
-            echo ""
-            echo "No APK was built. Provision the dedicated VAYRO HTTPS application origin, then add it as the repository variable VAYRO_APP_URL."
-            echo "The debug build will run on the next push to this feature branch, or via manual dispatch with app_url."
-          } >> "$GITHUB_STEP_SUMMARY"
