@@ -4,14 +4,15 @@
 - Repository: `gavad54/zelmira-one-`
 - PR: [#5](https://github.com/gavad54/zelmira-one-/pull/5)
 - Branch: `feature/vayro-real-dashboard`
-- Reviewed head before change: `11bba59960e48d9ab6776f6e407f27b7b9007ddf`
-- The Prisma `Session` model already contains nullable `revokedAt`, but the shared session lookup, platform-owner authorization helper and tenant authorization helper did not reject non-null revocation timestamps.
+- Reviewed head before this change: `14cc80396c4776b4398937a33cb7029b067e691f`
+- The PR branch's `Session` model and database table had no persisted revocation timestamp. The shared session lookup, platform-owner authorization helper and tenant authorization helper therefore had no common revocation signal to enforce.
 
 ## Change
-- `currentSession()` now rejects revoked sessions before returning an authenticated user.
-- `authorizeOwnerSession()` now rejects revoked sessions before owner authorization.
-- `authorizeTenantRequest()` now rejects revoked sessions before tenant membership lookup.
-- Added unit regression tests for owner and tenant authorization and a PostgreSQL-backed HTTP regression test for `GET /api/auth/me`.
+- Added nullable `Session.revokedAt` to Prisma and a forward-only migration that adds the database column.
+- `currentSession()` now rejects sessions with a non-null revocation timestamp.
+- `authorizeOwnerSession()` and `authorizeTenantRequest()` reject revoked sessions before granting access; tenant authorization denies before loading membership.
+- Added owner/tenant unit regression tests and a PostgreSQL-backed HTTP regression test for `GET /api/auth/me`.
+- Updated the workspace authorization fixture to model an explicitly unrevoked database session.
 
 ## Verification boundary
-The change is limited to the development branch and the disposable CI database. The tests must pass on the resulting commit before this finding is marked repository-verified. No production migration, data change, deployment, merge, secret change or public release is included.
+The migration is intended for the disposable PostgreSQL instance used by CI. It has not been applied to VAYRO-CORE or any production database. Repository CI must pass on the final commit before this change is considered verified. No deployment, merge, secret change or public release is included.

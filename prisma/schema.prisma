@@ -102,6 +102,7 @@ model Session {
   userId             String
   expiresAt          DateTime
   createdAt          DateTime         @default(now())
+  revokedAt          DateTime?
   assurance          SessionAssurance @default(PASSWORD)
   mfaAuthenticatedAt DateTime?
   user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
