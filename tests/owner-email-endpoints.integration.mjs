@@ -22,8 +22,9 @@ before(async () => {
       EMAIL_PROVIDER: ""
     },
     cwd: join(process.cwd(), ".next/standalone"),
-    stdio: ["ignore", "ignore", "pipe"]
+    stdio: ["ignore", "pipe", "pipe"]
   });
+  server.stdout.on("data", chunk => { serverError += chunk.toString(); });
   server.stderr.on("data", chunk => { serverError += chunk.toString(); });
   for (let attempt = 0; attempt < 60; attempt += 1) {
     if (server.exitCode !== null) throw new Error(`Next.js server exited: ${serverError}`);

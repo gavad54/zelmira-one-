@@ -25,6 +25,7 @@ globalThis.fetch = (input, init = {}) => {
 const bootstrapToken = randomBytes(48).toString("hex");
 let server;
 let serverError = "";
+let lastHealthCheck = "no HTTP response received";
 
 before(async () => {
   server = spawn(
@@ -33,25 +34,30 @@ before(async () => {
     {
       env: { ...process.env, NODE_ENV: "production", PORT: String(port), HOSTNAME: "127.0.0.1", NEXT_PUBLIC_APP_URL: origin, TRUSTED_PROXY_HOPS: "1", VAYRO_OWNER_BOOTSTRAP_TOKEN: bootstrapToken, VAYRO_MFA_ENCRYPTION_KEY: "ab".repeat(32), EMAIL_PROVIDER: "disabled-for-test" },
       cwd: join(process.cwd(), ".next/standalone"),
-      stdio: ["ignore", "ignore", "pipe"]
+      stdio: ["ignore", "pipe", "pipe"]
     }
   );
+  server.stdout.on("data", chunk => { serverError += chunk.toString(); });
   server.stderr.on("data", chunk => { serverError += chunk.toString(); });
 
   for (let attempt = 0; attempt < 60; attempt += 1) {
-    if (server.exitCode !== null) {
-      throw new Error(`Next.js production server exited early: ${serverError}`);
+    if (server.exitCode !== null || server.signalCode !== null) {
+      throw new Error(`Next.js production server exited early (code=${server.exitCode}, signal=${server.signalCode}): ${serverError}`);
     }
     try {
       const response = await fetch(`${origin}/api/health`);
       if (response.ok) return;
-    } catch {
+      const body = await response.text().catch(() => "");
+      lastHealthCheck = `HTTP ${response.status}: ${body.slice(0, 256)}`;
+    } catch (error) {
+      lastHealthCheck = `fetch error: ${error instanceof Error ? error.message : "unknown"}`;
       // The production server is still starting.
     }
     await delay(500);
   }
   server.kill("SIGTERM");
-  throw new Error(`Next.js production server did not become ready: ${serverError}`);
+  await delay(100);
+  throw new Error(`Next.js production server did not become ready (code=${server.exitCode}, signal=${server.signalCode}; last health check: ${lastHealthCheck}): ${serverError}`);
 });
 
 after(() => {
