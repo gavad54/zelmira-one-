@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "VAYRO-Android"
 include(":app")
+project(":app").projectDir = file("android/app")
