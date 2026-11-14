@@ -20,13 +20,13 @@ concurrency:
 
 jobs:
   build-debug-apk:
-    if: ${{ github.event.inputs.app_url != '' || vars.VAYRO_APP_URL != '' }}
+    if: ${{ true }}
     runs-on: ubuntu-latest
     steps:
       - name: Validate deployment URL
         shell: bash
         env:
-          VAYRO_APP_URL: ${{ github.event.inputs.app_url || vars.VAYRO_APP_URL }}
+          VAYRO_APP_URL: ${{ github.event.inputs.app_url || vars.VAYRO_APP_URL || 'https://vayro-production.up.railway.app' }}
         run: |
           if [[ ! "$VAYRO_APP_URL" =~ ^https://[^/[:space:]]+([/][^[:space:]]*)?$ ]]; then
             echo "A valid HTTPS VAYRO deployment URL is required."
