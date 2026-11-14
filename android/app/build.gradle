@@ -1,0 +1,32 @@
+plugins {
+    id "com.android.application"
+}
+
+def vayroAppUrl = project.findProperty("VAYRO_APP_URL") ?: ""
+if (!(vayroAppUrl instanceof String) || !vayroAppUrl.startsWith("https://")) {
+    throw new GradleException("Pass -PVAYRO_APP_URL=https://your-deployed-vayro-domain")
+}
+def escapedVayroAppUrl = vayroAppUrl.replace("\\", "\\\\").replace('"', '\\"')
+
+android {
+    namespace "com.vayro.app"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.vayro.app"
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName "1.0.0"
+        buildConfigField "String", "VAYRO_APP_URL", "\"${escapedVayroAppUrl}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
