@@ -840,7 +840,8 @@ test("privileged password login fails closed and old password sessions are rejec
       const response = await fetch(`${origin}/api/auth/login`, {
         method: "POST",
         headers: {
-          Origin: origin,
+          Origin: `http://localhost:${port}`,
+          Host: `localhost:${port}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ email, password })
@@ -872,7 +873,8 @@ test("privileged password login fails closed and old password sessions are rejec
     const ordinaryLogin = await fetch(`${origin}/api/auth/login`, {
       method: "POST",
       headers: {
-        Origin: origin,
+        Origin: `http://localhost:${port}`,
+        Host: `localhost:${port}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ email: ordinaryEmail, password })
