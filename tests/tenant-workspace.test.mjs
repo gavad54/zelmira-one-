@@ -8,6 +8,7 @@ const tokenHash = createHash("sha256").update(sessionToken).digest("hex");
 const now = new Date("2026-11-06T08:00:00.000Z");
 
 const activeSession = {
+  revokedAt: null,
   expiresAt: new Date("2026-11-07T08:00:00.000Z"),
   assurance: "MFA",
   mfaAuthenticatedAt: new Date("2026-11-06T07:00:00.000Z"),
