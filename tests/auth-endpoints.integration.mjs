@@ -841,7 +841,6 @@ test("privileged password login fails closed and old password sessions are rejec
         method: "POST",
         headers: {
           Origin: origin,
-          Host: `127.0.0.1:${port}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ email, password })
@@ -874,7 +873,6 @@ test("privileged password login fails closed and old password sessions are rejec
       method: "POST",
       headers: {
         Origin: origin,
-        Host: `127.0.0.1:${port}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ email: ordinaryEmail, password })
