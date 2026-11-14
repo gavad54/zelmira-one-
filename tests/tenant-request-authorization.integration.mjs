@@ -43,7 +43,9 @@ before(async () => {
     data: {
       tokenHash,
       userId,
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      assurance: "MFA",
+      mfaAuthenticatedAt: now
     }
   });
 });

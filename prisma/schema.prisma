@@ -48,6 +48,11 @@ enum AuthTokenPurpose {
   PASSWORD_RESET
 }
 
+enum SessionAssurance {
+  PASSWORD
+  MFA
+}
+
 model User {
   id              String       @id @default(cuid())
   email           String       @unique
@@ -92,12 +97,14 @@ model Membership {
 }
 
 model Session {
-  id        String   @id @default(cuid())
-  tokenHash String   @unique
-  userId    String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                 String           @id @default(cuid())
+  tokenHash          String           @unique
+  userId             String
+  expiresAt          DateTime
+  createdAt          DateTime         @default(now())
+  assurance          SessionAssurance @default(PASSWORD)
+  mfaAuthenticatedAt DateTime?
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
 }

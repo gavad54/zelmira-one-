@@ -72,6 +72,16 @@ export async function authorizeTenantRequest({
       return denied;
     }
 
+    if (membership.role === "OWNER" || membership.role === "ADMIN") {
+      const mfaAuthenticatedAt = session.mfaAuthenticatedAt;
+      const hasRecentMfa =
+        session.assurance === "MFA" &&
+        mfaAuthenticatedAt instanceof Date &&
+        mfaAuthenticatedAt.getTime() <= now.getTime() &&
+        mfaAuthenticatedAt.getTime() > now.getTime() - 12 * 60 * 60 * 1000;
+      if (!hasRecentMfa) return denied;
+    }
+
     if (!authorizeTenantAction({
       authenticatedUserId: session.user.id,
       requestedTenantId: tenantId,

@@ -1,6 +1,7 @@
 import test, { before, after } from "node:test";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, PlatformRole, MembershipRole } from "@prisma/client";
+import { hashPassword } from "../src/lib/auth-core.mjs";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
@@ -228,7 +229,13 @@ test("tenant HTTP APIs enforce authentication, verified email, membership and cr
     userId = user.id;
 
     await db.session.create({
-      data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+      data: {
+        userId,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        assurance: "MFA",
+        mfaAuthenticatedAt: new Date()
+      }
     });
     const cookie = `vayro_session=${token}`;
 
@@ -362,7 +369,9 @@ test("tenant HTTP APIs enforce authentication, verified email, membership and cr
       data: {
         userId: adminUserId,
         tokenHash: adminTokenHash,
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        assurance: "MFA",
+        mfaAuthenticatedAt: new Date()
       }
     });
     const adminCookie = `vayro_session=${adminToken}`;
@@ -615,7 +624,13 @@ test("tenant members endpoint requires OWNER or ADMIN and never exposes credenti
 
     await db.session.createMany({
       data: [
-        { userId: ownerId, tokenHash: ownerTokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
+        {
+          userId: ownerId,
+          tokenHash: ownerTokenHash,
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+          assurance: "MFA",
+          mfaAuthenticatedAt: new Date()
+        },
         { userId: viewerId, tokenHash: viewerTokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
       ]
     });
@@ -760,6 +775,121 @@ test("session identity endpoint denies expired sessions and disabled accounts", 
       await db.session.deleteMany({ where: { userId } });
       await db.user.deleteMany({ where: { id: userId } });
     }
+    await db.$disconnect();
+  }
+});
+
+test("privileged password login fails closed and old password sessions are rejected", async () => {
+  const db = new PrismaClient();
+  const suffix = randomUUID();
+  const password = "VAYRO-integration-password-2026";
+  const passwordHash = await hashPassword(password);
+  const ownerEmail = `owner-mfa-gate-${suffix}@example.invalid`;
+  const adminEmail = `tenant-admin-mfa-gate-${suffix}@example.invalid`;
+  const ordinaryEmail = `ordinary-mfa-gate-${suffix}@example.invalid`;
+  const loginRateLimitKeys = [ownerEmail, adminEmail, ordinaryEmail].map(email =>
+    createHash("sha256").update("login-email:identity:" + email.toLowerCase()).digest("hex")
+  );
+  let ownerId;
+  let adminId;
+  let ordinaryId;
+  let tenantId;
+
+  try {
+    await db.$connect();
+    const owner = await db.user.create({
+      data: {
+        email: ownerEmail,
+        passwordHash,
+        displayName: "MFA Gate Owner",
+        platformRole: PlatformRole.OWNER,
+        emailVerifiedAt: new Date()
+      }
+    });
+    ownerId = owner.id;
+
+    const admin = await db.user.create({
+      data: {
+        email: adminEmail,
+        passwordHash,
+        displayName: "MFA Gate Tenant Admin",
+        emailVerifiedAt: new Date()
+      }
+    });
+    adminId = admin.id;
+
+    const tenant = await db.tenant.create({
+      data: { name: "MFA Gate Tenant", slug: `mfa-gate-${suffix}` }
+    });
+    tenantId = tenant.id;
+    await db.membership.create({
+      data: { userId: adminId, tenantId, role: MembershipRole.ADMIN }
+    });
+
+    const ordinary = await db.user.create({
+      data: {
+        email: ordinaryEmail,
+        passwordHash,
+        displayName: "MFA Gate Ordinary User",
+        emailVerifiedAt: new Date()
+      }
+    });
+    ordinaryId = ordinary.id;
+
+    for (const email of [ownerEmail, adminEmail]) {
+      const response = await fetch(`${origin}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          Origin: origin,
+          Host: `127.0.0.1:${port}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email, password })
+      });
+      assert.equal(response.status, 403);
+      assert.deepEqual(await response.json(), { error: "mfa_required" });
+      assert.equal(response.headers.get("set-cookie"), null);
+    }
+    assert.equal(await db.session.count({ where: { userId: ownerId } }), 0);
+    assert.equal(await db.session.count({ where: { userId: adminId } }), 0);
+
+    for (const userId of [ownerId, adminId]) {
+      const legacyToken = randomBytes(32).toString("hex");
+      const legacyTokenHash = createHash("sha256").update(legacyToken).digest("hex");
+      await db.session.create({
+        data: {
+          userId,
+          tokenHash: legacyTokenHash,
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+        }
+      });
+      const me = await fetch(`${origin}/api/auth/me`, {
+        headers: { Cookie: `vayro_session=${legacyToken}` }
+      });
+      assert.equal(me.status, 401, "legacy password-only privileged sessions must fail closed");
+      assert.deepEqual(await me.json(), { authenticated: false });
+    }
+
+    const ordinaryLogin = await fetch(`${origin}/api/auth/login`, {
+      method: "POST",
+      headers: {
+        Origin: origin,
+        Host: `127.0.0.1:${port}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email: ordinaryEmail, password })
+    });
+    assert.equal(ordinaryLogin.status, 200);
+    assert.equal((await ordinaryLogin.json()).authenticated, true);
+    const ordinarySession = await db.session.findFirst({ where: { userId: ordinaryId } });
+    assert.equal(ordinarySession?.assurance, "PASSWORD");
+    assert.equal(ordinarySession?.mfaAuthenticatedAt, null);
+  } finally {
+    await db.authRateLimit.deleteMany({ where: { keyHash: { in: loginRateLimitKeys } } });
+    if (ownerId) await db.user.deleteMany({ where: { id: ownerId } });
+    if (adminId) await db.user.deleteMany({ where: { id: adminId } });
+    if (ordinaryId) await db.user.deleteMany({ where: { id: ordinaryId } });
+    if (tenantId) await db.tenant.deleteMany({ where: { id: tenantId } });
     await db.$disconnect();
   }
 });

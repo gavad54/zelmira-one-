@@ -30,6 +30,8 @@ function database({ session, membership, sessionError, membershipError } = {}) {
 
 const activeSession = {
   expiresAt: new Date("2026-11-05T12:00:00.000Z"),
+  assurance: "MFA",
+  mfaAuthenticatedAt: new Date("2026-11-04T11:00:00.000Z"),
   user: { id: "user-a", emailVerifiedAt: new Date("2026-11-01T00:00:00.000Z"), disabledAt: null }
 };
 const activeMembership = {
@@ -151,4 +153,40 @@ test("fails closed when database lookups throw", async () => {
     });
     assert.equal(result.authorized, false);
   }
+});
+
+test("denies privileged tenant memberships without fresh MFA assurance", async () => {
+  const passwordOnly = database({
+    session: { ...activeSession, assurance: "PASSWORD", mfaAuthenticatedAt: null },
+    membership: activeMembership
+  });
+  assert.equal((await authorizeTenantRequest({
+    sessionToken: token, tenantId: "tenant-a", action: "tenant_read", db: passwordOnly, now
+  })).authorized, false);
+
+  for (const mfaAuthenticatedAt of [
+    new Date(now.getTime() - 12 * 60 * 60 * 1000 - 1),
+    new Date(now.getTime() + 1)
+  ]) {
+    const staleOrFuture = database({
+      session: { ...activeSession, mfaAuthenticatedAt },
+      membership: activeMembership
+    });
+    assert.equal((await authorizeTenantRequest({
+      sessionToken: token, tenantId: "tenant-a", action: "tenant_read", db: staleOrFuture, now
+    })).authorized, false);
+  }
+});
+
+test("ordinary tenant members retain password-session access to permitted reads", async () => {
+  const db = database({
+    session: { ...activeSession, assurance: "PASSWORD", mfaAuthenticatedAt: null },
+    membership: { ...activeMembership, role: "VIEWER" }
+  });
+  const result = await authorizeTenantRequest({
+    sessionToken: token, tenantId: "tenant-a", action: "tenant_read", db, now
+  });
+  assert.deepEqual(result, {
+    authorized: true, userId: "user-a", tenantId: "tenant-a", role: "VIEWER"
+  });
 });
