@@ -42,6 +42,7 @@ export async function authorizeTenantRequest({
 
     if (
       !session ||
+      session.revokedAt !== null ||
       !(session.expiresAt instanceof Date) ||
       session.expiresAt.getTime() <= now.getTime() ||
       !session.user ||

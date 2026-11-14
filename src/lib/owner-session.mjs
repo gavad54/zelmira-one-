@@ -36,6 +36,7 @@ export async function authorizeOwnerSession({ sessionToken, db, now = new Date()
     });
     if (
       !session ||
+      session.revokedAt !== null ||
       !(session.expiresAt instanceof Date) ||
       session.expiresAt.getTime() <= now.getTime() ||
       !hasRecentMfaAssurance(session, now) ||

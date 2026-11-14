@@ -10,6 +10,7 @@ function makeDb(session) {
 
 function ownerSession(overrides = {}) {
   return {
+    revokedAt: null,
     expiresAt: new Date(now.getTime() + 60_000),
     assurance: "MFA",
     mfaAuthenticatedAt: new Date(now.getTime() - 60_000),
@@ -30,6 +31,15 @@ test("owner session accepts only active, unexpired sessions with recent MFA assu
     now
   });
   assert.deepEqual(result, { authorized: true, userId: "owner-1" });
+});
+
+test("owner session rejects revoked sessions even when unexpired", async () => {
+  const result = await authorizeOwnerSession({
+    sessionToken: "a".repeat(64),
+    db: makeDb(ownerSession({ revokedAt: new Date(now.getTime() - 1) })),
+    now
+  });
+  assert.deepEqual(result, { authorized: false });
 });
 
 test("owner session rejects password-only or missing MFA assurance", async () => {

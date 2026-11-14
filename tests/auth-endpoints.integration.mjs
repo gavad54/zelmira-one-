@@ -884,6 +884,21 @@ test("privileged password login fails closed and old password sessions are rejec
     const ordinarySession = await db.session.findFirst({ where: { userId: ordinaryId } });
     assert.equal(ordinarySession?.assurance, "PASSWORD");
     assert.equal(ordinarySession?.mfaAuthenticatedAt, null);
+
+    const revokedToken = randomBytes(32).toString("hex");
+    await db.session.create({
+      data: {
+        userId: ordinaryId,
+        tokenHash: createHash("sha256").update(revokedToken).digest("hex"),
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        revokedAt: new Date()
+      }
+    });
+    const revokedMe = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${revokedToken}` }
+    });
+    assert.equal(revokedMe.status, 401, "revoked sessions must not authenticate");
+    assert.deepEqual(await revokedMe.json(), { authenticated: false });
   } finally {
     await db.authRateLimit.deleteMany({ where: { keyHash: { in: loginRateLimitKeys } } });
     if (ownerId) await db.user.deleteMany({ where: { id: ownerId } });

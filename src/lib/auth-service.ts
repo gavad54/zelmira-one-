@@ -132,6 +132,7 @@ export async function currentSession() {
   });
   if (
     !session ||
+    session.revokedAt !== null ||
     session.expiresAt.getTime() <= now.getTime() ||
     !session.user.emailVerifiedAt ||
     session.user.disabledAt

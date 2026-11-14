@@ -29,6 +29,7 @@ function database({ session, membership, sessionError, membershipError } = {}) {
 }
 
 const activeSession = {
+  revokedAt: null,
   expiresAt: new Date("2026-11-05T12:00:00.000Z"),
   assurance: "MFA",
   mfaAuthenticatedAt: new Date("2026-11-04T11:00:00.000Z"),
@@ -118,6 +119,17 @@ test("denies expired sessions and disabled users", async () => {
     sessionToken: token, tenantId: "tenant-a", action: "tenant_read", db: disabled, now
   })).authorized, false);
   assert.equal(disabled.calls.membership.length, 0);
+});
+
+test("denies revoked sessions before checking tenant membership", async () => {
+  const db = database({
+    session: { ...activeSession, revokedAt: new Date(now.getTime() - 1) },
+    membership: activeMembership
+  });
+  assert.equal((await authorizeTenantRequest({
+    sessionToken: token, tenantId: "tenant-a", action: "tenant_read", db, now
+  })).authorized, false);
+  assert.equal(db.calls.membership.length, 0);
 });
 
 test("denies absent, cross-tenant and inactive tenant memberships", async () => {
