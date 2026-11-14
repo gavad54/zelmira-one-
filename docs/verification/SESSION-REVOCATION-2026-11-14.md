@@ -15,4 +15,12 @@
 - Updated the workspace authorization fixture to model an explicitly unrevoked database session.
 
 ## Verification boundary
-The migration is intended for the disposable PostgreSQL instance used by CI. It has not been applied to VAYRO-CORE or any production database. Repository CI must pass on the final commit before this change is considered verified. No deployment, merge, secret change or public release is included.
+The migration is intended for the disposable PostgreSQL instance used by CI. It has not been applied to VAYRO-CORE or any production database. ## CI evidence for the implementation commit
+
+The code/schema/test change at `175d09e320ef3ecb0b2154a276a72656328234b6` completed all repository checks on 2026-11-14:
+
+- [VAYRO CI #43574944542](https://github.com/gavad54/zelmira-one-/actions/runs/43574944542): success; 62 unit tests and 20 PostgreSQL/HTTP integration tests passed, zero failures; dependency audit reported 0 vulnerabilities; Prisma applied the complete migration history including `20261114090000_add_session_revocation`; lint, typecheck and production build passed.
+- [Dashboard Validation #43574944557](https://github.com/gavad54/zelmira-one-/actions/runs/43574944557): success; 62 unit tests, lint, typecheck and production build passed.
+- [CodeQL #43574944543](https://github.com/gavad54/zelmira-one-/actions/runs/43574944543): success.
+
+These are repository/isolated-CI results only. They do not verify production migration, runtime DB-role configuration, live deployment, UAT or release readiness. No deployment, merge, secret change or public release is included.
