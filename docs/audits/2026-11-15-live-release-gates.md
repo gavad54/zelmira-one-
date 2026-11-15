@@ -106,3 +106,36 @@ The production service's empty variable-name inventory means provisioned runtime
 - No purchase or paid resource provisioning.
 
 **Final decision: NOT READY FOR PRODUCTION OR COMMERCIAL RELEASE.** Continue only reversible source/documentation work and isolated tests until the owner prerequisites and release gates are satisfied.
+
+
+## 8. Additional read-only revalidation — 2026-11-15 05:57 UTC
+
+This section supersedes earlier observations in this document where the same field has changed. Historical snapshots above are retained intentionally.
+
+### Main branch and pull requests
+- Main remains at `f0d31804e695cd3d73b452c7507affdca9573740` at the time of this check.
+- PR #2 (VAYRO rebrand/product-family foundation) and PR #6 (MFA/session/access-control work) are merged.
+- PR #21 (UI/UX and solution architecture specification) remains OPEN/DRAFT and currently reports `mergeable=false`; it needs conflict inspection/reconciliation before any merge.
+- PR #25 (Android WebView wrapper) remains OPEN/DRAFT, head `52a1df7ce55e1884c256a7266b55248a429e875c`.
+- PR #26 (live release-gate audit) remains OPEN/DRAFT, head `a5b3a4df94c5927a17df243b5b78a07f0468480b`.
+- PR #27 (backup/recovery runbook) remains OPEN/DRAFT, head `318e6017e91202093bd03a79f115068e1413970f`. Its VAYRO CI run [43682757891](https://github.com/gavad54/zelmira-one-/actions/runs/43682757891) and CodeQL run [43682757872](https://github.com/gavad54/zelmira-one-/actions/runs/43682757872) completed successfully for that head.
+- PR #28 (product directory/registry parity regression tests) was created as OPEN/DRAFT, head `90f770aca700d047a344d6053e8b37e5344372ca`. CodeQL run [43683221202](https://github.com/gavad54/zelmira-one-/actions/runs/43683221202) completed successfully. VAYRO CI run [43683221240](https://github.com/gavad54/zelmira-one-/actions/runs/43683221240) was still IN_PROGRESS at the observation time; no test pass is claimed.
+- PR #28 is test-only and verifies the public product directory against the platform registry, keeps DANA as a central capability (not a twelfth product), and preserves ARIA/ARIANA accounting boundaries.
+
+### Fresh Supabase advisor and catalog observations
+- VAYRO-CORE remains `ACTIVE_HEALTHY`, PostgreSQL 17.11.
+- A verbose read-only catalog query again returned 11 public tables and zero rows in each table.
+- Migration history still returns an empty list.
+- Security Advisor still reports 11 `rls_enabled_no_policy` notices. These are INFO-level lints and must be reconciled with the intended server-only role/grant design; do not create blanket policies.
+- Performance Advisor still reports 10 unused-index notices. Do not remove indexes without workload evidence.
+- Health Advisor returned no lints.
+- No DDL, migration, policy, grant, data or configuration change was made.
+
+### Fresh Railway project inventory
+- The accessible workspace still lists only `ARIA Web` and `LEADORA`.
+- No independent VAYRO Railway project was created.
+- No Railway project/service/deployment/configuration mutation or paid upgrade was performed.
+
+### Corrected status
+- PR #27 is three commits ahead of main at its observed head, not two as stated in the earlier section.
+- All statements above are read-only observations at the stated time. They do not close production, backup/restore, hosting, schema-reconciliation, device-acceptance or commercial-release gates.
