@@ -49,7 +49,7 @@ export async function GET() {
             select: { id: true, key: true, name: true, description: true, status: true, baseUrl: true, updatedAt: true }
           }),
           tx.$queryRaw<Array<{ count: bigint }>>`SELECT COUNT("id")::bigint AS count FROM public."Tenant"`,
-          tx.$queryRaw<Array<{ count: bigint }>>`SELECT COUNT("id")::bigint AS count FROM public."License" WHERE "active" = true AND ("endsAt" IS NULL OR "endsAt" > now())`,
+          tx.$queryRaw<Array<{ count: bigint }>>`SELECT COUNT("id")::bigint AS count FROM public."License" WHERE "active" = true AND "startsAt" <= now() AND ("endsAt" IS NULL OR "endsAt" > now())`,
           tx.$queryRaw<Array<{ count: bigint }>>`SELECT COUNT("id")::bigint AS count FROM public."License"`,
           tx.$queryRaw<Array<{ productId: string; count: bigint }>>`SELECT "productId", COUNT("id")::bigint AS count FROM public."License" GROUP BY "productId"`
         ]);
