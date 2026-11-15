@@ -47,6 +47,7 @@ test("owner product configuration writes are rate limited without weakening auth
   const token = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(token).digest("hex");
   let userId;
+  let tenantId;
   let productId;
   let legacyDanaProductId;
   let actualRateLimitKey;
@@ -130,6 +131,48 @@ test("owner product configuration writes are rate limited without weakening auth
     assert.equal(portfolio.products.length, 11, "the owner portfolio must expose exactly eleven products");
     assert.ok(!portfolio.products.some(item => item.key === "DANA"), "DANA must not be exposed as an independent product");
     assert.ok(portfolio.products.some(item => item.key === "ARMIN_MARKET"), "ARMIN MARKET must appear in the independent product portfolio");
+    const metricTenant = await db.tenant.create({
+      data: { name: "Owner Metrics Test", slug: `owner-metrics-${suffix}` }
+    });
+    tenantId = metricTenant.id;
+    const metricProducts = await db.product.findMany({
+      where: { key: { in: ["ARVAND", "CHARSU", "GANJINEH"] } },
+      select: { id: true, key: true }
+    });
+    const metricProductIds = new Map(metricProducts.map(item => [item.key, item.id]));
+    assert.equal(metricProductIds.size, 3, "the catalog should contain all three metric fixtures");
+    const metricNow = new Date();
+    await db.license.createMany({
+      data: [
+        {
+          tenantId,
+          productId: metricProductIds.get("ARVAND"),
+          startsAt: new Date(metricNow.getTime() - 60_000),
+          active: true
+        },
+        {
+          tenantId,
+          productId: metricProductIds.get("CHARSU"),
+          startsAt: new Date(metricNow.getTime() + 60 * 60_000),
+          active: true
+        },
+        {
+          tenantId,
+          productId: metricProductIds.get("GANJINEH"),
+          startsAt: new Date(metricNow.getTime() - 60 * 60_000),
+          endsAt: new Date(metricNow.getTime() - 1_000),
+          active: true
+        }
+      ]
+    });
+
+    const metricsResponse = await fetch(`${origin}/api/owner/products`, { headers });
+    assert.equal(metricsResponse.status, 200);
+    const metricsPortfolio = await metricsResponse.json();
+    assert.equal(metricsPortfolio.metrics.activeLicenses, 1,
+      "active-license metrics must exclude future-starting and expired licenses");
+    assert.equal(metricsPortfolio.metrics.allLicenses, 3,
+      "all-license metrics must include every persisted license regardless of current activity");
 
     const crossOrigin = await fetch(`${origin}/api/owner/products`, {
       method: "PATCH",
@@ -157,6 +200,7 @@ test("owner product configuration writes are rate limited without weakening auth
       "the owner product update throttle must count attempts atomically");
   } finally {
     if (actualRateLimitKey) await db.authRateLimit.deleteMany({ where: { keyHash: actualRateLimitKey } });
+    if (tenantId) await db.tenant.deleteMany({ where: { id: tenantId } });
     if (productId) await db.product.deleteMany({ where: { id: productId } });
     if (legacyDanaProductId) await db.product.deleteMany({ where: { id: legacyDanaProductId } });
     if (userId) {

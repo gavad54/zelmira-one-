@@ -3,6 +3,12 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 
 type Stage = "login" | "enroll" | "verify" | "recovery";
+
+function postLoginDestination() {
+  return new URLSearchParams(window.location.search).get("next") === "/dashboard"
+    ? "/dashboard"
+    : "/workspaces";
+}
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -50,7 +56,7 @@ export default function LoginPage() {
         return;
       }
       if (data.authenticated) {
-        location.assign("/workspaces");
+        location.assign(postLoginDestination());
         return;
       }
       throw new Error("ورود کامل نشد. دوباره تلاش کنید.");
@@ -72,7 +78,7 @@ export default function LoginPage() {
         setStage("recovery");
       } else {
         await post("/api/auth/mfa/verify", { challengeToken, code });
-        location.assign("/workspaces");
+        location.assign(postLoginDestination());
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "تأیید انجام نشد.");
@@ -116,7 +122,7 @@ export default function LoginPage() {
         {recoveryCodes.map(value=><code key={value}>{value}</code>)}
       </div>
       <button type="button" onClick={()=>navigator.clipboard?.writeText(recoveryCodes.join("\n"))}>کپی کدهای بازیابی</button>
-      <button type="button" onClick={()=>location.assign("/workspaces")}>ذخیره کردم؛ ادامه</button>
+      <button type="button" onClick={()=>location.assign(postLoginDestination())}>ذخیره کردم؛ ادامه</button>
     </>}
     <p role="alert">{message}</p>
   </section></main>;
