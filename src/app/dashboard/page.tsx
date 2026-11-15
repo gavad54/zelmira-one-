@@ -45,8 +45,7 @@ export default function DashboardPage() {
     try {
       const response = await fetch("/api/owner/products", { cache: "no-store" });
       if (response.status === 401) {
-        window.location.assign("/login");
-        return;
+        throw new Error("برای این بخش به حساب مالک و تأیید دومرحله‌ای معتبر نیاز است. ابتدا وارد شوید و سپس دوباره داشبورد را باز کنید.");
       }
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -82,8 +81,7 @@ export default function DashboardPage() {
       });
       const data = await response.json().catch(() => ({}));
       if (response.status === 401) {
-        window.location.assign("/login");
-        return;
+        throw new Error("برای این بخش به حساب مالک و تأیید دومرحله‌ای معتبر نیاز است. ابتدا وارد شوید و سپس دوباره داشبورد را باز کنید.");
       }
       if (!response.ok) {
         throw new Error(data.error === "catalog_initialization_failed"
@@ -117,8 +115,7 @@ export default function DashboardPage() {
       });
       const data = await response.json().catch(() => ({}));
       if (response.status === 401) {
-        window.location.assign("/login");
-        return;
+        throw new Error("برای این بخش به حساب مالک و تأیید دومرحله‌ای معتبر نیاز است. ابتدا وارد شوید و سپس دوباره داشبورد را باز کنید.");
       }
       if (!response.ok) {
         const messages: Record<string, string> = {
@@ -148,6 +145,7 @@ export default function DashboardPage() {
         </Link>
         <nav aria-label="ناوبری داشبورد">
           <Link href="/">صفحه اصلی</Link>
+          <Link href="/login">ورود</Link>
           <Link href="/command-center">مرکز فرماندهی</Link>
         </nav>
       </header>
