@@ -145,7 +145,7 @@ export default function DashboardPage() {
         </Link>
         <nav aria-label="ناوبری داشبورد">
           <Link href="/">صفحه اصلی</Link>
-          <Link href="/login">ورود</Link>
+          <Link href="/login?next=%2Fdashboard">ورود</Link>
           <Link href="/command-center">مرکز فرماندهی</Link>
         </nav>
       </header>
