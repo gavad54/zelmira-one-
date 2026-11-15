@@ -6,6 +6,7 @@ import { authorizeOwnerSession } from "@/lib/owner-session.mjs";
 import { PRODUCT_CATALOG, validateProductConfiguration } from "@/lib/product-catalog.mjs";
 import { allowAttempt, noStoreJson, sha256 } from "@/lib/auth-service";
 import { authPrisma, assertAuthRuntimeRole } from "@/lib/auth-prisma";
+import { currentActiveLicenseWhere } from "@/lib/owner-metrics.mjs";
 import { withPlatformOwnerTransaction } from "@/lib/platform-request-transaction";
 
 export const runtime = "nodejs";
@@ -49,7 +50,7 @@ export async function GET() {
             select: { id: true, key: true, name: true, description: true, status: true, baseUrl: true, updatedAt: true }
           }),
           tx.$queryRaw<Array<{ count: bigint }>>`SELECT COUNT("id")::bigint AS count FROM public."Tenant"`,
-          tx.$queryRaw<Array<{ count: bigint }>>`SELECT COUNT("id")::bigint AS count FROM public."License" WHERE "active" = true AND "startsAt" <= now() AND ("endsAt" IS NULL OR "endsAt" > now())`,
+          tx.license.count({ where: currentActiveLicenseWhere(new Date()) }),
           tx.$queryRaw<Array<{ count: bigint }>>`SELECT COUNT("id")::bigint AS count FROM public."License"`,
           tx.$queryRaw<Array<{ productId: string; count: bigint }>>`SELECT "productId", COUNT("id")::bigint AS count FROM public."License" GROUP BY "productId"`
         ]);
@@ -59,7 +60,7 @@ export async function GET() {
           metrics: {
             totalProducts: products.length,
             totalTenants: Number(tenantRows[0]?.count ?? 0n),
-            activeLicenses: Number(activeRows[0]?.count ?? 0n),
+            activeLicenses: activeRows,
             allLicenses: Number(allRows[0]?.count ?? 0n)
           }
         };
