@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { SessionAssurance } from "@prisma/client";
 import { z } from "zod";
 import { isSameOriginRequest } from "@/lib/auth-core.mjs";
 import { decryptTotpSecret, verifyTotp } from "@/lib/mfa-core.mjs";
@@ -151,7 +152,7 @@ export async function POST(request: Request) {
     return noStoreJson({ error: "invalid_or_expired_challenge" }, 401);
   }
 
-  await issueSession(challenge.user.id, "MFA" as never);
+  await issueSession(challenge.user.id, SessionAssurance.MFA);
   return noStoreJson({
     authenticated: true,
     user: {
