@@ -115,6 +115,22 @@ export async function POST(request: Request) {
 
     try {
       await prisma.$transaction(async tx => {
+        const currentUser = await tx.user.findUnique({
+          where: { id: record.user.id },
+          select: {
+            platformRole: true,
+            memberships: {
+              where: { role: { in: ["OWNER", "ADMIN"] }, tenant: { status: "ACTIVE" } },
+              select: { id: true }
+            }
+          }
+        });
+        if (!currentUser ||
+            currentUser.platformRole === "OWNER" ||
+            currentUser.platformRole === "PLATFORM_ADMIN" ||
+            currentUser.memberships.length > 0) {
+          throw new Error("MFA_REQUIRED_FOR_PRIVILEGED_ACCOUNT");
+        }
         const consumed = await tx.mfaCredential.updateMany({
           where: { id: credential.id, enabledAt: credential.enabledAt, lastAcceptedStep: { lt: BigInt(acceptedStep) } },
           data: { lastAcceptedStep: BigInt(acceptedStep) }
@@ -138,6 +154,9 @@ export async function POST(request: Request) {
     } catch (error) {
       if (error instanceof Error && error.message === "MFA_CODE_REPLAYED") {
         return noStoreJson({ error: "mfa_code_already_used" }, 401);
+      }
+      if (error instanceof Error && error.message === "MFA_REQUIRED_FOR_PRIVILEGED_ACCOUNT") {
+        return noStoreJson({ error: "mfa_required_for_privileged_account" }, 409);
       }
       return noStoreJson({ error: "mfa_management_failed" }, 409);
     }
