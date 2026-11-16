@@ -148,7 +148,7 @@ test("MFA management requires fresh TOTP, rotates recovery codes atomically and 
       },
       body: JSON.stringify({
         action: "disable",
-        code: totpCode(secret, Date.now() + 60000),
+        code: totpCode(secret, Date.now() + 30000),
         password
       })
     });
