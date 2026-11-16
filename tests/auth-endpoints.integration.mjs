@@ -1,5 +1,5 @@
 import test, { before, after } from "node:test";
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 import { PrismaClient, PlatformRole, MembershipRole } from "@prisma/client";
 import { hashPassword } from "../src/lib/auth-core.mjs";
 import assert from "node:assert/strict";
@@ -10,6 +10,25 @@ import { setTimeout as delay } from "node:timers/promises";
 const port = 43179;
 const origin = `http://127.0.0.1:${port}`;
 const bootstrapToken = randomBytes(48).toString("hex");
+function totpCode(secret, now = Date.now()) {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let buffer = 0, bits = 0;
+  const bytes = [];
+  for (const character of secret) {
+    buffer = (buffer << 5) | alphabet.indexOf(character);
+    bits += 5;
+    if (bits >= 8) { bits -= 8; bytes.push((buffer >>> bits) & 255); }
+    buffer &= (1 << bits) - 1;
+  }
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(now / 30000)));
+  const digest = createHmac("sha1", Buffer.from(bytes)).update(counter).digest();
+  const offset = digest[digest.length - 1] & 15;
+  const binary = ((digest[offset] & 127) << 24) | ((digest[offset + 1] & 255) << 16) |
+    ((digest[offset + 2] & 255) << 8) | (digest[offset + 3] & 255);
+  return String(binary % 1000000).padStart(6, "0");
+}
+
 let server;
 let serverError = "";
 
@@ -18,7 +37,7 @@ before(async () => {
     process.execPath,
     ["server.js"],
     {
-      env: { ...process.env, NODE_ENV: "production", PORT: String(port), HOSTNAME: "127.0.0.1", NEXT_PUBLIC_APP_URL: origin, VAYRO_OWNER_BOOTSTRAP_TOKEN: bootstrapToken, EMAIL_PROVIDER: "disabled-for-test" },
+      env: { ...process.env, NODE_ENV: "production", PORT: String(port), HOSTNAME: "127.0.0.1", NEXT_PUBLIC_APP_URL: origin, VAYRO_OWNER_BOOTSTRAP_TOKEN: bootstrapToken, VAYRO_MFA_ENCRYPTION_KEY: "a".repeat(64), EMAIL_PROVIDER: "disabled-for-test" },
       cwd: join(process.cwd(), ".next/standalone"),
       stdio: ["ignore", "ignore", "pipe"]
     }
@@ -836,22 +855,47 @@ test("privileged password login fails closed and old password sessions are rejec
     });
     ordinaryId = ordinary.id;
 
-    for (const email of [ownerEmail, adminEmail]) {
+    for (const [email, userId] of [[ownerEmail, ownerId], [adminEmail, adminId]]) {
       const response = await fetch(`${origin}/api/auth/login`, {
         method: "POST",
-        headers: {
-          Origin: `http://localhost:${port}`,
-          Host: `localhost:${port}`,
-          "Content-Type": "application/json"
-        },
+        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
-      assert.equal(response.status, 403);
-      assert.deepEqual(await response.json(), { error: "mfa_required" });
-      assert.equal(response.headers.get("set-cookie"), null);
+      assert.equal(response.status, 200);
+      const login = await response.json();
+      assert.equal(login.authenticated, false);
+      assert.equal(login.mfaRequired, true);
+      assert.equal(login.mfaSetupRequired, true);
+      assert.match(login.challengeToken, /^[a-f0-9]{64}$/);
+      assert.equal(await db.session.count({ where: { userId } }), 0);
+
+      const enrollmentResponse = await fetch(`${origin}/api/auth/mfa/enroll`, {
+        method: "POST",
+        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeToken: login.challengeToken })
+      });
+      assert.equal(enrollmentResponse.status, 200);
+      const enrollment = await enrollmentResponse.json();
+      assert.match(enrollment.secret, /^[A-Z2-7]{32}$/);
+      assert.match(enrollment.otpauthUri, /^otpauth:\/\/totp\//);
+
+      const verifyResponse = await fetch(`${origin}/api/auth/mfa/verify`, {
+        method: "POST",
+        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeToken: login.challengeToken, code: totpCode(enrollment.secret) })
+      });
+      assert.equal(verifyResponse.status, 200);
+      const verified = await verifyResponse.json();
+      assert.equal(verified.authenticated, true);
+      assert.equal(verified.recoveryCodes.length, 10);
+      assert.match(verifyResponse.headers.get("set-cookie") ?? "", /vayro_session=/);
+      const credential = await db.mfaCredential.findUnique({ where: { userId } });
+      assert.ok(credential?.enabledAt instanceof Date);
+      assert.equal(await db.mfaRecoveryCode.count({ where: { userId, usedAt: null } }), 10);
+      const session = await db.session.findFirst({ where: { userId, revokedAt: null } });
+      assert.equal(session?.assurance, "MFA");
+      assert.ok(session?.mfaAuthenticatedAt instanceof Date);
     }
-    assert.equal(await db.session.count({ where: { userId: ownerId } }), 0);
-    assert.equal(await db.session.count({ where: { userId: adminId } }), 0);
 
     for (const userId of [ownerId, adminId]) {
       const legacyToken = randomBytes(32).toString("hex");
