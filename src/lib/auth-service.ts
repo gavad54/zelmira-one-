@@ -7,6 +7,8 @@ import { createSessionToken, getTrustedClientAddress, hashSessionToken } from "@
 
 export const SESSION_COOKIE = "vayro_session";
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const SESSION_IDLE_TTL_MS = 30 * 60 * 1000;
+export const SESSION_ACTIVITY_WRITE_INTERVAL_MS = 5 * 60 * 1000;
 export const MFA_ASSURANCE_TTL_MS = 12 * 60 * 60 * 1000;
 
 function hasRecentMfaAssurance(
@@ -132,11 +134,34 @@ export async function currentSession() {
   });
   if (
     !session ||
+    !(session.createdAt instanceof Date) ||
+    !(session.expiresAt instanceof Date) ||
     session.revokedAt !== null ||
     session.expiresAt.getTime() <= now.getTime() ||
     !session.user.emailVerifiedAt ||
     session.user.disabledAt
   ) return null;
+
+  // Existing sessions with NULL lastSeenAt use their creation time as the
+  // initial activity baseline. Idle sessions are revoked server-side.
+  const lastActivityAt = session.lastSeenAt instanceof Date ? session.lastSeenAt : session.createdAt;
+  if (now.getTime() - lastActivityAt.getTime() > SESSION_IDLE_TTL_MS) {
+    await prisma.session.updateMany({
+      where: { id: session.id, revokedAt: null },
+      data: { revokedAt: now }
+    });
+    return null;
+  }
+
+  // Avoid a database write on every request while still refreshing activity
+  // often enough that the 30-minute idle window remains meaningful.
+  if (now.getTime() - lastActivityAt.getTime() >= SESSION_ACTIVITY_WRITE_INTERVAL_MS) {
+    const touched = await prisma.session.updateMany({
+      where: { id: session.id, revokedAt: null, expiresAt: { gt: now } },
+      data: { lastSeenAt: now }
+    });
+    if (touched.count !== 1) return null;
+  }
 
   const requiresMfa =
     session.user.platformRole === "OWNER" ||

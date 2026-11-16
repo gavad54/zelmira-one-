@@ -103,11 +103,13 @@ model Session {
   expiresAt          DateTime
   createdAt          DateTime         @default(now())
   revokedAt          DateTime?
+  lastSeenAt         DateTime?
   assurance          SessionAssurance @default(PASSWORD)
   mfaAuthenticatedAt DateTime?
   user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
+  @@index([userId, revokedAt])
 }
 
 model Product {

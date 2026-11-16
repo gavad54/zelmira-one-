@@ -908,3 +908,61 @@ test("privileged password login fails closed and old password sessions are rejec
     await db.$disconnect();
   }
 });
+
+
+test("idle sessions are revoked and active sessions refresh lastSeenAt over HTTP", async () => {
+  const db = new PrismaClient();
+  let userId;
+  try {
+    await db.$connect();
+    const user = await db.user.create({
+      data: {
+        email: `idle-session-${randomUUID()}@example.invalid`,
+        passwordHash: "integration-test-only-hash",
+        displayName: "Idle Session Test",
+        emailVerifiedAt: new Date()
+      }
+    });
+    userId = user.id;
+
+    const now = Date.now();
+    const idleToken = randomBytes(32).toString("hex");
+    const activeToken = randomBytes(32).toString("hex");
+    const idleTokenHash = createHash("sha256").update(idleToken, "utf8").digest("hex");
+    const activeTokenHash = createHash("sha256").update(activeToken, "utf8").digest("hex");
+    const idleLastSeenAt = new Date(now - 31 * 60 * 1000);
+    const activeLastSeenAt = new Date(now - 6 * 60 * 1000);
+    const expiresAt = new Date(now + 60 * 60 * 1000);
+
+    await db.session.createMany({
+      data: [
+        { userId, tokenHash: idleTokenHash, expiresAt, lastSeenAt: idleLastSeenAt },
+        { userId, tokenHash: activeTokenHash, expiresAt, lastSeenAt: activeLastSeenAt }
+      ]
+    });
+
+    const idleResponse = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${idleToken}` }
+    });
+    assert.equal(idleResponse.status, 401, "sessions idle for more than 30 minutes must be rejected");
+    const idleSession = await db.session.findUnique({
+      where: { tokenHash: idleTokenHash },
+      select: { revokedAt: true }
+    });
+    assert.ok(idleSession?.revokedAt instanceof Date, "idle session must be revoked in the database");
+
+    const activeResponse = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${activeToken}` }
+    });
+    assert.equal(activeResponse.status, 200, "recently active sessions remain valid");
+    const activeSession = await db.session.findUnique({
+      where: { tokenHash: activeTokenHash },
+      select: { lastSeenAt: true, revokedAt: true }
+    });
+    assert.equal(activeSession?.revokedAt, null);
+    assert.ok(activeSession?.lastSeenAt && activeSession.lastSeenAt.getTime() > activeLastSeenAt.getTime());
+  } finally {
+    if (userId) await db.user.deleteMany({ where: { id: userId } });
+    await db.$disconnect();
+  }
+});

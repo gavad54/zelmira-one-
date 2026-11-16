@@ -4,12 +4,25 @@ import { authorizeOwnerSession } from "../src/lib/owner-session.mjs";
 
 const now = new Date("2026-11-14T08:00:00.000Z");
 
-function makeDb(session) {
-  return { session: { findUnique: async () => session } };
+function makeDb(session, updateCount = 1) {
+  const updates = [];
+  return {
+    updates,
+    session: {
+      findUnique: async () => session,
+      updateMany: async args => {
+        updates.push(args);
+        return { count: updateCount };
+      }
+    }
+  };
 }
 
 function ownerSession(overrides = {}) {
   return {
+    id: "session-1",
+    createdAt: new Date(now.getTime() - 60_000),
+    lastSeenAt: new Date(now.getTime() - 60_000),
     revokedAt: null,
     expiresAt: new Date(now.getTime() + 60_000),
     assurance: "MFA",
@@ -24,13 +37,15 @@ function ownerSession(overrides = {}) {
   };
 }
 
-test("owner session accepts only active, unexpired sessions with recent MFA assurance", async () => {
+test("owner session accepts active, unexpired sessions with recent MFA assurance", async () => {
+  const db = makeDb(ownerSession());
   const result = await authorizeOwnerSession({
     sessionToken: "a".repeat(64),
-    db: makeDb(ownerSession()),
+    db,
     now
   });
   assert.deepEqual(result, { authorized: true, userId: "owner-1" });
+  assert.equal(db.updates.length, 0);
 });
 
 test("owner session rejects revoked sessions even when unexpired", async () => {
@@ -84,14 +99,62 @@ test("owner session rejects unverified, non-owner, disabled and expired accounts
   }
 });
 
+test("owner session revokes idle sessions and rejects them", async () => {
+  const db = makeDb(ownerSession({ lastSeenAt: new Date(now.getTime() - 31 * 60 * 1000) }));
+  const result = await authorizeOwnerSession({ sessionToken: "a".repeat(64), db, now });
+  assert.deepEqual(result, { authorized: false });
+  assert.equal(db.updates.length, 1);
+  assert.deepEqual(db.updates[0].where, { id: "session-1", revokedAt: null });
+  assert.deepEqual(db.updates[0].data, { revokedAt: now });
+});
+
+test("owner session uses createdAt when lastSeenAt is null", async () => {
+  const db = makeDb(ownerSession({
+    createdAt: new Date(now.getTime() - 31 * 60 * 1000),
+    lastSeenAt: null
+  }));
+  const result = await authorizeOwnerSession({ sessionToken: "a".repeat(64), db, now });
+  assert.deepEqual(result, { authorized: false });
+  assert.equal(db.updates.length, 1);
+});
+
+test("owner session refreshes activity after five minutes without weakening expiry checks", async () => {
+  const db = makeDb(ownerSession({ lastSeenAt: new Date(now.getTime() - 6 * 60 * 1000) }));
+  const result = await authorizeOwnerSession({ sessionToken: "a".repeat(64), db, now });
+  assert.deepEqual(result, { authorized: true, userId: "owner-1" });
+  assert.equal(db.updates.length, 1);
+  assert.deepEqual(db.updates[0].data, { lastSeenAt: now });
+  assert.deepEqual(db.updates[0].where, {
+    id: "session-1",
+    revokedAt: null,
+    expiresAt: { gt: now }
+  });
+});
+
+test("owner session rejects an activity refresh lost to concurrent revocation", async () => {
+  const db = makeDb(ownerSession({ lastSeenAt: new Date(now.getTime() - 6 * 60 * 1000) }), 0);
+  const result = await authorizeOwnerSession({ sessionToken: "a".repeat(64), db, now });
+  assert.deepEqual(result, { authorized: false });
+});
+
 test("owner session fails closed for malformed tokens and database failures", async () => {
   assert.deepEqual(
     await authorizeOwnerSession({ sessionToken: "bad", db: makeDb(null), now }),
     { authorized: false }
   );
-  const broken = { session: { findUnique: async () => { throw new Error("database offline"); } } };
+  const broken = {
+    session: {
+      findUnique: async () => { throw new Error("database offline"); },
+      updateMany: async () => ({ count: 1 })
+    }
+  };
   assert.deepEqual(
     await authorizeOwnerSession({ sessionToken: "b".repeat(64), db: broken, now }),
+    { authorized: false }
+  );
+  const missingUpdate = { session: { findUnique: async () => ownerSession() } };
+  assert.deepEqual(
+    await authorizeOwnerSession({ sessionToken: "c".repeat(64), db: missingUpdate, now }),
     { authorized: false }
   );
 });
