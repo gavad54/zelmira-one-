@@ -316,3 +316,8 @@ The development branch now contains an end-to-end privileged sign-in path:
 **Required runtime configuration:** set `VAYRO_MFA_ENCRYPTION_KEY` to a unique cryptographically random 32-byte key encoded as 64 hexadecimal characters in the protected hosting secret store. Do not place a real key in Git, client-side variables, logs, tickets or chat. A missing/invalid key intentionally prevents enrollment with HTTP 503. Losing or rotating this key without a versioned re-encryption procedure makes existing TOTP credentials unusable.
 
 **Verification boundary:** repository implementation and CI tests do not prove the production secret is configured, HTTPS delivery, backup of the encryption key, recovery operations, or successful owner acceptance in the live deployment. Those remain release gates. Do not enable production access until protected-key custody, recovery procedure, independent security review and owner UAT are evidenced.
+
+
+### TypeScript verification follow-up — 2026-11-16
+
+The first CI pass for the MFA implementation found a missing TypeScript declaration for the existing JavaScript crypto module. The 68 unit tests and lint step passed on that run; TypeScript checking failed at the two new API imports. Added `src/lib/mfa-core.d.mts` following the repository's existing `.d.mts` convention and corrected the tenant-admin post-enrollment destination in the login UI. The failed run belongs to the earlier pre-declaration commit; a fresh CI run on the final head is required before this fix can be considered verified.
