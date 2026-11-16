@@ -8,7 +8,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { hashPassword } from "../src/lib/auth-core.mjs";
 import { encryptTotpSecret, generateTotpSecret } from "../src/lib/mfa-core.mjs";
 
-const origin = "http://127.0.0.1:43179";
+const origin = "http://localhost:43179";
 const key = "a".repeat(64);
 const bootstrapToken = randomBytes(48).toString("hex");
 let server;
@@ -122,7 +122,7 @@ test("MFA management requires fresh TOTP, rotates recovery codes atomically and 
       method: "POST",
       headers: {
         Origin: origin,
-        Host: "127.0.0.1:43179",
+        Host: "localhost:43179",
         "Content-Type": "application/json",
         Cookie: `vayro_session=${token}`
       },
