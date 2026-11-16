@@ -8,7 +8,7 @@ const tokenHash = createHash("sha256").update(token).digest("hex");
 const now = new Date("2026-11-04T12:00:00.000Z");
 
 function database({ session, membership, sessionError, membershipError } = {}) {
-  const calls = { session: [], membership: [] };
+  const calls = { session: [], membership: [], updates: [] };
   return {
     calls,
     session: {
@@ -16,6 +16,10 @@ function database({ session, membership, sessionError, membershipError } = {}) {
         calls.session.push(args);
         if (sessionError) throw sessionError;
         return session ?? null;
+      },
+      async updateMany(args) {
+        calls.updates.push(args);
+        return { count: 1 };
       }
     },
     membership: {
@@ -29,6 +33,9 @@ function database({ session, membership, sessionError, membershipError } = {}) {
 }
 
 const activeSession = {
+  id: "session-a",
+  createdAt: new Date("2026-11-04T11:30:00.000Z"),
+  lastSeenAt: new Date("2026-11-04T11:30:00.000Z"),
   revokedAt: null,
   expiresAt: new Date("2026-11-05T12:00:00.000Z"),
   assurance: "MFA",
@@ -201,4 +208,50 @@ test("ordinary tenant members retain password-session access to permitted reads"
   assert.deepEqual(result, {
     authorized: true, userId: "user-a", tenantId: "tenant-a", role: "VIEWER"
   });
+});
+
+
+test("denies and revokes tenant sessions idle for more than 30 minutes", async () => {
+  const db = database({
+    session: { ...activeSession, lastSeenAt: new Date(now.getTime() - 31 * 60 * 1000) },
+    membership: activeMembership
+  });
+  const result = await authorizeTenantRequest({
+    sessionToken: token, tenantId: "tenant-a", action: "tenant_read", db, now
+  });
+  assert.equal(result.authorized, false);
+  assert.equal(db.calls.membership.length, 0);
+  assert.deepEqual(db.calls.updates[0], {
+    where: { id: "session-a", revokedAt: null },
+    data: { revokedAt: now }
+  });
+});
+
+test("refreshes tenant session activity conditionally and fails closed on concurrent revocation", async () => {
+  const db = database({
+    session: { ...activeSession, lastSeenAt: new Date(now.getTime() - 6 * 60 * 1000) },
+    membership: activeMembership
+  });
+  const result = await authorizeTenantRequest({
+    sessionToken: token, tenantId: "tenant-a", action: "tenant_read", db, now
+  });
+  assert.equal(result.authorized, true);
+  assert.deepEqual(db.calls.updates[0], {
+    where: { id: "session-a", revokedAt: null, expiresAt: { gt: now } },
+    data: { lastSeenAt: now }
+  });
+
+  const raced = database({
+    session: { ...activeSession, lastSeenAt: new Date(now.getTime() - 6 * 60 * 1000) },
+    membership: activeMembership
+  });
+  raced.session.updateMany = async args => {
+    raced.calls.updates.push(args);
+    return { count: 0 };
+  };
+  const deniedResult = await authorizeTenantRequest({
+    sessionToken: token, tenantId: "tenant-a", action: "tenant_read", db: raced, now
+  });
+  assert.equal(deniedResult.authorized, false);
+  assert.equal(raced.calls.membership.length, 0);
 });
