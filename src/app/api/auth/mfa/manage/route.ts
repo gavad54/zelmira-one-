@@ -1,17 +1,14 @@
 import { randomBytes } from "node:crypto";
-import { SessionAssurance } from "@prisma/client";
 import { z } from "zod";
-import { isSameOriginRequest } from "@/lib/auth-core.mjs";
+import { isSameOriginRequest, verifyLoginPassword } from "@/lib/auth-core.mjs";
 import { decryptTotpSecret, verifyTotp } from "@/lib/mfa-core.mjs";
 import {
   allowAttempt,
   clearSessionCookie,
   currentSession,
   noStoreJson,
-  safeEqualText,
   sha256
 } from "@/lib/auth-service";
-import { verifyLoginPassword } from "@/lib/auth-core.mjs";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
