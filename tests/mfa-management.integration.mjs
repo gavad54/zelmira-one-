@@ -137,6 +137,16 @@ test("MFA management requires fresh TOTP, rotates recovery codes atomically and 
     assert.equal(await db.mfaRecoveryCode.count({ where: { userId, codeHash: createHash("sha256").update("OLDRECOVERYCODE00").digest("hex") } }), 0);
     assert.equal((await db.session.findUnique({ where: { id: sessionId } })).revokedAt, null);
 
+    const securityStatus = await fetch(`${origin}/api/auth/mfa/manage`, {
+      headers: { Cookie: `vayro_session=${token}` }
+    });
+    assert.equal(securityStatus.status, 200);
+    assert.deepEqual(await securityStatus.json(), {
+      enabled: true,
+      required: true,
+      unusedRecoveryCodes: 10
+    });
+
     const privilegedDisable = await fetch(`${origin}/api/auth/mfa/manage`, {
       method: "POST",
       headers: {
