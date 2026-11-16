@@ -22,6 +22,7 @@ export default function LoginPage() {
   const [setupSecret, setSetupSecret] = useState("");
   const [stage, setStage] = useState<"login" | "verify" | "enroll" | "recovery">("login");
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [destination, setDestination] = useState("/dashboard");
 
   async function submitLogin(e: FormEvent) {
     e.preventDefault();
@@ -84,6 +85,7 @@ export default function LoginPage() {
       }
       if (data.recoveryCodes?.length) {
         setRecoveryCodes(data.recoveryCodes);
+        setDestination(data.user?.platformRole === "OWNER" ? "/dashboard" : "/workspaces");
         setStage("recovery");
         return;
       }
@@ -100,7 +102,7 @@ export default function LoginPage() {
       <span>VAYRO</span><h1>کدهای بازیابی</h1>
       <p>این کدها فقط همین بار نمایش داده می‌شوند. آن‌ها را در محل امن و جدا از دستگاه ورود نگهداری کنید.</p>
       <ul>{recoveryCodes.map(value => <li key={value}><code>{value}</code></li>)}</ul>
-      <button onClick={() => location.assign("/dashboard")}>ادامه به داشبورد</button>
+      <button onClick={() => location.assign(destination)}>ادامه</button>
     </section></main>;
   }
 
