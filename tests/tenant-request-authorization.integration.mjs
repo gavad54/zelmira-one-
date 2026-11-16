@@ -44,6 +44,7 @@ before(async () => {
       tokenHash,
       userId,
       expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      lastSeenAt: now,
       assurance: "MFA",
       mfaAuthenticatedAt: now
     }
@@ -76,6 +77,25 @@ test("PostgreSQL-backed authorization enforces session, tenant and role boundari
     sessionToken, tenantId: tenantBId, action: "tenant_read", db, now
   });
   assert.equal(crossTenant.authorized, false);
+
+  await db.session.update({
+    where: { tokenHash },
+    data: { lastSeenAt: new Date(now.getTime() - 31 * 60 * 1000) }
+  });
+  const idleDenied = await authorizeTenantRequest({
+    sessionToken, tenantId: tenantAId, action: "tenant_read", db, now
+  });
+  assert.equal(idleDenied.authorized, false);
+  const revokedIdleSession = await db.session.findUnique({
+    where: { tokenHash },
+    select: { revokedAt: true }
+  });
+  assert.ok(revokedIdleSession?.revokedAt instanceof Date);
+
+  await db.session.update({
+    where: { tokenHash },
+    data: { revokedAt: null, lastSeenAt: now }
+  });
 
   await db.membership.update({
     where: { userId_tenantId: { userId, tenantId: tenantAId } },
