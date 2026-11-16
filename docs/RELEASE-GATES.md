@@ -299,3 +299,20 @@ This addendum supersedes earlier PR-number, branch-head, and CI statements where
 - All previously listed gates remain open unless supported by evidence above. In particular: runtime DB least privilege, migration baseline/reconciliation, privileged MFA, endpoint authorization and tenant isolation, external encrypted backup and isolated restore, production hosting and email, operational product integrations, Android, UAT, rollback/monitoring, legal/privacy review and explicit release approval.
 
 **Current status: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## MFA implementation update — 2026-11-16
+
+The development branch now contains an end-to-end privileged sign-in path:
+
+- Password verification issues a short-lived, single-use MFA challenge for platform OWNER/PLATFORM_ADMIN and active-tenant OWNER/ADMIN accounts; it does not issue a password-only session.
+- First-time setup generates a 160-bit TOTP secret, encrypts it with AES-256-GCM, and returns an authenticator-app provisioning URI over the same-origin API.
+- TOTP verification uses a bounded clock window and an atomic monotonic time-step update to reject replay.
+- Successful enrollment creates ten hashed one-time recovery codes; recovery-code use is atomic and single-use.
+- A session is issued with MFA assurance only after the challenge and factor verification succeed.
+- The Persian login page now guides first-time setup, subsequent code verification and one-time recovery-code display.
+- Integration coverage exercises owner and tenant-admin enrollment and MFA session issuance against the production-mode HTTP server and PostgreSQL.
+
+**Required runtime configuration:** set `VAYRO_MFA_ENCRYPTION_KEY` to a unique cryptographically random 32-byte key encoded as 64 hexadecimal characters in the protected hosting secret store. Do not place a real key in Git, client-side variables, logs, tickets or chat. A missing/invalid key intentionally prevents enrollment with HTTP 503. Losing or rotating this key without a versioned re-encryption procedure makes existing TOTP credentials unusable.
+
+**Verification boundary:** repository implementation and CI tests do not prove the production secret is configured, HTTPS delivery, backup of the encryption key, recovery operations, or successful owner acceptance in the live deployment. Those remain release gates. Do not enable production access until protected-key custody, recovery procedure, independent security review and owner UAT are evidenced.
