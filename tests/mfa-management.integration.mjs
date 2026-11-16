@@ -1,12 +1,41 @@
-import test from "node:test";
+import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 import { PrismaClient, PlatformRole } from "@prisma/client";
+import { spawn } from "node:child_process";
+import { join } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { hashPassword } from "../src/lib/auth-core.mjs";
 import { encryptTotpSecret, generateTotpSecret } from "../src/lib/mfa-core.mjs";
 
 const origin = "http://127.0.0.1:43179";
 const key = "a".repeat(64);
+const bootstrapToken = randomBytes(48).toString("hex");
+let server;
+let serverError = "";
+
+before(async () => {
+  server = spawn(process.execPath, ["server.js"], {
+    env: { ...process.env, NODE_ENV: "production", PORT: "43179", HOSTNAME: "127.0.0.1", NEXT_PUBLIC_APP_URL: origin, VAYRO_OWNER_BOOTSTRAP_TOKEN: bootstrapToken, VAYRO_MFA_ENCRYPTION_KEY: key, EMAIL_PROVIDER: "disabled-for-test" },
+    cwd: join(process.cwd(), ".next/standalone"),
+    stdio: ["ignore", "ignore", "pipe"]
+  });
+  server.stderr.on("data", chunk => { serverError += chunk.toString(); });
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    if (server.exitCode !== null) throw new Error(`Next.js production server exited early: ${serverError}`);
+    try {
+      const response = await fetch(`${origin}/api/health`);
+      if (response.ok) return;
+    } catch { /* server is starting */ }
+    await delay(500);
+  }
+  server.kill("SIGTERM");
+  throw new Error(`Next.js production server did not become ready: ${serverError}`);
+});
+
+after(() => {
+  if (server && server.exitCode === null) server.kill("SIGTERM");
+});
 
 function totpCode(secret, now = Date.now()) {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
