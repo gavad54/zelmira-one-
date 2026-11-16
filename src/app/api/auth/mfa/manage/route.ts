@@ -13,6 +13,33 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
+export async function GET() {
+  const session = await currentSession();
+  if (!session) return noStoreJson({ error: "unauthorized" }, 401);
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      platformRole: true,
+      memberships: {
+        where: { role: { in: ["OWNER", "ADMIN"] }, tenant: { status: "ACTIVE" } },
+        select: { id: true }
+      },
+      mfaCredential: { select: { enabledAt: true } },
+      mfaRecoveryCodes: { where: { usedAt: null }, select: { id: true } }
+    }
+  });
+  if (!user) return noStoreJson({ error: "unauthorized" }, 401);
+  const mfaRequired =
+    user.platformRole === "OWNER" ||
+    user.platformRole === "PLATFORM_ADMIN" ||
+    user.memberships.length > 0;
+  return noStoreJson({
+    enabled: Boolean(user.mfaCredential?.enabledAt),
+    required: mfaRequired,
+    unusedRecoveryCodes: user.mfaRecoveryCodes.length
+  });
+}
+
 export async function POST(request: Request) {
   if (!isSameOriginRequest(request)) return noStoreJson({ error: "invalid_origin" }, 403);
 
