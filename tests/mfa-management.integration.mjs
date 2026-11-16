@@ -36,7 +36,7 @@ test("MFA management requires fresh TOTP, rotates recovery codes atomically and 
   const tokenHash = createHash("sha256").update(token).digest("hex");
   let userId;
   let sessionId;
-  const rateLimitKey = createHash("sha256").update("mfa-manage:" + "placeholder").digest("hex");
+  let rateLimitKey;
 
   try {
     await db.$connect();
@@ -61,6 +61,7 @@ test("MFA management requires fresh TOTP, rotates recovery codes atomically and 
       }
     });
     sessionId = session.id;
+    rateLimitKey = createHash("sha256").update("mfa-manage:" + sessionId).digest("hex");
     const secret = generateTotpSecret();
     const encrypted = encryptTotpSecret(secret, key);
     await db.mfaCredential.create({
@@ -165,7 +166,7 @@ test("MFA management requires fresh TOTP, rotates recovery codes atomically and 
       await db.auditEvent.deleteMany({ where: { actorUserId: userId } });
       await db.user.deleteMany({ where: { id: userId } });
     }
-    await db.authRateLimit.deleteMany({ where: { keyHash: rateLimitKey } });
+    if (rateLimitKey) await db.authRateLimit.deleteMany({ where: { keyHash: rateLimitKey } });
     await db.$disconnect();
   }
 });
