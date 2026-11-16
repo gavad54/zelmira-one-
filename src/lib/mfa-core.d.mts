@@ -1,5 +1,5 @@
 export interface EncryptedTotpSecret {
-  readonly version: 1;
+  readonly version: number;
   readonly iv: string;
   readonly ciphertext: string;
   readonly authTag: string;
