@@ -895,6 +895,43 @@ test("privileged password login fails closed and old password sessions are rejec
       const session = await db.session.findFirst({ where: { userId, revokedAt: null } });
       assert.equal(session?.assurance, "MFA");
       assert.ok(session?.mfaAuthenticatedAt instanceof Date);
+
+      const nextLoginResponse = await fetch(`${origin}/api/auth/login`, {
+        method: "POST",
+        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      assert.equal(nextLoginResponse.status, 200);
+      const nextLogin = await nextLoginResponse.json();
+      assert.equal(nextLogin.mfaRequired, true);
+      if (email === ownerEmail) {
+        const recovery = await fetch(`${origin}/api/auth/mfa/verify`, {
+          method: "POST",
+          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ challengeToken: nextLogin.challengeToken, code: verified.recoveryCodes[0] })
+        });
+        assert.equal(recovery.status, 200, "a recovery code must allow a single recovery login");
+
+        const retryLoginResponse = await fetch(`${origin}/api/auth/login`, {
+          method: "POST",
+          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const retryLogin = await retryLoginResponse.json();
+        const reusedRecovery = await fetch(`${origin}/api/auth/mfa/verify`, {
+          method: "POST",
+          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ challengeToken: retryLogin.challengeToken, code: verified.recoveryCodes[0] })
+        });
+        assert.equal(reusedRecovery.status, 401, "a recovery code must not be reusable");
+      } else {
+        const totpLogin = await fetch(`${origin}/api/auth/mfa/verify`, {
+          method: "POST",
+          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ challengeToken: nextLogin.challengeToken, code: totpCode(enrollment.secret, Date.now() + 30000) })
+        });
+        assert.equal(totpLogin.status, 200, "an enrolled authenticator must complete subsequent privileged logins");
+      }
     }
 
     for (const userId of [ownerId, adminId]) {
