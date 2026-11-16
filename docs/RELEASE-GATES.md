@@ -321,3 +321,21 @@ The development branch now contains an end-to-end privileged sign-in path:
 ### TypeScript verification follow-up — 2026-11-16
 
 The first CI pass for the MFA implementation found a missing TypeScript declaration for the existing JavaScript crypto module. The 68 unit tests and lint step passed on that run; TypeScript checking failed at the two new API imports. Added `src/lib/mfa-core.d.mts` following the repository's existing `.d.mts` convention and corrected the tenant-admin post-enrollment destination in the login UI. The failed run belongs to the earlier pre-declaration commit; a fresh CI run on the final head is required before this fix can be considered verified.
+
+
+## MFA lifecycle management update — 2026-11-16
+
+The development branch adds `POST /api/auth/mfa/manage` with the following controls:
+
+- Fresh TOTP reauthentication, valid session, same-origin enforcement and per-session rate limiting.
+- Recovery-code regeneration is transactional, invalidates the old set, persists only hashes, displays the new ten-code set once, audits the action and revokes other active sessions.
+- MFA disablement requires password plus fresh TOTP, is forbidden while the account has platform or active-tenant OWNER/ADMIN privileges, deletes credentials and recovery codes only for non-privileged accounts, revokes all sessions and clears the current cookie.
+- Integration tests cover cross-origin rejection, recovery rotation, mandatory privileged MFA and non-privileged disablement.
+
+Remaining MFA lifecycle/release gates:
+- [ ] Implement safe authenticator-device replacement using pending encrypted secret state and confirm-before-swap; do not overwrite an active factor before the new factor is proven.
+- [ ] Add a user-facing Persian security-settings screen for recovery-code regeneration and eligible non-privileged disablement; the current slice is an API endpoint.
+- [ ] Verify production key custody, protected backup and tested key-rotation/recovery procedure.
+- [ ] Complete independent security review and owner UAT after CI verification.
+
+This is repository-only development work. No production database, secret, deployment or release action was performed.
