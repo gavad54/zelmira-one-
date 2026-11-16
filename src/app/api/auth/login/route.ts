@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { isSameOriginRequest, verifyLoginPassword } from "@/lib/auth-core.mjs";
 import {
@@ -5,11 +6,13 @@ import {
   allowAttempt,
   issueSession,
   noStoreJson,
-  requestFingerprint
+  requestFingerprint,
+  sha256
 } from "@/lib/auth-service";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
+const MFA_CHALLENGE_TTL_MS = 5 * 60 * 1000;
 
 export async function POST(request: Request) {
   if (!isSameOriginRequest(request)) return noStoreJson({ error: "invalid_origin" }, 403);
@@ -46,18 +49,33 @@ export async function POST(request: Request) {
         select: { id: true }
       });
 
-  // This branch has no end-to-end MFA challenge flow yet. Never issue a
-  // password-only session to a platform owner/admin or active-tenant owner/admin.
   if (isPlatformPrivileged || privilegedMembership) {
+    const credential = await prisma.mfaCredential.findUnique({
+      where: { userId: user.id },
+      select: { enabledAt: true }
+    });
+    const challengeToken = randomBytes(32).toString("hex");
+    await prisma.mfaLoginChallenge.create({
+      data: {
+        userId: user.id,
+        tokenHash: sha256(challengeToken),
+        expiresAt: new Date(Date.now() + MFA_CHALLENGE_TTL_MS)
+      }
+    });
     await prisma.auditEvent.create({
       data: {
         actorUserId: user.id,
-        action: "auth.login.mfa_required",
+        action: credential?.enabledAt ? "auth.login.mfa_challenge_issued" : "auth.login.mfa_setup_required",
         resource: "User",
         resourceId: user.id
       }
     });
-    return noStoreJson({ error: "mfa_required" }, 403);
+    return noStoreJson({
+      authenticated: false,
+      mfaRequired: true,
+      mfaSetupRequired: !credential?.enabledAt,
+      challengeToken
+    }, 200);
   }
 
   await issueSession(user.id);
