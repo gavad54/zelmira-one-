@@ -211,10 +211,15 @@ model MfaCredential {
   secretCiphertext  String
   secretIv          String   @db.VarChar(24)
   secretAuthTag     String   @db.VarChar(32)
-  keyVersion        Int      @default(1)
-  enabledAt         DateTime?
-  lastAcceptedStep  BigInt   @default(-1)
-  createdAt         DateTime @default(now())
+  keyVersion             Int      @default(1)
+  enabledAt              DateTime?
+  lastAcceptedStep       BigInt   @default(-1)
+  pendingSecretCiphertext String?
+  pendingSecretIv        String?  @db.VarChar(24)
+  pendingSecretAuthTag   String?  @db.VarChar(32)
+  pendingKeyVersion      Int?
+  pendingExpiresAt       DateTime?
+  createdAt              DateTime @default(now())
   updatedAt         DateTime @updatedAt
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
