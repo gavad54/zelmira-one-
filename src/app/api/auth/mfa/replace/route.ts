@@ -255,7 +255,10 @@ export async function POST(request: Request) {
         }
       });
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "MFA_SESSION_REVOKED") {
+      return noStoreJson({ error: "unauthorized" }, 401);
+    }
     return noStoreJson({ error: "mfa_replacement_failed" }, 409);
   }
 
