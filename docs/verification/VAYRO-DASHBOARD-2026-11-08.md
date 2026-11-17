@@ -36,7 +36,7 @@ The GitHub commit combined-status endpoint returned no legacy status entries. Th
 - The API derives authorization from the server-side session and verifies OWNER access.
 - Catalog initialization is an idempotent upsert and records an audit event.
 - Product updates validate HTTPS destinations, enforce same-origin requests, rate-limit owner actions and record audit events.
-- The catalog contains eleven entries: ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA, PAYAM, DANA, ARIA, ARIANA and LEADORA.
+- The authoritative current catalogue contains eleven independent apps: ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA, PAYAM, LEADORA, ARIANA, ARIA and ARMIN MARKET. DANA is the shared AI command plane and is not counted as a standalone app. This corrects the older inventory wording in this historical verification record.
 - Product boundaries are preserved: ARIA excludes accounting/ERP; ARIANA owns accounting/ERP; LEADORA covers distribution operations.
 - Login response includes `user.platformRole`; the dashboard redirect checks that field for OWNER.
 
