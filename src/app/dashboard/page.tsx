@@ -9,7 +9,7 @@ type Product = {
   status: ProductStatus; baseUrl: string | null; licenseCount: number;
   updatedAt: string;
 };
-type Metrics = { totalProducts: number; totalTenants: number; activeLicenses: number; allLicenses: number };
+type Metrics = { totalProducts: number; catalogSize: number; totalTenants: number; activeLicenses: number; allLicenses: number };
 const statusLabels: Record<ProductStatus, string> = {
   PLANNED: "در برنامه", ACTIVE: "فعال", MAINTENANCE: "در تعمیر و نگهداری", RETIRED: "بازنشسته"
 };
@@ -103,11 +103,11 @@ export default function DashboardPage() {
 
       <section className="owner-metrics" aria-label="شاخص‌های واقعی هسته">
         {[
-          ["محصولات ثبت‌شده", metrics?.totalProducts],
+          ["محصولات ثبت‌شده", metrics ? `${metrics.totalProducts.toLocaleString("fa-IR")} / ${metrics.catalogSize.toLocaleString("fa-IR")}` : undefined],
           ["سازمان‌ها", metrics?.totalTenants],
           ["مجوزهای فعال", metrics?.activeLicenses],
           ["کل مجوزها", metrics?.allLicenses]
-        ].map(([label, value]) => <article key={String(label)}><span>{label}</span><strong>{loading ? "…" : value === undefined ? "—" : Number(value).toLocaleString("fa-IR")}</strong></article>)}
+        ].map(([label, value]) => <article key={String(label)}><span>{label}</span><strong>{loading ? "…" : value === undefined ? "—" : typeof value === "number" ? value.toLocaleString("fa-IR") : value}</strong></article>)}
       </section>
 
       <section className="owner-products-panel">
