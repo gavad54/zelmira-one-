@@ -44,7 +44,7 @@ Acceptance must include: no session on password-only login when MFA is enabled; 
 
 ## 4. Product-family inventory boundary
 
-The owner-confirmed family contains these 11 products: DANA, ARIA, ARIANA, LEADORA, ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM. VAYRO is the mother application and is not counted as one of the 11.
+The authoritative eleven-app portfolio is ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA, PAYAM, LEADORA, ARIANA, ARIA and ARMIN MARKET. VAYRO is the mother application and is not counted as one of the 11. DANA is the shared AI intelligence, management and orchestration command plane; it is not counted as a standalone app.
 
 No product is promoted to a completed or release-ready state by this audit. For each of the 11, independent evidence is still required for its mission and capabilities, source/repository ownership, backend/frontend, data boundary, API/authz, integration tests, operational hosting, backup/restore, UAT, support, commercial workflow and owner release approval.
 
@@ -57,7 +57,7 @@ Some historical text in `docs/RELEASE-GATES.md` still refers to PR #2, older bra
 ## 6. Release posture
 
 **VAYRO: DEVELOPMENT IN PROGRESS.**  
-**DANA and all 11 products: AUDIT REQUIRED for independent acceptance.**  
+**DANA command plane and all 11 independent apps: AUDIT REQUIRED for independent acceptance.**  
 **Public release and commercial operation: NOT AUTHORIZED / NOT VERIFIED.**
 
 Open critical gates include end-to-end privileged MFA, endpoint-by-endpoint authorization, full tenant isolation coverage, trusted-proxy validation, production CSP/security review, live database migration-baseline reconciliation, independent encrypted backup and isolated restore, dedicated hosting, operational email, Android build/signing/device acceptance, billing/legal readiness, UAT, monitoring/rollback and explicit owner approval.
