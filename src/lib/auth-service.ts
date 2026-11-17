@@ -145,6 +145,9 @@ export async function currentSession() {
   // Existing sessions with NULL lastSeenAt use their creation time as the
   // initial activity baseline. Idle sessions are revoked server-side.
   const lastActivityAt = session.lastSeenAt instanceof Date ? session.lastSeenAt : session.createdAt;
+  // Reject impossible future activity timestamps; otherwise the negative idle
+  // age can keep an otherwise idle session alive until its absolute expiry.
+  if (lastActivityAt.getTime() > now.getTime()) return null;
   if (now.getTime() - lastActivityAt.getTime() > SESSION_IDLE_TTL_MS) {
     await prisma.session.updateMany({
       where: { id: session.id, revokedAt: null },
