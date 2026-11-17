@@ -59,10 +59,15 @@ export async function authorizeTenantRequest({
     }
 
     const lastActivityAt = session.lastSeenAt instanceof Date ? session.lastSeenAt : session.createdAt;
-    // A future activity timestamp can otherwise make the idle-age calculation
-    // negative and keep a session alive indefinitely. Treat clock/data anomalies
-    // as invalid session state and fail closed.
-    if (lastActivityAt.getTime() > now.getTime()) return denied;
+    // Future activity values indicate corrupted or skewed session state.
+    // Revoke the session rather than merely denying this request.
+    if (lastActivityAt.getTime() > now.getTime()) {
+      await db.session.updateMany({
+        where: { id: session.id, revokedAt: null },
+        data: { revokedAt: now }
+      });
+      return denied;
+    }
 
     if (now.getTime() - lastActivityAt.getTime() > SESSION_IDLE_TTL_MS) {
       await db.session.updateMany({
