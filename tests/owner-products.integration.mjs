@@ -104,6 +104,7 @@ test("owner product configuration writes are rate limited without weakening auth
     const dashboardData = await dashboardResponse.json();
     assert.ok(!dashboardData.products.some((item) => item.key === "DANA"), "legacy DANA row must not appear as a twelfth independent app");
     assert.equal(dashboardData.metrics.totalProducts, dashboardData.products.length, "the product metric must count only approved catalogue apps");
+    assert.equal(dashboardData.metrics.catalogSize, 11, "the dashboard must expose the approved eleven-app catalogue size");
 
     const crossOrigin = await fetch(`${origin}/api/owner/products`, {
       method: "PATCH",
