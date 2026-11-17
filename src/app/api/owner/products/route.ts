@@ -49,7 +49,7 @@ export async function GET() {
     ]);
     return noStoreJson({
       products: products.map(({ _count, ...product }) => ({ ...product, licenseCount: _count.licenses })),
-      metrics: { totalProducts: products.length, totalTenants: tenants, activeLicenses, allLicenses }
+      metrics: { totalProducts: products.length, catalogSize: PRODUCT_CATALOG.length, totalTenants: tenants, activeLicenses, allLicenses }
     });
   } catch {
     return noStoreJson({ error: "dashboard_unavailable" }, 503);
