@@ -7,6 +7,8 @@ type SecurityStatus = {
   enabled: boolean;
   required: boolean;
   unusedRecoveryCodes: number;
+  replacementPending: boolean;
+  replacementExpiresAt: string | null;
 };
 
 export default function SecuritySettingsPage() {
@@ -17,6 +19,10 @@ export default function SecuritySettingsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [replacementSecret, setReplacementSecret] = useState("");
+  const [replacementUri, setReplacementUri] = useState("");
+  const [replacementOldCode, setReplacementOldCode] = useState("");
+  const [replacementNewCode, setReplacementNewCode] = useState("");
 
   async function loadStatus() {
     setError("");
@@ -68,6 +74,53 @@ export default function SecuritySettingsPage() {
     }
   }
 
+  async function replaceFactor(action: "begin" | "confirm", event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const code = action === "begin" ? replacementOldCode : replacementNewCode;
+      const response = await fetch("/api/auth/mfa/replace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, code })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        const messages: Record<string, string> = {
+          invalid_mfa_code: "کد عامل فعلی معتبر نیست یا قبلاً استفاده شده است.",
+          invalid_new_factor_code: "کد عامل جدید معتبر نیست.",
+          no_pending_factor: "ابتدا فرایند تعویض را آغاز کنید.",
+          pending_factor_expired: "مهلت تأیید تمام شده است؛ فرایند را دوباره آغاز کنید.",
+          mfa_code_already_used: "این کد قبلاً استفاده شده است؛ کد تازه بگیرید.",
+          try_again_later: "تعداد تلاش‌ها بیش از حد مجاز است؛ بعداً دوباره امتحان کنید."
+        };
+        throw new Error(messages[data.error] ?? "تعویض عامل احراز هویت انجام نشد.");
+      }
+      if (action === "begin") {
+        setReplacementSecret(data.secret);
+        setReplacementUri(data.otpauthUri);
+        setReplacementOldCode("");
+        setReplacementNewCode("");
+        setNotice("عامل جدید به‌صورت موقت ثبت شد. آن را در برنامه احراز هویت اضافه و پیش از پایان مهلت تأیید کنید. عامل قبلی هنوز فعال است.");
+        await loadStatus();
+      } else {
+        setRecoveryCodes(data.recoveryCodes ?? []);
+        setReplacementSecret("");
+        setReplacementUri("");
+        setReplacementOldCode("");
+        setReplacementNewCode("");
+        setNotice("عامل جدید تأیید و جایگزین شد. کدهای بازیابی قبلی باطل شده‌اند؛ کدهای تازه را در محل امن ذخیره کنید.");
+        await loadStatus();
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "خطای انجام عملیات.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <main className="auth-page" dir="rtl">
       <section className="auth-panel">
@@ -78,6 +131,28 @@ export default function SecuritySettingsPage() {
           <p>وضعیت تأیید دومرحله‌ای: <strong>{status.enabled ? "فعال" : "غیرفعال"}</strong></p>
           <p>الزام امنیتی حساب: <strong>{status.required ? "اجباری" : "اختیاری"}</strong></p>
           <p>کدهای بازیابی استفاده‌نشده: <strong>{status.unusedRecoveryCodes}</strong></p>
+          {status.enabled && <form onSubmit={event => void replaceFactor("begin", event)}>
+            <h2>تعویض امن دستگاه احراز هویت</h2>
+            <p>ابتدا با کد دستگاه فعلی اجازه تعویض می‌دهید. عامل فعلی تا تأیید کد دستگاه جدید فعال می‌ماند.</p>
+            <label>کد دستگاه فعلی
+              <input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={replacementOldCode} onChange={event => setReplacementOldCode(event.target.value)} />
+            </label>
+            <button disabled={busy}>{busy ? "در حال انجام…" : "آغاز تعویض دستگاه"}</button>
+          </form>}
+          {replacementSecret && <section aria-live="polite">
+            <h2>ثبت موقت دستگاه جدید</h2>
+            <p>در برنامه احراز هویت، کلید زیر را به‌صورت دستی وارد کنید. این کلید فقط در همین مرحله نمایش داده می‌شود.</p>
+            <p><code>{replacementSecret}</code></p>
+            <p>پیوند ثبت: <code>{replacementUri}</code></p>
+            <p>مهلت تأیید: ۱۰ دقیقه. تا تأیید موفق، دستگاه قبلی همچنان معتبر است.</p>
+            <form onSubmit={event => void replaceFactor("confirm", event)}>
+              <label>کد شش‌رقمی دستگاه جدید
+                <input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={replacementNewCode} onChange={event => setReplacementNewCode(event.target.value)} />
+              </label>
+              <button disabled={busy}>{busy ? "در حال تأیید…" : "تأیید و جایگزینی عامل"}</button>
+            </form>
+          </section>}
+          {status.replacementPending && !replacementSecret && <p role="status">یک فرایند تعویض در انتظار تأیید است. اگر کلید موقت را در اختیار ندارید، با کد دستگاه فعلی فرایند تازه‌ای آغاز کنید.</p>}
           {status.enabled && <>
             <form onSubmit={event => void submit("regenerate_recovery_codes", event)}>
               <h2>صدور مجدد کدهای بازیابی</h2>
