@@ -2,7 +2,7 @@
 
 ## Delivered in this slice
 - Owner-only dashboard at `/owner`, guarded by a verified, active OWNER session.
-- Eight fixed catalog identities: ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA, PAYAM and DANA.
+- Eleven fixed independent app identities: ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA, PAYAM and DANA.
 - Explicit, idempotent catalog initialization. Existing product status, description and URL are not overwritten.
 - Owner-only catalog read, status/destination update, and audit event in the same transaction.
 - Aggregate counts for tenants and licenses.
