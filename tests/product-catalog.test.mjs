@@ -4,12 +4,14 @@ import { PRODUCT_CATALOG, validateProductConfiguration } from "../src/lib/produc
 
 test("the catalog preserves the approved VAYRO product family and independent products", () => {
   assert.deepEqual(PRODUCT_CATALOG.map(product => product.key), [
-    "ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM", "DANA", "ARIA", "ARIANA", "LEADORA"
+    "ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM", "LEADORA", "ARIANA", "ARIA", "ARMIN_MARKET"
   ]);
   assert.equal(new Set(PRODUCT_CATALOG.map(product => product.key)).size, 11);
   assert.ok(PRODUCT_CATALOG.every(product => product.name && product.description));
   assert.match(PRODUCT_CATALOG.find(product => product.key === "ARIA").description, /بدون حسابداری و ERP/);
   assert.match(PRODUCT_CATALOG.find(product => product.key === "ARIANA").description, /حسابداری/);
+  assert.ok(PRODUCT_CATALOG.some(product => product.key === "ARMIN_MARKET"));
+  assert.ok(!PRODUCT_CATALOG.some(product => product.key === "DANA"));
 });
 
 test("a product cannot be marked active without a secure HTTPS destination", () => {
