@@ -59,3 +59,14 @@ The repository now includes a privileged MFA lifecycle: password login can requi
 The latest verified application-code head is `5274fdf8333f5d9b0451265df7920c85436edab8`. Subsequent documentation-only commits advanced PR #5 to `3e0632cdf6214a690d10571a6aa8c48fba35df90`; CI, CodeQL and Dashboard Validation for that documentation-only head were still running at the time of this note. VAYRO CI [43926257688](https://github.com/gavad54/zelmira-one-/actions/runs/43926257688), CodeQL [43926257680](https://github.com/gavad54/zelmira-one-/actions/runs/43926257680) and Dashboard Validation [43926257703](https://github.com/gavad54/zelmira-one-/actions/runs/43926257703) all completed successfully on that exact commit.
 
 Authenticator-device replacement is not yet implemented; it must use a pending encrypted secret and confirm-before-swap transaction. Production key custody, live database baseline reconciliation, external encrypted backup and restore, dedicated hosting, production email, billing, Android delivery, independently operational product integrations and owner UAT remain unverified. PR #5 remains open and draft. The platform remains **DEPLOYMENT BLOCKED — NOT RELEASED**.
+
+
+## 2026-11-17 implementation and infrastructure verification
+
+- Added a safe TOTP authenticator replacement lifecycle: encrypted pending secret, ten-minute expiry, old-factor proof to begin, new-factor proof to confirm, atomic promotion, replay/rate-limit protection, audit events, recovery-code rotation and revocation of other sessions. The active factor remains intact until confirmation succeeds.
+- Added a Persian security-settings workflow for device replacement and one-time recovery-code display.
+- CI now uses PostgreSQL 17 and includes an isolated logical backup/restore smoke test. This validates CI restore mechanics only; no production backup or external encrypted storage is configured.
+- Fresh read-only VAYRO-CORE inspection shows 11 public tables, no data rows, RLS enabled, no client table grants and no migration history. The live schema has not yet received MFA persistence or later Session columns. The database inspection identity was `postgres` (BYPASSRLS); the application's runtime database identity remains unverified.
+- No dedicated VAYRO Railway project or Android/Gradle project exists in the current accessible workspace/repository tree.
+
+The production database baseline, least-privilege runtime identity, protected MFA key custody, external encrypted backups/restore, hosting, email, billing, independent product operations, Android release, UAT and explicit owner release approval remain separate gates. No production schema, secret, deployment or data was changed.
