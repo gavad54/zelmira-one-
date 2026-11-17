@@ -6,7 +6,7 @@ export function mfaConfiguration(env = process.env) {
 
 export function trustedProxyConfiguration(env = process.env) {
   const value = env.TRUSTED_PROXY_HOPS ?? "";
-  if (!/^\\d+$/.test(value)) return "not_configured";
+  if (!/^\d+$/.test(value)) return "not_configured";
   const hops = Number(value);
   return Number.isSafeInteger(hops) && hops >= 1 && hops <= 10
     ? "ok"
@@ -18,7 +18,7 @@ export function emailConfiguration(env = process.env) {
   if (provider === "resend") {
     const apiKey = env.EMAIL_API_KEY?.trim() ?? "";
     const from = env.EMAIL_FROM?.trim() ?? "";
-    const validFrom = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(from);
+    const validFrom = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(from);
     // Resend's shared test sender is deliberately not production-ready.
     return apiKey.length > 0 && validFrom && !from.toLowerCase().endsWith("@resend.dev")
       ? "ok"
@@ -26,7 +26,7 @@ export function emailConfiguration(env = process.env) {
   }
   if (provider === "gmail") {
     const sender = env.GMAIL_SENDER_EMAIL?.trim() ?? "";
-    const validSender = /^[^\\s@]+@gmail\\.com$/i.test(sender);
+    const validSender = /^[^\s@]+@gmail\.com$/i.test(sender);
     return Boolean(
       env.GMAIL_CLIENT_ID?.trim() &&
       env.GMAIL_CLIENT_SECRET?.trim() &&
