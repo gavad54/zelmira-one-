@@ -78,3 +78,15 @@ Repository implementation does not equal production activation. Production MFA e
 - A green CI run is evidence for that commit and those checks only; it is not a production-readiness or commercial-release certification.
 
 **Release decision: BLOCKED.**
+
+## Latest verified engineering update — 2026-11-17 07:17 UTC
+
+This section supersedes older commit identifiers and CI run references above.
+
+- Current PR #5 head at this verification: `cad0a4c7b155f0b02f7bf44732bbe790f76ba28b`; PR remains open, Draft and unmerged.
+- VAYRO CI [44037240669](https://github.com/gavad54/zelmira-one-/actions/runs/44037240669), Dashboard Validation [44037240710](https://github.com/gavad54/zelmira-one-/actions/runs/44037240710), and CodeQL [44037240679](https://github.com/gavad54/zelmira-one-/actions/runs/44037240679) all completed successfully on this exact commit.
+- Verified checks: 69 unit tests passed; 23 PostgreSQL/production-HTTP integration tests passed; locked dependency audit reported zero vulnerabilities; Prisma validation, isolated least-privilege PostgreSQL role setup, all repository migrations, isolated logical backup/restore, lint, TypeScript and production build passed.
+- New session regression coverage proves that a future `lastSeenAt` value is rejected by both tenant authorization and the public `/api/auth/me` session endpoint. The owner-session guard also rejects future activity timestamps.
+- Owner email-confirmation integration coverage now verifies successful confirmation, one-time token replay rejection, and rejection of disabled contacts. The confirmation write rechecks `enabled=true` atomically, preventing a concurrent disable from being overwritten by verification.
+- These are repository and isolated-CI results only. They do not verify production database migration, production backup/restore, production key custody, live email delivery, hosting, billing, Android, independent product operation or owner UAT.
+- Release posture remains **DEPLOYMENT BLOCKED — NOT RELEASED**. No merge, production deployment, production database change, payment activation or customer onboarding was performed.
