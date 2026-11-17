@@ -89,6 +89,8 @@ test("production IP throttling denies attempts when trusted proxy fingerprint is
   const { shouldAllowIpAttempt } = await import("../src/lib/auth-core.mjs");
   assert.equal(shouldAllowIpAttempt("production", null), false);
   assert.equal(shouldAllowIpAttempt("production", ""), false);
+  assert.equal(shouldAllowIpAttempt(undefined, null), false);
+  assert.equal(shouldAllowIpAttempt("production", "   "), false);
 });
 
 test("development IP throttling remains permissive when trusted proxy fingerprint is unavailable", async () => {
