@@ -129,3 +129,16 @@ IP-based throttling must not trust an arbitrary `X-Forwarded-For` value. The app
 - Disablement requires password plus fresh TOTP, rejects platform OWNER/PLATFORM_ADMIN and active tenant OWNER/ADMIN roles, removes credentials/recovery codes only for eligible non-privileged accounts, revokes sessions and clears the current cookie. Privileged status is rechecked inside the transaction to reduce role-change race risk.
 - **Authenticator-device replacement is not implemented.** Required safe design: store a pending encrypted secret with a short expiry; verify it with a new-factor TOTP; atomically promote it only after successful confirmation; preserve the old factor until then; enforce replay/rate limits; audit begin/confirm/expiry; and define recovery-code/session rotation behavior. Do not treat an unconfirmed pending factor as active.
 - Production key custody, key rotation/recovery, secure-cookie verification on the deployed host, trusted-proxy topology, complete endpoint authorization review and independent security assessment remain open. CI success is repository evidence, not production certification.
+
+
+## Verification addendum — 2026-11-17 (authenticator replacement)
+
+- Added a confirm-before-swap authenticator replacement endpoint. Starting replacement requires a fresh TOTP from the active factor; the new secret is encrypted at rest in separate pending fields and expires after ten minutes. The existing active secret is never overwritten during setup.
+- Confirmation requires a valid code from the pending factor. A single transaction promotes the pending envelope, clears pending columns, updates the current session's MFA assurance, rotates recovery codes, revokes other active sessions and writes an audit event. Conditional updates prevent stale/replayed pending state from being promoted.
+- The endpoint is same-origin, no-store, session-bound and rate-limited. It rechecks session validity inside the database transaction. Invalid new-factor proof leaves the original active factor intact.
+- The Persian security page displays the temporary setup secret/provisioning URI and requires explicit new-factor confirmation. The new recovery-code set is shown once.
+- Integration test coverage includes invalid old-factor proof, invalid new-factor confirmation, successful factor promotion, pending-state cleanup, recovery-code rotation, current/other session handling, audit persistence and replay rejection.
+- Production key custody and recovery remain open. `VAYRO_MFA_ENCRYPTION_KEY` must be provisioned as a unique 32-byte hex key in protected runtime secrets and backed up under a separate controlled procedure. No real key was created, viewed, or changed.
+- The actual deployed application database identity remains unverified. The read-only Supabase catalog session ran as `postgres` with BYPASSRLS; do not assume that is the application's runtime identity, and do not use an owner/superuser connection for the application.
+
+CI success is repository-level evidence only; it does not certify live authentication or production security.
