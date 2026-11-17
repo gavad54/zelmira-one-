@@ -104,7 +104,7 @@ export default function OwnerDashboardPage() {
       </section>
 
       <section className="owner-metrics" aria-label="شاخص‌های مرکزی">
-        <article><span>محصولات ثبت‌شده</span><strong>{metrics.totalProducts} / 8</strong></article>
+        <article><span>محصولات ثبت‌شده</span><strong>{metrics.totalProducts} / 11</strong></article>
         <article><span>سازمان‌ها</span><strong>{metrics.totalTenants}</strong></article>
         <article><span>مجوزهای فعال</span><strong>{metrics.activeLicenses}</strong></article>
         <article><span>کل مجوزها</span><strong>{metrics.allLicenses}</strong></article>
