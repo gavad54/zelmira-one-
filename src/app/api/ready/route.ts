@@ -52,7 +52,7 @@ async function databaseConfiguration(): Promise<Check> {
       isSuperuser: boolean;
       bypassesRls: boolean;
       canLogin: boolean;
-    }>>\`
+    }>>`
       SELECT
         current_user AS "roleName",
         COALESCE(rolsuper, false) AS "isSuperuser",
@@ -60,7 +60,7 @@ async function databaseConfiguration(): Promise<Check> {
         COALESCE(rolcanlogin, false) AS "canLogin"
       FROM pg_roles
       WHERE rolname = current_user
-    \`;
+    `;
     const identity = rows[0];
     if (!identity) return "unavailable";
     return identity.canLogin && !identity.isSuperuser && !identity.bypassesRls
