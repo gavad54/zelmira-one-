@@ -156,5 +156,5 @@ export function getTrustedClientAddress(forwardedFor, trustedProxyHops) {
  */
 export function shouldAllowIpAttempt(nodeEnv, fingerprint) {
   if (typeof fingerprint === "string" && fingerprint.trim().length > 0) return true;
-  return nodeEnv !== "production";
+  return nodeEnv === "development" || nodeEnv === "test";
 }
