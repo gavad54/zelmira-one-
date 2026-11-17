@@ -210,6 +210,10 @@ export async function POST(request: Request) {
       });
       if (promoted.count !== 1) throw new Error("MFA_PENDING_FACTOR_CHANGED");
 
+      await tx.session.updateMany({
+        where: { id: record.id, userId: record.user.id, revokedAt: null },
+        data: { assurance: "MFA", mfaAuthenticatedAt: new Date() }
+      });
       await tx.mfaRecoveryCode.deleteMany({ where: { userId: record.user.id } });
       await tx.mfaRecoveryCode.createMany({
         data: recoveryCodes.map(code => ({
