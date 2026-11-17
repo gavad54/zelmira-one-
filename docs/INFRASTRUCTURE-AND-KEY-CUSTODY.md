@@ -142,3 +142,16 @@ A `railway.toml` or Dockerfile in Git does not prove that Railway service exists
 ## 10. Prohibited until separate owner approval
 
 No production migration/baseline, role/grant/policy change, secret creation or rotation, paid resource creation, deployment, DNS cutover, customer data ingestion, payment activation, PR merge or public release is performed by this engineering specification.
+
+
+## 7A. Supabase plan and backup constraint (verified 2026-11-17)
+
+- The owning Supabase organization is currently on the **Free** plan.
+- Supabase's current Database Backups documentation states that automatic daily backups are provided for Pro, Team and Enterprise projects; Free projects should regularly export their data with Supabase CLI `db dump` and keep off-site backups. The Production Checklist also states that database backups are not available for download on Free projects.
+- The current project has no verified independent object-storage destination, no backup encryption key custody and no restore drill. Therefore **there is no proven production backup path today**.
+- Do not enable PITR or upgrade a plan without explicit cost review and owner approval. PITR is a paid add-on and is not a substitute for a separately controlled off-site backup.
+- Until an off-site encrypted backup destination and restore identity are provisioned, the live VAYRO-CORE database remains a release blocker. The existing CI pg_dump/pg_restore check is isolated test evidence only.
+
+Official references:
+- [Supabase Database Backups](https://supabase.com/docs/guides/platform/backups)
+- [Supabase Production Checklist](https://supabase.com/docs/guides/deployment/going-into-prod)
