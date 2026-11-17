@@ -177,6 +177,20 @@ test("valid session is returned by /me and revoked by HTTP logout", async () => 
       data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
     });
 
+    await db.session.update({
+      where: { id: session.id },
+      data: { lastSeenAt: new Date(Date.now() + 60 * 1000) }
+    });
+    const futureActivity = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${token}` }
+    });
+    assert.equal(futureActivity.status, 401);
+    assert.deepEqual(await futureActivity.json(), { authenticated: false });
+
+    await db.session.update({
+      where: { id: session.id },
+      data: { lastSeenAt: new Date() }
+    });
     const me = await fetch(`${origin}/api/auth/me`, {
       headers: { Cookie: `vayro_session=${token}` }
     });
