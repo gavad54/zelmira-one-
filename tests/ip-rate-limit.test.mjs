@@ -24,3 +24,14 @@ test("preserves the persistent limiter decision for a trusted fingerprint", asyn
   const limiter = async () => true;
   assert.equal(await allowIpRateLimit("sha256-client-key", 8, 900000, limiter), true);
 });
+
+
+test("rejects malformed fingerprints instead of persisting raw or ambiguous keys", async () => {
+  let calls = 0;
+  const limiter = async () => { calls += 1; return true; };
+
+  for (const fingerprint of [" ", "198.51.100.10", "A".repeat(64), "a".repeat(63), "a".repeat(65)]) {
+    assert.equal(await allowIpRateLimit(fingerprint, 8, 900000, limiter), false, fingerprint);
+  }
+  assert.equal(calls, 0);
+});
