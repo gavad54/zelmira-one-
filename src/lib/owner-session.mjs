@@ -52,9 +52,15 @@ export async function authorizeOwnerSession({ sessionToken, db, now = new Date()
     ) return { authorized: false };
 
     const lastActivityAt = session.lastSeenAt instanceof Date ? session.lastSeenAt : session.createdAt;
-    // Treat future activity values as invalid session state instead of
-    // allowing a negative idle age to bypass the inactivity timeout.
-    if (lastActivityAt.getTime() > now.getTime()) return { authorized: false };
+    // Future activity values indicate corrupted or skewed session state.
+    // Revoke the session rather than merely denying this request.
+    if (lastActivityAt.getTime() > now.getTime()) {
+      await db.session.updateMany({
+        where: { id: session.id, revokedAt: null },
+        data: { revokedAt: now }
+      });
+      return { authorized: false };
+    }
     if (now.getTime() - lastActivityAt.getTime() > SESSION_IDLE_TTL_MS) {
       await db.session.updateMany({
         where: { id: session.id, revokedAt: null },
