@@ -84,7 +84,10 @@ test("liveness and database readiness are independently verified", async () => {
   assert.equal(readiness.status, "not_ready");
   // CI connects with the PostgreSQL bootstrap superuser; readiness must fail closed until a dedicated runtime role is tested.
   assert.equal(readiness.checks.database, "not_configured");
+  // CI applies all six migrations to its disposable database; schema must be complete.
+  assert.equal(readiness.checks.schema, "ok");
   assert.equal(readiness.checks.mfa, "ok");
+  assert.equal("roleName" in readiness.checks, false);
   assert.equal(readiness.checks.rateLimit, "not_configured");
   assert.equal(readiness.checks.email, "not_configured");
 });
