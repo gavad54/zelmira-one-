@@ -83,7 +83,7 @@ test("liveness and database readiness are independently verified", async () => {
   const readiness = await ready.json();
   assert.equal(readiness.status, "not_ready");
   assert.equal(readiness.checks.database, "ok");
-  assert.equal(readiness.checks.mfa, "not_configured");
+  assert.equal(readiness.checks.mfa, "ok");
   assert.equal(readiness.checks.rateLimit, "not_configured");
   assert.equal(readiness.checks.email, "not_configured");
 });
