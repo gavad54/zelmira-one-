@@ -123,7 +123,7 @@ test("MFA factor replacement requires old-factor proof, confirms new factor, rot
       method: "POST",
       headers: {
         Origin: origin,
-        Host: "127.0.0.1:43180",
+        Host: "localhost:43180",
         "Content-Type": "application/json",
         Cookie: `vayro_session=${token}`
       },
