@@ -9,18 +9,18 @@ This document is the current source of truth as of 2026-11-17. It supersedes old
 - Repository: `gavad54/zelmira-one-`
 - Active engineering branch: `feature/vayro-real-dashboard`
 - PR: [#5](https://github.com/gavad54/zelmira-one-/pull/5)
-- Last fully verified application-code head: `c489b97f3fe9b10dd7cfd63ac0c0fa1ecb71e3d4`. The subsequent release-gate document refresh is documentation-only; always read the live PR head and its own workflow runs before treating a newer commit as verified.
+- Last verified PR head: `934458ccb054796c50205b69589c861261846f7f` (2026-11-17). The workflow runs below completed successfully on this exact SHA.
 - PR #5 is **open, draft, not merged**. No production deployment or public release is authorized.
-- VAYRO CI [run 44020434688](https://github.com/gavad54/zelmira-one-/actions/runs/44020434688): completed successfully on the verified application-code head above.
-- Dashboard Validation [run 44020434855](https://github.com/gavad54/zelmira-one-/actions/runs/44020434855): completed successfully on the verified application-code head above.
-- CodeQL PR analysis [run 44020435183](https://github.com/gavad54/zelmira-one-/actions/runs/44020435183): completed successfully on the verified application-code head above. This records a successful scan; it does not by itself prove that all historical alert records are closed or formally dispositioned.
-- A separate push-triggered CodeQL run [44020429639](https://github.com/gavad54/zelmira-one-/actions/runs/44020429639) was still running at the last check; the PR-triggered CodeQL run above is the completed evidence used for this head.
+- VAYRO CI [run 44059004783](https://github.com/gavad54/zelmira-one-/actions/runs/44059004783): success on the exact head above.
+- Dashboard Validation [run 44059004844](https://github.com/gavad54/zelmira-one-/actions/runs/44059004844): success on the exact head above.
+- CodeQL [run 44059004829](https://github.com/gavad54/zelmira-one-/actions/runs/44059004829): success on the exact head above. A successful scan does not by itself prove that all historical alert records are closed or formally dispositioned.
+- The CI and Dashboard Validation logs report 74 unit tests passed, 0 failed. Dashboard Validation reports 23 PostgreSQL/HTTP integration tests passed, 0 failed. Prisma generation/validation, lint, typecheck, production build and dependency audit completed successfully in the CI workflows.
 
 ### Verified CI checks on current PR head
 
 - Locked dependency installation and enforced dependency audit: passed.
-- Unit tests: **68 passed, 0 failed**.
-- PostgreSQL/HTTP integration tests: **23 passed, 0 failed**.
+- Unit tests on verified head `934458ccb054796c50205b69589c861261846f7f`: **74 passed, 0 failed**.
+- PostgreSQL/HTTP integration tests on that head: **23 passed, 0 failed**.
 - Prisma client generation and schema validation: passed.
 - Least-privilege roles in isolated PostgreSQL: passed.
 - Full Prisma migration history on isolated PostgreSQL 17: passed.
