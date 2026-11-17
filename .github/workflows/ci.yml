@@ -61,18 +61,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "INSERT INTO \"AuthRateLimit\" (\"keyHash\", \"windowStartedAt\", \"count\", \"expiresAt\") VALUES (repeat('a', 64), now(), 1, now() + interval '1 hour') ON CONFLICT (\"keyHash\") DO UPDATE SET \"count\" = 1;"
-          pg_dump "$DATABASE_URL" --format=custom --no-owner --file=/tmp/vayro-ci-backup.dump
-          createdb "postgresql://ci:ci@localhost:5432/vayro_restore_ci"
-          pg_restore --exit-on-error --no-owner --dbname="postgresql://ci:ci@localhost:5432/vayro_restore_ci" /tmp/vayro-ci-backup.dump
-          source_marker="$(psql "$DATABASE_URL" -Atc 'SELECT count(*) FROM "AuthRateLimit" WHERE "keyHash" = repeat('"'a'"', 64)')"
-          restored_marker="$(psql "postgresql://ci:ci@localhost:5432/vayro_restore_ci" -Atc 'SELECT count(*) FROM "AuthRateLimit" WHERE "keyHash" = repeat('"'a'"', 64)')"
-          source_migrations="$(psql "$DATABASE_URL" -Atc 'SELECT count(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL')"
-          restored_migrations="$(psql "postgresql://ci:ci@localhost:5432/vayro_restore_ci" -Atc 'SELECT count(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL')"
+          pg_url="postgresql://ci:ci@localhost:5432/vayro_ci"
+          restore_url="postgresql://ci:ci@localhost:5432/vayro_restore_ci"
+          psql "$pg_url" -v ON_ERROR_STOP=1 -c "INSERT INTO \"AuthRateLimit\" (\"keyHash\", \"windowStartedAt\", \"count\", \"expiresAt\") VALUES (repeat('a', 64), now(), 1, now() + interval '1 hour') ON CONFLICT (\"keyHash\") DO UPDATE SET \"count\" = 1;"
+          pg_dump "$pg_url" --format=custom --no-owner --file=/tmp/vayro-ci-backup.dump
+          createdb "$restore_url"
+          pg_restore --exit-on-error --no-owner --dbname="$restore_url" /tmp/vayro-ci-backup.dump
+          source_marker="$(psql "$pg_url" -Atc "SELECT count(*) FROM \"AuthRateLimit\" WHERE \"keyHash\" = repeat('a', 64)")"
+          restored_marker="$(psql "$restore_url" -Atc "SELECT count(*) FROM \"AuthRateLimit\" WHERE \"keyHash\" = repeat('a', 64)")"
+          source_migrations="$(psql "$pg_url" -Atc 'SELECT count(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL')"
+          restored_migrations="$(psql "$restore_url" -Atc 'SELECT count(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL')"
           test "$source_marker" = "1"
           test "$restored_marker" = "1"
           test "$source_migrations" = "$restored_migrations"
-          dropdb "postgresql://ci:ci@localhost:5432/vayro_restore_ci"
+          dropdb "$restore_url"
           rm -f /tmp/vayro-ci-backup.dump
       - name: Lint
         run: npm run lint
