@@ -84,3 +84,21 @@ test("login verification performs the approved scrypt check for unknown accounts
   assert.equal(await verifyLoginPassword(password, passwordHash), true);
   assert.equal(await verifyLoginPassword("a-different-password-42", passwordHash), false);
 });
+
+test("production IP throttling denies attempts when trusted proxy fingerprint is unavailable", async () => {
+  const { shouldAllowIpAttempt } = await import("../src/lib/auth-core.mjs");
+  assert.equal(shouldAllowIpAttempt("production", null), false);
+  assert.equal(shouldAllowIpAttempt("production", ""), false);
+});
+
+test("development IP throttling remains permissive when trusted proxy fingerprint is unavailable", async () => {
+  const { shouldAllowIpAttempt } = await import("../src/lib/auth-core.mjs");
+  assert.equal(shouldAllowIpAttempt("development", null), true);
+  assert.equal(shouldAllowIpAttempt("test", ""), true);
+});
+
+test("IP throttling proceeds when a trusted client fingerprint is available", async () => {
+  const { shouldAllowIpAttempt } = await import("../src/lib/auth-core.mjs");
+  assert.equal(shouldAllowIpAttempt("production", "a".repeat(64)), true);
+  assert.equal(shouldAllowIpAttempt("development", "a".repeat(64)), true);
+});
