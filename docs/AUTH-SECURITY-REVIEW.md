@@ -119,3 +119,13 @@ IP-based throttling must not trust an arbitrary `X-Forwarded-For` value. The app
 - Added production-mode HTTP/PostgreSQL integration coverage for cross-origin rejection, recovery-code replacement, privileged disable denial, non-privileged disable, credential deletion and session revocation.
 - This change does not implement authenticator-device replacement/rotation. A safe factor replacement requires pending encrypted credential state and a confirm-before-swap workflow; it remains a separate engineering item.
 - No live database, production secret, hosting configuration, deployment or public release was changed. CI on the resulting commit must pass before this code is treated as repository-verified.
+
+
+## Verification addendum — 2026-11-17
+
+- Current verified repository head: `5274fdf8333f5d9b0451265df7920c85436edab8`. PR #5 VAYRO CI [43926257688](https://github.com/gavad54/zelmira-one-/actions/runs/43926257688), CodeQL [43926257680](https://github.com/gavad54/zelmira-one-/actions/runs/43926257680) and Dashboard Validation [43926257703](https://github.com/gavad54/zelmira-one-/actions/runs/43926257703) completed successfully on that exact head.
+- MFA lifecycle now includes privileged login challenge enforcement, TOTP enrollment and verification, MFA-assured sessions, hashed one-time recovery codes, Persian security settings, recovery-code rotation and controlled disablement for non-privileged accounts.
+- Recovery-code rotation consumes a fresh TOTP step atomically, replaces the prior recovery set with hashes, returns the new codes once, records an audit event and revokes other active sessions.
+- Disablement requires password plus fresh TOTP, rejects platform OWNER/PLATFORM_ADMIN and active tenant OWNER/ADMIN roles, removes credentials/recovery codes only for eligible non-privileged accounts, revokes sessions and clears the current cookie. Privileged status is rechecked inside the transaction to reduce role-change race risk.
+- **Authenticator-device replacement is not implemented.** Required safe design: store a pending encrypted secret with a short expiry; verify it with a new-factor TOTP; atomically promote it only after successful confirmation; preserve the old factor until then; enforce replay/rate limits; audit begin/confirm/expiry; and define recovery-code/session rotation behavior. Do not treat an unconfirmed pending factor as active.
+- Production key custody, key rotation/recovery, secure-cookie verification on the deployed host, trusted-proxy topology, complete endpoint authorization review and independent security assessment remain open. CI success is repository evidence, not production certification.
