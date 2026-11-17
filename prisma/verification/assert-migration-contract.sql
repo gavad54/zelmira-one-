@@ -7,7 +7,7 @@ DECLARE
     'EmailContact','EmailContactVerificationToken','AuthActionToken','AuthRateLimit',
     'MfaCredential','MfaLoginChallenge','MfaRecoveryCode'
   ];
-  table_name text;
+  v_table_name text;
   actual_count integer;
   bad_count integer;
 BEGIN
@@ -28,20 +28,20 @@ BEGIN
     RAISE EXCEPTION '% VAYRO tables have RLS disabled', bad_count;
   END IF;
 
-  FOREACH table_name IN ARRAY expected_tables LOOP
-    IF has_table_privilege('anon', format('%I.%I','public',table_name), 'SELECT')
-       OR has_table_privilege('anon', format('%I.%I','public',table_name), 'INSERT')
-       OR has_table_privilege('anon', format('%I.%I','public',table_name), 'UPDATE')
-       OR has_table_privilege('anon', format('%I.%I','public',table_name), 'DELETE')
-       OR has_table_privilege('authenticated', format('%I.%I','public',table_name), 'SELECT')
-       OR has_table_privilege('authenticated', format('%I.%I','public',table_name), 'INSERT')
-       OR has_table_privilege('authenticated', format('%I.%I','public',table_name), 'UPDATE')
-       OR has_table_privilege('authenticated', format('%I.%I','public',table_name), 'DELETE')
-       OR has_table_privilege('service_role', format('%I.%I','public',table_name), 'SELECT')
-       OR has_table_privilege('service_role', format('%I.%I','public',table_name), 'INSERT')
-       OR has_table_privilege('service_role', format('%I.%I','public',table_name), 'UPDATE')
-       OR has_table_privilege('service_role', format('%I.%I','public',table_name), 'DELETE') THEN
-      RAISE EXCEPTION 'Unexpected client/service-role table privilege on public.%', table_name;
+  FOREACH v_table_name IN ARRAY expected_tables LOOP
+    IF has_table_privilege('anon', format('%I.%I','public',v_table_name), 'SELECT')
+       OR has_table_privilege('anon', format('%I.%I','public',v_table_name), 'INSERT')
+       OR has_table_privilege('anon', format('%I.%I','public',v_table_name), 'UPDATE')
+       OR has_table_privilege('anon', format('%I.%I','public',v_table_name), 'DELETE')
+       OR has_table_privilege('authenticated', format('%I.%I','public',v_table_name), 'SELECT')
+       OR has_table_privilege('authenticated', format('%I.%I','public',v_table_name), 'INSERT')
+       OR has_table_privilege('authenticated', format('%I.%I','public',v_table_name), 'UPDATE')
+       OR has_table_privilege('authenticated', format('%I.%I','public',v_table_name), 'DELETE')
+       OR has_table_privilege('service_role', format('%I.%I','public',v_table_name), 'SELECT')
+       OR has_table_privilege('service_role', format('%I.%I','public',v_table_name), 'INSERT')
+       OR has_table_privilege('service_role', format('%I.%I','public',v_table_name), 'UPDATE')
+       OR has_table_privilege('service_role', format('%I.%I','public',v_table_name), 'DELETE') THEN
+      RAISE EXCEPTION 'Unexpected client/service-role table privilege on public.%', v_table_name;
     END IF;
   END LOOP;
 
