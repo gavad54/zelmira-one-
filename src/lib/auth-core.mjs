@@ -147,3 +147,14 @@ export function getTrustedClientAddress(forwardedFor, trustedProxyHops) {
   const candidate = chain[clientIndex];
   return typeof candidate === "string" && isIP(candidate) !== 0 ? candidate : null;
 }
+
+
+/**
+ * Decide whether IP-only throttling may proceed without a client fingerprint.
+ * Production fails closed; local/test environments retain the documented
+ * ability to run without a configured reverse-proxy chain.
+ */
+export function shouldAllowIpAttempt(nodeEnv, fingerprint) {
+  if (typeof fingerprint === "string" && fingerprint.trim().length > 0) return true;
+  return nodeEnv !== "production";
+}
