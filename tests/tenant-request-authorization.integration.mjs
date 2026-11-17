@@ -105,10 +105,15 @@ test("PostgreSQL-backed authorization enforces session, tenant and role boundari
     sessionToken, tenantId: tenantAId, action: "tenant_read", db, now
   });
   assert.equal(futureActivityDenied.authorized, false);
+  const revokedFutureSession = await db.session.findUnique({
+    where: { tokenHash },
+    select: { revokedAt: true }
+  });
+  assert.ok(revokedFutureSession?.revokedAt instanceof Date);
 
   await db.session.update({
     where: { tokenHash },
-    data: { lastSeenAt: now }
+    data: { revokedAt: null, lastSeenAt: now }
   });
 
   await db.membership.update({
