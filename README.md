@@ -15,9 +15,12 @@ VAYRO is a Persian-first, mobile-first platform for discovering and coordinating
 | SEPEHR | Cloud and digital infrastructure |
 | NAMA | Website and landing-page builder |
 | PAYAM | Marketing and customer growth |
-| DANA | AI intelligence and orchestration |
+| LEADORA | Business management, distribution and operations |
+| ARIANA | Accounting, finance, tax and ERP |
+| ARIA | Intelligent social, services and marketplace; no accounting/ERP |
+| ARMIN MARKET | Buyer requests and supplier quotations |
 
-Independent products retain their own identity and deployment boundaries: LEADORA (distribution and sales operations), ARIANA (accounting and ERP), ARIA (social, services and marketplace; no accounting/ERP), and ARMIN MARKET (request and supplier quotation marketplace).
+DANA is the shared AI intelligence, management and orchestration command plane across the eleven independent apps; it is not counted as a twelfth standalone app.
 
 ## Engineering status
 
