@@ -131,6 +131,16 @@ export async function POST(request: Request) {
             currentUser.memberships.length > 0) {
           throw new Error("MFA_REQUIRED_FOR_PRIVILEGED_ACCOUNT");
         }
+        const activeSession = await tx.session.updateMany({
+          where: {
+            id: record.id,
+            userId: record.user.id,
+            revokedAt: null,
+            expiresAt: { gt: new Date() }
+          },
+          data: { assurance: "MFA", mfaAuthenticatedAt: new Date() }
+        });
+        if (activeSession.count !== 1) throw new Error("MFA_SESSION_REVOKED");
         const consumed = await tx.mfaCredential.updateMany({
           where: { id: credential.id, enabledAt: credential.enabledAt, lastAcceptedStep: { lt: BigInt(acceptedStep) } },
           data: { lastAcceptedStep: BigInt(acceptedStep) }
@@ -158,6 +168,9 @@ export async function POST(request: Request) {
       if (error instanceof Error && error.message === "MFA_REQUIRED_FOR_PRIVILEGED_ACCOUNT") {
         return noStoreJson({ error: "mfa_required_for_privileged_account" }, 409);
       }
+      if (error instanceof Error && error.message === "MFA_SESSION_REVOKED") {
+        return noStoreJson({ error: "unauthorized" }, 401);
+      }
       return noStoreJson({ error: "mfa_management_failed" }, 409);
     }
     await clearSessionCookie();
@@ -167,6 +180,16 @@ export async function POST(request: Request) {
   const recoveryCodes = Array.from({ length: 10 }, () => randomBytes(8).toString("hex").toUpperCase());
   try {
     await prisma.$transaction(async tx => {
+      const activeSession = await tx.session.updateMany({
+        where: {
+          id: record.id,
+          userId: record.user.id,
+          revokedAt: null,
+          expiresAt: { gt: new Date() }
+        },
+        data: { assurance: "MFA", mfaAuthenticatedAt: new Date() }
+      });
+      if (activeSession.count !== 1) throw new Error("MFA_SESSION_REVOKED");
       const consumed = await tx.mfaCredential.updateMany({
         where: { id: credential.id, enabledAt: credential.enabledAt, lastAcceptedStep: { lt: BigInt(acceptedStep) } },
         data: { lastAcceptedStep: BigInt(acceptedStep) }
@@ -193,6 +216,9 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof Error && error.message === "MFA_CODE_REPLAYED") {
       return noStoreJson({ error: "mfa_code_already_used" }, 401);
+    }
+    if (error instanceof Error && error.message === "MFA_SESSION_REVOKED") {
+      return noStoreJson({ error: "unauthorized" }, 401);
     }
     return noStoreJson({ error: "mfa_management_failed" }, 409);
   }
