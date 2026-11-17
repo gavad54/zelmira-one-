@@ -25,7 +25,7 @@ This repository contains an engineering foundation: public product directory, au
 
 A dedicated VAYRO-CORE PostgreSQL 17 project is provisioned on Supabase Free in eu-central-1, separate from ARIA. Its 11 initial tables have RLS enabled and client-role access revoked. The schema was provisioned directly and verified; the Prisma migration baseline is not yet registered, and migration forward/rollback testing remains open.
 
-Production email, complete endpoint-level authorization coverage, full tenant-scoped product workflows, MFA, licensing/billing operations, independent backup/restore, dedicated application hosting, mobile acceptance, owner UAT and explicit release approval remain open gates. Customer onboarding, real payments and production data collection must remain disabled until those gates are evidenced.
+Repository-level privileged MFA is now implemented, including TOTP enrollment/verification, recovery-code rotation, safe confirm-before-swap authenticator replacement and controlled disablement for eligible non-privileged users. Production MFA key custody and owner UAT remain open. CI runs PostgreSQL 17 migration tests and an isolated logical backup/restore smoke test; this is not an external encrypted production backup. Production email, complete endpoint-level authorization coverage, full tenant-scoped product workflows, licensing/billing operations, independent encrypted backup/restore, dedicated application hosting, Android build/signing, owner UAT and explicit release approval remain open gates. Customer onboarding, real payments and production data collection must remain disabled until those gates are evidenced.
 
 ## Stack
 
