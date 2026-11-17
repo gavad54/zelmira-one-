@@ -55,6 +55,10 @@ jobs:
         run: psql "postgresql://ci:ci@localhost:5432/vayro_ci" -v ON_ERROR_STOP=1 -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN;'
       - name: Apply real Prisma migration history
         run: npx prisma migrate deploy
+      - name: Assert complete VAYRO migration and privilege contract
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f prisma/verification/assert-migration-contract.sql
+      - name: Verify migration deployment is idempotent
+        run: npx prisma migrate deploy
       # Exercise a complete logical backup/restore on the isolated CI database.
       # This does not replace encrypted off-site production backups.
       - name: Verify isolated PostgreSQL backup and restore
