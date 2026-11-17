@@ -339,3 +339,21 @@ Remaining MFA lifecycle/release gates:
 - [ ] Complete independent security review and owner UAT after CI verification.
 
 This is repository-only development work. No production database, secret, deployment or release action was performed.
+
+
+## Verification addendum — 2026-11-17 (current PR #5 head)
+
+This addendum is the current repository evidence and supersedes older PR numbers, branch heads, workflow IDs and MFA/UI completion statements above wherever they conflict.
+
+- PR #5 is open, draft, mergeable and not merged. It targets `experiment/cloudflare-free-hosting-audit` from `feature/vayro-real-dashboard`.
+- The PR head and development branch are aligned at `5274fdf8333f5d9b0451265df7920c85436edab8`.
+- VAYRO CI run [43926257688](https://github.com/gavad54/zelmira-one-/actions/runs/43926257688), CodeQL run [43926257680](https://github.com/gavad54/zelmira-one-/actions/runs/43926257680), and Dashboard Validation run [43926257703](https://github.com/gavad54/zelmira-one-/actions/runs/43926257703) all completed successfully for this exact head.
+- The VAYRO CI job reports success for locked dependency installation, enforced dependency audit, unit tests, Prisma generation/schema validation, least-privilege role setup in isolated PostgreSQL, execution of the repository migration history in isolated PostgreSQL, lint, typecheck, production build and PostgreSQL/production-HTTP integration tests. Dashboard Validation reports success for its schema, unit, lint, typecheck and production-build steps. CodeQL analysis completed successfully.
+- A successful CodeQL workflow is not equivalent to independently confirming every alert's disposition. Review GitHub Security alerts before release.
+- Privileged MFA login enforcement, TOTP enrollment/verification, one-time recovery codes, MFA-assured sessions, Persian security settings, recovery-code regeneration and controlled MFA disablement for eligible non-privileged users are present in the repository. The latest commit also rechecks privileged status inside the disable transaction.
+- Authenticator-device replacement remains unimplemented. It requires pending encrypted factor state, expiry, confirmation with the new factor, atomic swap, replay protection, audit logging and session/recovery-code handling. Do not replace or remove the current factor until the new factor has been proven.
+- No CI result proves production database readiness, production key custody, production HTTPS behavior, live email delivery, hosting, backups/restores, Android signing, billing, product operations or UAT.
+- The VAYRO-CORE migration baseline remains unresolved. Its existing live schema must be reconciled read-only against Prisma and repository migration SQL before any migration. Do not run migrations or mutate production data.
+- The eight family products remain catalogue entries, not eight completed independently deployable commercial products.
+
+**Current release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.** No merge, production deployment, production migration, public launch or payment activation is authorized by these CI results.
