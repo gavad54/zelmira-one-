@@ -357,3 +357,19 @@ This addendum is the current repository evidence and supersedes older PR numbers
 - The eight family products remain catalogue entries, not eight completed independently deployable commercial products.
 
 **Current release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.** No merge, production deployment, production migration, public launch or payment activation is authorized by these CI results.
+
+
+## Verification addendum — 2026-11-17 (MFA replacement, backup test and live baseline)
+
+This addendum supersedes older MFA-device-replacement and backup-CI statements above where they conflict.
+
+- Added `POST /api/auth/mfa/replace` with `begin` and `confirm` phases. Begin requires a valid authenticated session and fresh old-factor TOTP, stores the new TOTP secret only as an AES-256-GCM encrypted pending envelope, sets a 10-minute expiry and records an audit event. The active factor remains unchanged.
+- Confirm requires a valid TOTP from the pending factor. In one transaction it verifies the pending factor has not changed or expired, promotes it to active, clears pending fields, refreshes the current MFA session, rotates the ten recovery codes (hashes only at rest), revokes other sessions and records an audit event. Both phases revalidate the live session inside their transactions. The current factor is not replaced on an invalid new code.
+- Persian security settings now include the device replacement flow. The new factor secret and provisioning URI are returned no-store and displayed only during setup; the user must confirm the new factor before replacement. Recovery codes are displayed once after confirmation.
+- Added production-mode HTTP/PostgreSQL integration coverage for invalid old-factor proof, pending encrypted state, rejection of an invalid new-factor code without deleting the active factor, successful confirmation, pending-state cleanup, recovery-code rotation, current-session preservation, other-session revocation, audit persistence and confirmation replay rejection.
+- CI now runs PostgreSQL 17 (matching the live VAYRO-CORE major version) and performs a custom-format logical dump/restore into a separate disposable database, checking a marker row and migration-history parity. This is CI-only restore evidence, not an encrypted external production backup.
+- Added `docs/operations/BACKUP-RESTORE.md` and `docs/DB-BASELINE-RECONCILIATION.md` with the verified boundary and safe next steps.
+- Fresh read-only VAYRO-CORE inspection: ACTIVE_HEALTHY PostgreSQL 17.11 in eu-central-1; 11 public tables; estimated zero rows; RLS enabled; zero public policies; no table grants to anon/authenticated/service_role; no Supabase migration history. Live schema lacks the MFA tables and later Session columns now present in the repository. The catalog inspection ran as `postgres`, which has BYPASSRLS; actual application runtime DB identity remains unverified.
+- Railway currently lists only the ARIA Web and LEADORA projects in the user's personal workspace; no dedicated VAYRO Railway project exists. The repository root has no Android/Gradle project or release artifact.
+
+**Still blocked:** exact approved baseline registration and production migration; verification/provisioning of a least-privilege application DB identity; protected production MFA encryption key and recovery custody; external encrypted backup destination and restore drill with RPO/RTO; dedicated VAYRO hosting; production email; billing/legal readiness; operational specialist products; Android build/signing/UAT; owner approval. Do not infer production completion from CI.
