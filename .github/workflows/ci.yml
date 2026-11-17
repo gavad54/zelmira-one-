@@ -47,9 +47,6 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-      # Enforce the dependency-security gate: moderate, high and critical advisories fail CI.
-      - name: Enforce locked dependency security audit
-        run: npm audit --audit-level=moderate
       - name: Run unit tests
         run: npm test
       - name: Generate Prisma client
@@ -84,3 +81,19 @@ jobs:
         run: docker build --pull --tag vayro-ci:local .
       - name: Run PostgreSQL and production HTTP integration tests
         run: npm run test:integration
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      # Keep the dependency-security gate independent so its failure never hides test/build evidence.
+      - name: Enforce locked dependency security audit
+        run: npm audit --audit-level=moderate
