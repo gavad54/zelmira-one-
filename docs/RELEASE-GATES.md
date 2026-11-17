@@ -9,18 +9,19 @@ This document is the current source of truth as of 2026-11-17. It supersedes old
 - Repository: `gavad54/zelmira-one-`
 - Active engineering branch: `feature/vayro-real-dashboard`
 - PR: [#5](https://github.com/gavad54/zelmira-one-/pull/5)
-- Last verified PR head: `934458ccb054796c50205b69589c861261846f7f` (2026-11-17). The workflow runs below completed successfully on this exact SHA.
+- Last verified application-code commit: `05b9a29061885c3c32e37ef6299abd3b5d184de6` (2026-11-17). VAYRO CI, Dashboard Validation and CodeQL all completed successfully on this exact SHA.
 - PR #5 is **open, draft, not merged**. No production deployment or public release is authorized.
-- VAYRO CI [run 44059004783](https://github.com/gavad54/zelmira-one-/actions/runs/44059004783): success on the exact head above.
-- Dashboard Validation [run 44059004844](https://github.com/gavad54/zelmira-one-/actions/runs/44059004844): success on the exact head above.
-- CodeQL [run 44059004829](https://github.com/gavad54/zelmira-one-/actions/runs/44059004829): success on the exact head above. A successful scan does not by itself prove that all historical alert records are closed or formally dispositioned.
-- The CI and Dashboard Validation logs report 74 unit tests passed, 0 failed. Dashboard Validation reports 23 PostgreSQL/HTTP integration tests passed, 0 failed. Prisma generation/validation, lint, typecheck, production build and dependency audit completed successfully in the CI workflows.
+- VAYRO CI [run 44060768378](https://github.com/gavad54/zelmira-one-/actions/runs/44060768378): success on the exact application-code commit above.
+- Dashboard Validation [run 44060768155](https://github.com/gavad54/zelmira-one-/actions/runs/44060768155): success on the exact application-code commit above.
+- CodeQL [run 44060768154](https://github.com/gavad54/zelmira-one-/actions/runs/44060768154): success on the exact application-code commit above. A successful scan does not by itself prove that all historical alert records are closed or formally dispositioned.
+- The CI logs report 74 unit tests passed, 0 failed, and 23 PostgreSQL/HTTP integration tests passed, 0 failed. Prisma generation/validation, lint, TypeScript typecheck, production build and dependency audit completed successfully. Dashboard Validation also passed on the same application-code commit.
+- The owner dashboard and the shared dashboard now display the count against the approved catalogue size; the owner-products API filters out legacy non-catalogue records without deleting them.
 
 ### Verified CI checks on current PR head
 
 - Locked dependency installation and enforced dependency audit: passed.
-- Unit tests on verified head `934458ccb054796c50205b69589c861261846f7f`: **74 passed, 0 failed**.
-- PostgreSQL/HTTP integration tests on that head: **23 passed, 0 failed**.
+- Unit tests on verified application-code commit `05b9a29061885c3c32e37ef6299abd3b5d184de6`: **74 passed, 0 failed**.
+- PostgreSQL/HTTP integration tests on that commit: **23 passed, 0 failed**.
 - Prisma client generation and schema validation: passed.
 - Least-privilege roles in isolated PostgreSQL: passed.
 - Full Prisma migration history on isolated PostgreSQL 17: passed.
