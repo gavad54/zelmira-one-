@@ -144,7 +144,9 @@ test("MFA management requires fresh TOTP, rotates recovery codes atomically and 
     assert.deepEqual(await securityStatus.json(), {
       enabled: true,
       required: true,
-      unusedRecoveryCodes: 10
+      unusedRecoveryCodes: 10,
+      replacementPending: false,
+      replacementExpiresAt: null
     });
 
     const privilegedDisable = await fetch(`${origin}/api/auth/mfa/manage`, {
