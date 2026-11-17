@@ -145,6 +145,13 @@ test("MFA factor replacement requires old-factor proof, confirms new factor, rot
     assert.match(beginBody.secret, /^[A-Z2-7]{32}$/);
     assert.match(beginBody.otpauthUri, /^otpauth:\/\/totp\//);
     assert.equal(beginBody.expiresInSeconds, 600);
+    const pendingStatusResponse = await fetch(`${origin}/api/auth/mfa/manage`, {
+      headers: { Cookie: `vayro_session=${token}` }
+    });
+    assert.equal(pendingStatusResponse.status, 200);
+    const pendingStatus = await pendingStatusResponse.json();
+    assert.equal(pendingStatus.replacementPending, true);
+    assert.ok(pendingStatus.replacementExpiresAt);
 
     const afterBegin = await db.mfaCredential.findUnique({ where: { id: credential.id } });
     assert.equal(decryptTotpSecret({
@@ -180,6 +187,13 @@ test("MFA factor replacement requires old-factor proof, confirms new factor, rot
     assert.equal(confirmBody.replaced, true);
     assert.equal(confirmBody.recoveryCodes.length, 10);
     assert.ok(confirmBody.recoveryCodes.every(value => /^[A-F0-9]{16}$/.test(value)));
+    const completedStatusResponse = await fetch(`${origin}/api/auth/mfa/manage`, {
+      headers: { Cookie: `vayro_session=${token}` }
+    });
+    assert.equal(completedStatusResponse.status, 200);
+    const completedStatus = await completedStatusResponse.json();
+    assert.equal(completedStatus.replacementPending, false);
+    assert.equal(completedStatus.replacementExpiresAt, null);
 
     const active = await db.mfaCredential.findUnique({ where: { id: credential.id } });
     assert.equal(decryptTotpSecret({
