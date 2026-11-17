@@ -42,9 +42,6 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-      # Enforce the dependency-security gate: moderate, high and critical advisories fail CI.
-      - name: Enforce locked dependency security audit
-        run: npm audit --audit-level=moderate
       - name: Run unit tests
         run: npm test
       - name: Generate Prisma client
@@ -105,3 +102,9 @@ jobs:
           NEXT_PUBLIC_APP_URL: http://localhost:3000
       - name: Run PostgreSQL and production HTTP integration tests
         run: npm run test:integration
+
+      # Run the full validation suite before the strict dependency gate so
+      # migration, baseline, restore, and application failures remain visible.
+      # This does not waive or lower the audit threshold.
+      - name: Enforce locked dependency security audit
+        run: npm audit --audit-level=moderate
