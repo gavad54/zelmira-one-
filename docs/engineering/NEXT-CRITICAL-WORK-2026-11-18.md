@@ -93,3 +93,17 @@ Each product needs its own scope, data boundary, API contract, identity/service 
 - No PR merge, public launch, customer onboarding or payment activation until all release gates and owner UAT are satisfied.
 
 **Current decision: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Execution update — 2026-11-18 (latest observed HEAD)
+Latest branch HEAD: `a2b2e890c5609def7bdefd2338ab236616642d69`.
+
+Fresh checks on that exact HEAD:
+- [CodeQL run 44170647339](https://github.com/gavad54/zelmira-one-/actions/runs/44170647339): completed successfully.
+- [Dashboard Validation run 44170647346](https://github.com/gavad54/zelmira-one-/actions/runs/44170647346): completed successfully.
+- [VAYRO CI run 44170648801](https://github.com/gavad54/zelmira-one-/actions/runs/44170648801): completed with failure at the final strict `npm audit --audit-level=moderate` step. Unit tests, Prisma generation/validation, six migration history checks, migration/privilege contract, idempotency, disposable baseline rehearsal, isolated PostgreSQL backup/restore, lint, typecheck, production build, and PostgreSQL/HTTP integration tests all completed successfully on this run.
+- The final audit again reported 13 high findings through the picomatch/fdir/tinyglobby/micromatch/fast-glob dependency chain. npm's proposed `--force` resolution would install `eslint-config-next@14.2.35`, a breaking downgrade from the current Next 15 toolchain; it was not applied.
+- Upstream proposals checked: [#238](https://github.com/micromatch/picomatch/pull/238), [#246](https://github.com/micromatch/picomatch/pull/246), and [#194](https://github.com/micromatch/picomatch/pull/194) remain open/unmerged. The maintainer guidance issue [#247](https://github.com/micromatch/picomatch/issues/247) remains open. No official published fixed release was verified.
+- PR #5 remains open, Draft, and unmerged; its head matches the latest SHA above.
+
+Decision unchanged: do not downgrade the Next lint toolchain, invent a patched version, suppress the advisory, or relax the audit threshold. Dependency security remains a hard release blocker.
