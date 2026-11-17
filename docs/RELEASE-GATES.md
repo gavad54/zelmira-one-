@@ -102,3 +102,51 @@ This section supersedes older commit identifiers and CI run references above.
 - No production database, policy, grant, secret, deployment or customer data was changed.
 
 **Release remains BLOCKED — NOT RELEASED.**
+
+
+## Verified engineering checkpoint — 2026-11-17 (eleven-app catalogue and owner dashboard)
+
+**Application-code commit:** `8f96fef52331c98d03743ed79f89ce0e5ee16dc4`  
+**PR:** [#5](https://github.com/gavad54/zelmira-one-/pull/5), open, Draft and unmerged.
+
+### Completed in this checkpoint
+
+- Corrected the server-side product catalogue to exactly eleven independent apps: ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA, PAYAM, LEADORA, ARIANA, ARIA and ARMIN MARKET.
+- DANA is explicitly the shared AI intelligence/management/orchestration command plane, not a twelfth app and not part of the eleven-app catalogue.
+- Preserved the ARIA exclusion of accounting/ERP and the ARIANA accounting/finance/tax/ERP boundary.
+- Updated the owner dashboard labels and denominator; the API now returns the authoritative catalogue size and filters displayed products to the approved eleven keys.
+- Legacy DANA product rows are not deleted or mutated. They are excluded from the independent-app dashboard response and product count, preserving historical data.
+- Added integration coverage proving a legacy DANA row is not exposed as a standalone app, the product metric matches the approved catalogue response, and the catalogue size is eleven.
+- Updated README, architecture, product boundaries, brand naming, central dashboard, platform blueprint and dated verification records to use the same portfolio definition.
+
+### Exact-commit verification
+
+On the application-code commit above:
+
+- VAYRO CI [run 44058691845](https://github.com/gavad54/zelmira-one-/actions/runs/44058691845): **success**.
+- Dashboard Validation [run 44058692221](https://github.com/gavad54/zelmira-one-/actions/runs/44058692221): **success**.
+- CodeQL Security Analysis [run 44058691959](https://github.com/gavad54/zelmira-one-/actions/runs/44058691959): **success**.
+- Unit tests: **74 passed, 0 failed**.
+- PostgreSQL/production-HTTP integration tests: **23 passed, 0 failed**.
+- Enforced dependency audit: **0 vulnerabilities**.
+- Prisma generation/schema validation, isolated PostgreSQL migration history, isolated backup/restore smoke test, lint, TypeScript typecheck and production build: **passed**.
+
+These results apply to the cited application-code commit and the listed checks only. The CI backup/restore test is isolated PostgreSQL evidence, not proof of encrypted offsite production backup or independent production restore.
+
+### Remaining blockers — unchanged
+
+- Live VAYRO-CORE migration baseline and safe schema reconciliation.
+- Dedicated least-privilege production runtime database identity and effective-privilege verification.
+- Production MFA encryption-key custody, rotation/recovery and owner UAT.
+- Independent encrypted off-provider backup and measured restore exercise.
+- Dedicated VAYRO hosting; Railway free-plan resource provisioning limit remains unresolved.
+- Verified transactional email delivery, production secrets, DNS/domain and monitoring/rollback.
+- Complete endpoint-by-endpoint authorization and independent security review.
+- Operational implementation, health checks, scoped APIs and acceptance evidence for each of the eleven independent apps.
+- Commercial billing, payment webhooks, invoicing, refunds, reconciliation and legal review.
+- Android reproducible build, official signing and real-device acceptance.
+- Owner and representative-user UAT and explicit release approval.
+
+No production database, external product repository, paid resource, production secret, domain, deployment, merge, payment or customer data was changed in this checkpoint.
+
+**Release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
