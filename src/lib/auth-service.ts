@@ -3,7 +3,7 @@ import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { Prisma, AuthTokenPurpose, SessionAssurance } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { createSessionToken, getTrustedClientAddress, hashSessionToken } from "@/lib/auth-core.mjs";
+import { createSessionToken, getTrustedClientAddress, hashSessionToken, shouldAllowIpAttempt } from "@/lib/auth-core.mjs";
 
 export const SESSION_COOKIE = "vayro_session";
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -58,10 +58,11 @@ export async function allowAttempt(keyHash: string, limit: number, windowMs: num
   return (result[0]?.count ?? limit + 1) <= limit;
 }
 
-/** Skip IP-only throttling until the actual trusted proxy chain is configured. */
+/** Enforce IP-only throttling; production denies when trusted proxy identity is unavailable. */
 export async function allowIpAttempt(scope: string, limit: number, windowMs: number): Promise<boolean> {
   const keyHash = await requestFingerprint(scope, "all");
-  return keyHash ? allowAttempt(keyHash, limit, windowMs) : true;
+  if (!keyHash) return shouldAllowIpAttempt(process.env.NODE_ENV, null);
+  return allowAttempt(keyHash, limit, windowMs);
 }
 export async function createActionToken(userId: string, purpose: AuthTokenPurpose, ttlMs: number) {
   const token = randomActionToken();
