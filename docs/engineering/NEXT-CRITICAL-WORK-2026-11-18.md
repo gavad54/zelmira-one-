@@ -147,3 +147,23 @@ The Supabase advisor remediation reference is [RLS enabled without policies](htt
 - No branch protection setting was changed because the available GitHub connection does not expose repository administration/write permissions. No secret or environment value was read.
 
 **Release decision remains BLOCKED — NOT RELEASED.**
+
+
+## 2026-11-18 — Production IP-throttle fail-closed patch
+
+Branch: `fix/trusted-proxy-rate-limit-fail-closed`  
+PR: [#31](https://github.com/gavad54/zelmira-one-/pull/31) — open, Draft, unmerged.  
+Code head at this checkpoint: `2cb21716d4cd5579726025e671523c173eb2df6f`.
+
+### Implementation
+- `src/lib/auth-core.mjs`: added `shouldAllowIpAttempt(nodeEnv, fingerprint)`. A non-empty fingerprint permits the IP limiter to proceed. Missing/blank fingerprints are permitted only in explicit `development` or `test` environments; production and unknown environments fail closed.
+- `src/lib/auth-service.ts`: `allowIpAttempt` now denies when the trusted-client fingerprint is unavailable in production or an unknown environment, instead of returning `true`.
+- `tests/auth-core.test.mjs`: added behavioral cases for production missing/blank fingerprints, unknown environment, development/test compatibility, and a valid fingerprint.
+
+### Verification status
+- Tests were committed before the implementation, but the expected red failure was not observed in an executed test run.
+- The repository CI workflow's pull-request trigger is restricted to base branches `main` and `experiment/cloudflare-free-hosting-audit`; its push trigger is restricted to `main`, `brand/vayro-name-only`, and `feature/vayro-real-dashboard`. The focused fix branch is not in the push allowlist.
+- The PR was briefly retargeted to `main` to check workflow eligibility, then restored to `feature/vayro-real-dashboard` to keep the proposed diff scoped. The GitHub connector returned no workflow runs or check statuses for this fix head. The repository's full test suite has not been run in a local checkout.
+- Therefore this patch is **implemented but unverified**. Do not merge or treat it as a completed security remediation until a supported CI run or full local test execution confirms it.
+
+No production environment variable, database, secret, deployment, or customer data was changed. The correct `TRUSTED_PROXY_HOPS` value remains an infrastructure-specific unknown and must not be guessed.
