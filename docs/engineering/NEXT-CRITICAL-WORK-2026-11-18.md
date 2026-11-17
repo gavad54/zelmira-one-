@@ -4,7 +4,7 @@
 Repository: `gavad54/zelmira-one-`
 Branch: `feature/vayro-real-dashboard`
 PR: [#5](https://github.com/gavad54/zelmira-one-/pull/5) — open, Draft, unmerged
-Observed HEAD: `b2f40e44dad20b2bbac8b81ad140744b480e65f7`
+Observed HEAD at initial register: `b2f40e44dad20b2bbac8b81ad140744b480e65f7`
 Release decision: **DEPLOYMENT BLOCKED — NOT RELEASED**
 
 This register is an evidence-based work order. It distinguishes repository work from production activation. It does not authorize a production schema mutation, paid infrastructure, secret rotation, customer onboarding, payment activation, PR merge, or public release.
@@ -107,3 +107,22 @@ Fresh checks on that exact HEAD:
 - PR #5 remains open, Draft, and unmerged; its head matches the latest SHA above.
 
 Decision unchanged: do not downgrade the Next lint toolchain, invent a patched version, suppress the advisory, or relax the audit threshold. Dependency security remains a hard release blocker.
+
+
+## Execution update — 2026-11-18 (fresh verification on c627ae3)
+
+Latest branch HEAD verified from GitHub:
+`c627ae374c47b08c7315194d20d200e93fead8a0`.
+
+Exact-HEAD workflow results:
+- [CodeQL run 44171073786](https://github.com/gavad54/zelmira-one-/actions/runs/44171073786): completed successfully.
+- [Dashboard Validation run 44171073763](https://github.com/gavad54/zelmira-one-/actions/runs/44171073763): completed successfully.
+- [VAYRO CI run 44171073703](https://github.com/gavad54/zelmira-one-/actions/runs/44171073703): completed with failure at `Enforce locked dependency security audit`.
+- Before the dependency audit, the same CI run passed unit tests, Prisma generation and validation, migration history application, migration/privilege contract assertions, idempotency, pre-existing-schema baseline rehearsal, isolated PostgreSQL backup/restore, lint, TypeScript, production build, and PostgreSQL/HTTP integration tests.
+- The strict audit failure remains a release blocker. No official patched picomatch version was identified in the current GitHub advisory or OSV record; the advisory still identifies versions through 4.0.7 as affected and patched versions as unknown. See [GitHub Advisory GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) and [OSV record](https://osv.dev/vulnerability/GHSA-fc5q-39xc-vjpf).
+- No forced downgrade, third-party fork, fabricated version, audit suppression, or reduced severity threshold was applied.
+- PR #5 remains open, Draft, and unmerged; its head matches this SHA.
+
+This update does not change production state or release status. The CI disposable restore is not evidence of production backup/restore. The database/RLS/runtime-role, production recovery, hosting/operations, endpoint authorization, independent product readiness, Android signing/device testing, and owner UAT gates remain open.
+
+**Decision: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
