@@ -25,7 +25,7 @@ const statusLabels: Record<Product["status"], string> = {
 
 export default function OwnerDashboardPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [metrics, setMetrics] = useState<Metrics>({ totalProducts: 0, totalTenants: 0, activeLicenses: 0, allLicenses: 0 });
+  const [metrics, setMetrics] = useState<Metrics>({ totalProducts: 0, catalogSize: 0, totalTenants: 0, activeLicenses: 0, allLicenses: 0 });
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [statuses, setStatuses] = useState<Record<string, Product["status"]>>({});
   const [loading, setLoading] = useState(true);
