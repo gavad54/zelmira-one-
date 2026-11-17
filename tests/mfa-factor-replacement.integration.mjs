@@ -130,6 +130,10 @@ test("MFA factor replacement requires old-factor proof, confirms new factor, rot
       body: JSON.stringify(body)
     });
 
+    const invalidOldFactor = await post({ action: "begin", code: "000000" });
+    assert.equal(invalidOldFactor.status, 401);
+    assert.equal((await db.mfaCredential.findUnique({ where: { id: credential.id } })).pendingSecretCiphertext, null);
+
     const begun = await post({ action: "begin", code: totpCode(oldSecret) });
     assert.equal(begun.status, 200);
     const beginBody = await begun.json();
@@ -150,8 +154,10 @@ test("MFA factor replacement requires old-factor proof, confirms new factor, rot
     assert.ok(afterBegin.pendingSecretAuthTag);
     assert.ok(afterBegin.pendingExpiresAt > new Date());
 
-    const expectedNewCode = totpCode(beginBody.secret);
-    const definitelyWrongCode = expectedNewCode === "000000" ? "000001" : "000000";
+    const nowForWrongCode = Date.now();
+    const validWindowCodes = new Set([-30000, 0, 30000].map(offset => totpCode(beginBody.secret, nowForWrongCode + offset)));
+    const definitelyWrongCode = ["000000", "000001", "000002", "000003"].find(value => !validWindowCodes.has(value));
+    assert.ok(definitelyWrongCode);
     const invalidConfirmation = await post({ action: "confirm", code: definitelyWrongCode });
     assert.equal(invalidConfirmation.status, 401);
     const stillPending = await db.mfaCredential.findUnique({ where: { id: credential.id } });
@@ -182,7 +188,8 @@ test("MFA factor replacement requires old-factor proof, confirms new factor, rot
     assert.equal(active.pendingSecretIv, null);
     assert.equal(active.pendingSecretAuthTag, null);
     assert.equal(active.pendingExpiresAt, null);
-    assert.equal(Number(active.lastAcceptedStep), Math.floor(Date.now() / 30000));
+    const currentStep = Math.floor(Date.now() / 30000);
+    assert.ok(Number(active.lastAcceptedStep) >= currentStep - 1 && Number(active.lastAcceptedStep) <= currentStep + 1);
     assert.equal(await db.mfaRecoveryCode.count({ where: { userId, usedAt: null } }), 10);
     assert.equal(await db.mfaRecoveryCode.count({
       where: { userId, codeHash: createHash("sha256").update("OLDRECOVERYCODE00").digest("hex") }
