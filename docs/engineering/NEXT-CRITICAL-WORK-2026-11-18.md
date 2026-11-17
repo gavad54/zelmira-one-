@@ -126,3 +126,24 @@ Exact-HEAD workflow results:
 This update does not change production state or release status. The CI disposable restore is not evidence of production backup/restore. The database/RLS/runtime-role, production recovery, hosting/operations, endpoint authorization, independent product readiness, Android signing/device testing, and owner UAT gates remain open.
 
 **Decision: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Additional security and production-database verification — 2026-11-18
+
+### Live database recheck (read-only)
+Project `wdqhdnhpgxhmmfeyxwxr` was re-inspected through read-only table, migration-history, and Supabase security-advisor operations:
+- The same 11 public tables are present, each with RLS enabled.
+- The live migration-history list remains empty.
+- The security advisor still reports 11 instances of `rls_enabled_no_policy`; no RLS policy is currently present on those tables.
+- The live `Session` table still has only its original five columns; MFA persistence tables and later session-security fields in the Prisma schema are not present in the live schema.
+- No SQL write, DDL, migration, role/grant change, policy creation, or data mutation was executed.
+
+The Supabase advisor remediation reference is [RLS enabled without policies](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
+
+### GitHub governance and API review
+- The development branch API currently reports `protected: false`; required status checks are disabled. Thus successful CI is not enforced as a merge gate by branch protection.
+- A route inventory found 23 API route handlers. The reviewed tenant workspace, tenant mutation/member, owner bootstrap/email-contact/product, authentication, and MFA handlers use server-side session/role checks in the inspected paths. This is a code review sample, not a completed route-by-route authorization certification.
+- A concrete configuration-dependent control gap was identified: `allowIpAttempt` returns `true` when trusted proxy configuration is unavailable; `requestFingerprint(..., "all")` returns null unless `TRUSTED_PROXY_HOPS` is configured. Login, registration, password reset, and password recovery therefore rely on identity/token throttles alone when that setting is absent. Production configuration has not been verified. Next code task: add an explicit production configuration gate and tests, while preserving local development behavior; do not guess the correct proxy hop count.
+- No branch protection setting was changed because the available GitHub connection does not expose repository administration/write permissions. No secret or environment value was read.
+
+**Release decision remains BLOCKED — NOT RELEASED.**
