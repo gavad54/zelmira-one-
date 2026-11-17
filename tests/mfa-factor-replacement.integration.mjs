@@ -130,7 +130,11 @@ test("MFA factor replacement requires old-factor proof, confirms new factor, rot
       body: JSON.stringify(body)
     });
 
-    const invalidOldFactor = await post({ action: "begin", code: "000000" });
+    const nowForOldCode = Date.now();
+    const validOldWindowCodes = new Set([-30000, 0, 30000].map(offset => totpCode(oldSecret, nowForOldCode + offset)));
+    const definitelyWrongOldCode = ["000000", "000001", "000002", "000003"].find(value => !validOldWindowCodes.has(value));
+    assert.ok(definitelyWrongOldCode);
+    const invalidOldFactor = await post({ action: "begin", code: definitelyWrongOldCode });
     assert.equal(invalidOldFactor.status, 401);
     assert.equal((await db.mfaCredential.findUnique({ where: { id: credential.id } })).pendingSecretCiphertext, null);
 
