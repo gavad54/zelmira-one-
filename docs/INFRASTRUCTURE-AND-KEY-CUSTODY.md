@@ -1,19 +1,36 @@
 # VAYRO — Independent Infrastructure and Operational Key Custody
 
-**Status:** Engineering specification and verified gap register. This document does not claim that production infrastructure or secrets have been provisioned.
+**Status:** Engineering specification and verified gap register. Production infrastructure, credentials and external backups are not provisioned by this document.
 
-## 1. Verified baseline (2026-11-17)
+## 1. Verified live baseline (2026-11-17)
 
-- Supabase project `VAYRO-CORE` exists, is `ACTIVE_HEALTHY`, PostgreSQL 17, region `eu-central-1`.
-- The project is separate from ARIA. The inspected public schema contains 11 tables, all with RLS enabled; estimated row counts are zero.
-- No table policies exist. No table grants to `anon`, `authenticated` or `service_role` were found. This is consistent with the current server-only data-access design; do not add browser grants without a separately reviewed authorization model.
-- Migration history in the live database is empty. Repository migrations contain six ordered migration files. The live schema does not yet match the complete repository schema (including MFA and later Session columns).
-- Live roles include `postgres` with login and `BYPASSRLS`; `service_role` has `BYPASSRLS` but cannot log in. The actual application connection identity has not been proven.
-- No independent VAYRO application host, production backup destination, external restore drill, production email sender or production secret custody has been verified.
-- The repository has a Dockerfile, Railway deployment descriptor and environment-variable names, but configuration files are not a deployed service.
-- PR #5 is open, Draft and unmerged. No production change was made during this inspection.
+- Supabase project `VAYRO-CORE` exists, is `ACTIVE_HEALTHY`, PostgreSQL 17.11, region `eu-central-1`.
+- The live `public` schema contains exactly 11 base tables, all owned by `postgres`, all with RLS enabled and `FORCE ROW LEVEL SECURITY` disabled. All 11 have no policies.
+- No table-level grants to `anon`, `authenticated` or `service_role` were found. Those API roles have `USAGE` on schema `public`, but no table privileges were found. Do not add browser grants or permissive policies without a separate authorization design.
+- The live schema contains the six enums from the initial migration, but no `SessionAssurance` enum.
+- The live `Session` table contains only `id`, `tokenHash`, `userId`, `expiresAt`, `createdAt`. It is missing `assurance`, `mfaAuthenticatedAt`, `revokedAt`, and `lastSeenAt`.
+- All three MFA tables are absent: `MfaCredential`, `MfaLoginChallenge`, `MfaRecoveryCode`. The pending-factor columns and check constraint from the sixth migration are therefore also absent.
+- The live database has no `public._prisma_migrations` table; Supabase migration listing is empty. The repository contains six ordered migration directories. The live database is therefore not registered as having applied the repository migration history.
+- The expected application role `vayro_app` does not exist. Catalog inspection shows `postgres` can log in and has `BYPASSRLS=true`; `service_role` has `BYPASSRLS=true` but cannot log in. The actual deployed application connection identity is not known because no independent VAYRO app host has been verified.
+- The existing schema is empty by estimated row count. Do not infer that it is safe to destroy or recreate; preserve it until an independent backup and owner-approved baseline plan exist.
+- CI, Dashboard Validation and CodeQL all passed on PR #5 head `216b3ce233751c93dfaf5af0e9232310f42a9413`. The readiness route now fails closed for superuser/BYPASSRLS runtime identities. CI's own integration test deliberately expects the bootstrap PostgreSQL identity to be rejected. This is repository evidence, not proof of the live app's runtime identity.
+- PR #5 remains open, Draft and unmerged. No production DDL, grants, secrets, backup or deployment were changed in this review.
 
-## 2. Target topology
+## 2. Explicit live schema drift
+
+| Object | Repository expectation | Live database | Result |
+|---|---|---|---|
+| Base tables | 14 tables | 11 tables | 3 MFA tables missing |
+| Session columns | 9 fields including four security fields | 5 fields | 4 fields missing |
+| Session enum | `SessionAssurance` | absent | missing |
+| MFA schema | 3 tables, 3 FK relationships, indexes | absent | missing |
+| MFA factor replacement | 5 pending columns + completeness CHECK | absent | missing |
+| Session revocation index | `Session_userId_revokedAt_idx` | absent | missing |
+| Prisma history | `_prisma_migrations` with six applied rows | table absent | unbaselined |
+
+The repository has six migrations, but only the first migration's 11-table foundation resembles the live database. The later five migration files have not been applied to VAYRO-CORE. Do not mark migrations as applied until every type, table, column, default, index, constraint and RLS property is proven equivalent.
+
+## 3. Target topology
 
 Keep the control plane isolated from every product data plane:
 
@@ -26,7 +43,7 @@ Keep the control plane isolated from every product data plane:
 
 The host/provider and plan are not selected here because account access, cost and regional/legal constraints must be verified first. Do not create paid resources without explicit cost approval.
 
-## 3. Runtime identity and database access
+## 4. Runtime identity and database access
 
 ### Required properties
 
@@ -37,19 +54,20 @@ The host/provider and plan are not selected here because account access, cost an
 - No `CREATE`, `ALTER`, `DROP`, `TRUNCATE`, ownership, role administration or schema migration rights.
 - Use a separate short-lived migration principal for reviewed migrations. Never put its credential in the runtime environment.
 - Verify the runtime identity from inside the running application connection using `current_user`, `rolsuper`, `rolbypassrls` and `rolcanlogin`. Fail readiness if the identity is privileged or cannot log in.
-- Keep browser roles without table grants. RLS-without-policy findings are expected under this server-only model; do not add permissive policies merely to silence an advisor.
+- Keep browser roles without table grants. RLS-without-policy findings are expected under this server-only model; do not add permissive policies merely to silence an advisor. Evaluate `FORCE ROW LEVEL SECURITY` only after the app role, ownership model and RLS policy strategy are designed and tested.
 
 ### Baseline/migration gate
 
 Do not run `prisma migrate deploy` against the live project yet. First:
-1. Export a verified independent backup.
+1. Obtain an independent backup and verify its checksum and restore into an isolated database.
 2. Compare every live type, table, column, default, index, constraint, extension, grant and RLS flag against `prisma/schema.prisma` and all six repository migrations.
 3. Resolve drift, especially MFA tables/columns and Session assurance/revocation/activity columns.
-4. Produce a reviewed baseline procedure that marks the already-provisioned initial schema as applied only after exact equivalence is proven; do not replay the initial CREATE TABLE migration against existing tables.
-5. Test baseline plus all forward migrations against a disposable PostgreSQL 17 database and test restore/rollback there.
-6. Obtain owner approval before any production baseline metadata or DDL operation.
+4. Reconcile the already-provisioned initial schema with the first migration. Do not replay its `CREATE TYPE` / `CREATE TABLE` statements against existing objects.
+5. Test the exact baseline procedure and all forward migrations against a disposable PostgreSQL 17 database.
+6. Only after exact equivalence is proven, record the initial migration as applied using a reviewed Prisma baseline procedure; then apply and verify the remaining five migrations in an isolated rehearsal.
+7. Obtain owner approval before any production baseline metadata, role/grant/policy change or DDL operation.
 
-## 4. Operational secret inventory
+## 5. Operational secret inventory
 
 Only names and custody requirements belong in this repository. Values must be set directly in the approved provider's protected secret manager.
 
@@ -67,7 +85,7 @@ Only names and custody requirements belong in this repository. Values must be se
 
 Do not create dummy values to make readiness green. A syntactically valid key is not evidence that key custody, recovery, rotation or service operation has been tested.
 
-## 5. Key lifecycle controls
+## 6. Key lifecycle controls
 
 For every production key record only metadata: key identifier/version, purpose, environment, owner/custodian, creation date, rotation due date, last successful validation, recovery location and revocation status. Never record the key value.
 
@@ -79,20 +97,20 @@ For every production key record only metadata: key identifier/version, purpose, 
 - Test disaster recovery with the matching key version without exposing it.
 - Revoke immediately on suspected disclosure and record incident evidence.
 
-## 6. Backup and recovery target
+## 7. Backup and recovery target
 
 Proposed objectives pending owner ratification:
 - Core control-plane RPO: 15 minutes.
-- Core control-plane RTO: 4 hours.
+- Recovery time objective (RTO): 4 hours.
 - Encrypted daily full backup plus supported incremental/WAL capture.
-- Retention target: 30 daily, 12 monthly and 1 annual recovery point, subject to cost and legal review.
+- Retain 30 daily, 12 monthly and 1 annual recovery point, subject to cost and legal review.
 - Independent provider/account and separate access identity; object versioning/immutability; SHA-256 checksum and schema/migration metadata.
 - Restore into an isolated environment at least quarterly and after material schema/key changes.
 - Record measured RPO/RTO, checksum, migration version, restore results, tenant-isolation checks and reviewer.
 
 The existing CI logical backup/restore smoke test is not a production backup or an independent restore drill.
 
-## 7. Host deployment gate
+## 8. Host deployment gate
 
 Before selecting or creating a host:
 - Confirm owner account access, project ownership, region, pricing, resource limits and data residency.
@@ -104,22 +122,23 @@ Before selecting or creating a host:
 
 A `railway.toml` or Dockerfile in Git does not prove that Railway service exists or is running.
 
-## 8. Current execution status
+## 9. Current execution status
 
 | Workstream | Status |
 |---|---|
 | Dedicated VAYRO-CORE project | Exists; active |
-| Initial schema | Exists; 11 tables, empty |
-| Migration baseline | Blocked pending catalog/schema reconciliation |
-| Least-privilege runtime DB role | Not provisioned/verified |
-| Runtime identity readiness guard | Added in repository; CI verification pending |
-| Dedicated app hosting | Not provisioned |
+| Initial 11-table schema | Exists; empty by estimated row count |
+| Live Prisma migration history | Absent |
+| MFA schema and Session security columns | Missing from live DB |
+| Least-privilege runtime DB role | `vayro_app` absent; runtime identity unverified |
+| Runtime identity readiness guard | Implemented; CI passed on PR head 216b3ce |
+| Dedicated app hosting | Not provisioned/verified |
 | Production MFA key custody | Not configured/verified |
 | Email provider and verified sender | Not configured/verified |
 | Independent encrypted backup | Not configured |
 | Independent restore drill | Not performed |
 | Production deployment | Not authorized |
 
-## 9. Prohibited until separate owner approval
+## 10. Prohibited until separate owner approval
 
 No production migration/baseline, role/grant/policy change, secret creation or rotation, paid resource creation, deployment, DNS cutover, customer data ingestion, payment activation, PR merge or public release is performed by this engineering specification.
