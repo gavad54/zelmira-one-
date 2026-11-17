@@ -33,10 +33,13 @@ export async function GET() {
     user.platformRole === "OWNER" ||
     user.platformRole === "PLATFORM_ADMIN" ||
     user.memberships.length > 0;
+  const replacementExpiresAt = user.mfaCredential?.pendingExpiresAt ?? null;
   return noStoreJson({
     enabled: Boolean(user.mfaCredential?.enabledAt),
     required: mfaRequired,
-    unusedRecoveryCodes: user.mfaRecoveryCodes.length
+    unusedRecoveryCodes: user.mfaRecoveryCodes.length,
+    replacementPending: Boolean(replacementExpiresAt && replacementExpiresAt > new Date()),
+    replacementExpiresAt: replacementExpiresAt?.toISOString() ?? null
   });
 }
 
