@@ -200,3 +200,16 @@ This section supersedes older status notes above where they conflict.
 - New-head CI/check runs were still queued/in progress at the time of this commit; do not mark them green until polled on the exact resulting SHA.
 
 **Next gate:** prove backup restore on a separate disposable database, complete privilege/ownership comparison, rehearse initial-migration baseline plus five subsequent migrations, and test tenant isolation with a dedicated least-privilege runtime identity. Production remains **BLOCKED — NOT RELEASED**.
+
+
+## CI security and recovery checkpoint — 2026-11-17 (HEAD ab78b758)
+
+See [VAYRO-CI-SECURITY-RESTORE-2026-11-17.md](verification/VAYRO-CI-SECURITY-RESTORE-2026-11-17.md) for the run-specific evidence.
+
+- On exact HEAD `ab78b75874e9fb1b3146d3d6ffa4451495a1c8a9`, Dashboard Validation and CodeQL passed.
+- VAYRO CI passed all unit, Prisma migration-contract, idempotency, baseline rehearsal, isolated PostgreSQL logical backup/restore, lint, typecheck, production build and PostgreSQL/HTTP integration steps.
+- The strict dependency audit then failed: 13 high-severity vulnerabilities, including GHSA-fc5q-39xc-vjpf / CVE-2026-112366 affecting picomatch through 4.0.7. The current advisory has no verified fixed release. Proposed upstream 2.x/4.x fixes remain open and unmerged. No unverified override, forced major upgrade, audit suppression or threshold reduction was applied.
+- The isolated restore test verified a marker row and migration-history count after `pg_dump` / `pg_restore`. This is not a production backup, encrypted off-site copy, PITR test, or production restore.
+- No production schema, grants, policies, secrets, data or deployment were changed.
+
+**Decision: SECURITY GATE BLOCKED; DEPLOYMENT BLOCKED — NOT RELEASED.**
