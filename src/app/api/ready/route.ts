@@ -1,49 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  emailConfiguration,
+  mfaConfiguration,
+  trustedProxyConfiguration
+} from "@/lib/readiness-config.mjs";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type Check = "ok" | "not_configured" | "unavailable";
-
-function mfaConfiguration(): Check {
-  return /^[a-f0-9]{64}$/i.test(process.env.VAYRO_MFA_ENCRYPTION_KEY ?? "")
-    ? "ok"
-    : "not_configured";
-}
-
-function trustedProxyConfiguration(): Check {
-  const value = process.env.TRUSTED_PROXY_HOPS ?? "";
-  if (!/^\\d+$/.test(value)) return "not_configured";
-  const hops = Number(value);
-  return Number.isSafeInteger(hops) && hops >= 1 && hops <= 10
-    ? "ok"
-    : "not_configured";
-}
-
-function emailConfiguration(): Check {
-  const provider = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
-  if (provider === "resend") {
-    const apiKey = process.env.EMAIL_API_KEY?.trim() ?? "";
-    const from = process.env.EMAIL_FROM?.trim() ?? "";
-    const validFrom = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(from);
-    // Resend's shared test sender is deliberately not considered production-ready.
-    return apiKey.length > 0 && validFrom && !from.toLowerCase().endsWith("@resend.dev")
-      ? "ok"
-      : "not_configured";
-  }
-  if (provider === "gmail") {
-    const sender = process.env.GMAIL_SENDER_EMAIL?.trim() ?? "";
-    const validSender = /^[^\\s@]+@gmail\\.com$/i.test(sender);
-    return Boolean(
-      process.env.GMAIL_CLIENT_ID?.trim() &&
-      process.env.GMAIL_CLIENT_SECRET?.trim() &&
-      process.env.GMAIL_REFRESH_TOKEN?.trim() &&
-      validSender
-    ) ? "ok" : "not_configured";
-  }
-  return "not_configured";
-}
 
 async function databaseConfiguration(): Promise<Check> {
   try {
@@ -69,8 +35,7 @@ async function databaseConfiguration(): Promise<Check> {
   }
 }
 
-// Verify the complete application schema before accepting traffic. This is a
-// read-only catalog check; it never runs migrations or returns schema details.
+// Read-only catalog and migration-history check. It never applies DDL or migrations.
 async function schemaConfiguration(): Promise<Check> {
   try {
     const rows = await prisma.$queryRaw<Array<{
@@ -78,6 +43,8 @@ async function schemaConfiguration(): Promise<Check> {
       missingColumns: number;
       hasSessionAssurance: boolean;
       hasMigrationTable: boolean;
+      missingMigrations: number;
+      incompleteMigrations: number;
     }>>`
       WITH expected_tables(table_name) AS (
         VALUES
@@ -108,6 +75,15 @@ async function schemaConfiguration(): Promise<Check> {
           ('MfaRecoveryCode', 'codeHash'),
           ('MfaRecoveryCode', 'userId'),
           ('MfaRecoveryCode', 'usedAt')
+      ),
+      expected_migrations(migration_name) AS (
+        VALUES
+          ('20261106055500_init_vayro_core'),
+          ('20261111080000_add_mfa_persistence'),
+          ('20261114080000_session_mfa_assurance'),
+          ('20261114090000_add_session_revocation'),
+          ('20261116080000_add_session_idle_tracking'),
+          ('20261117080000_mfa_factor_replacement')
       )
       SELECT
         (SELECT count(*)::int
@@ -125,14 +101,26 @@ async function schemaConfiguration(): Promise<Check> {
           AND c.column_name = e.column_name
          WHERE c.column_name IS NULL) AS "missingColumns",
         to_regtype('public."SessionAssurance"') IS NOT NULL AS "hasSessionAssurance",
-        to_regclass('public._prisma_migrations') IS NOT NULL AS "hasMigrationTable"
+        to_regclass('public._prisma_migrations') IS NOT NULL AS "hasMigrationTable",
+        (SELECT count(*)::int
+         FROM expected_migrations e
+         LEFT JOIN public."_prisma_migrations" m
+           ON m.migration_name = e.migration_name
+          AND m.finished_at IS NOT NULL
+          AND m.rolled_back_at IS NULL
+         WHERE m.migration_name IS NULL) AS "missingMigrations",
+        (SELECT count(*)::int
+         FROM public."_prisma_migrations"
+         WHERE finished_at IS NULL AND rolled_back_at IS NULL) AS "incompleteMigrations"
     `;
     const schema = rows[0];
     if (!schema) return "unavailable";
     return schema.missingTables === 0 &&
       schema.missingColumns === 0 &&
       schema.hasSessionAssurance &&
-      schema.hasMigrationTable
+      schema.hasMigrationTable &&
+      schema.missingMigrations === 0 &&
+      schema.incompleteMigrations === 0
       ? "ok"
       : "not_configured";
   } catch {
