@@ -24,7 +24,7 @@ export async function GET() {
         where: { role: { in: ["OWNER", "ADMIN"] }, tenant: { status: "ACTIVE" } },
         select: { id: true }
       },
-      mfaCredential: { select: { enabledAt: true } },
+      mfaCredential: { select: { enabledAt: true, pendingExpiresAt: true } },
       mfaRecoveryCodes: { where: { usedAt: null }, select: { id: true } }
     }
   });
