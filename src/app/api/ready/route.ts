@@ -14,7 +14,7 @@ function mfaConfiguration(): Check {
 
 function trustedProxyConfiguration(): Check {
   const value = process.env.TRUSTED_PROXY_HOPS ?? "";
-  if (!/^\d+$/.test(value)) return "not_configured";
+  if (!/^\\d+$/.test(value)) return "not_configured";
   const hops = Number(value);
   return Number.isSafeInteger(hops) && hops >= 1 && hops <= 10
     ? "ok"
@@ -26,7 +26,7 @@ function emailConfiguration(): Check {
   if (provider === "resend") {
     const apiKey = process.env.EMAIL_API_KEY?.trim() ?? "";
     const from = process.env.EMAIL_FROM?.trim() ?? "";
-    const validFrom = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(from);
+    const validFrom = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(from);
     // Resend's shared test sender is deliberately not considered production-ready.
     return apiKey.length > 0 && validFrom && !from.toLowerCase().endsWith("@resend.dev")
       ? "ok"
@@ -34,7 +34,7 @@ function emailConfiguration(): Check {
   }
   if (provider === "gmail") {
     const sender = process.env.GMAIL_SENDER_EMAIL?.trim() ?? "";
-    const validSender = /^[^\s@]+@gmail\.com$/i.test(sender);
+    const validSender = /^[^\\s@]+@gmail\\.com$/i.test(sender);
     return Boolean(
       process.env.GMAIL_CLIENT_ID?.trim() &&
       process.env.GMAIL_CLIENT_SECRET?.trim() &&
@@ -48,13 +48,11 @@ function emailConfiguration(): Check {
 async function databaseConfiguration(): Promise<Check> {
   try {
     const rows = await prisma.$queryRaw<Array<{
-      roleName: string;
       isSuperuser: boolean;
       bypassesRls: boolean;
       canLogin: boolean;
     }>>`
       SELECT
-        current_user AS "roleName",
         COALESCE(rolsuper, false) AS "isSuperuser",
         COALESCE(rolbypassrls, false) AS "bypassesRls",
         COALESCE(rolcanlogin, false) AS "canLogin"
@@ -71,9 +69,85 @@ async function databaseConfiguration(): Promise<Check> {
   }
 }
 
+// Verify the complete application schema before accepting traffic. This is a
+// read-only catalog check; it never runs migrations or returns schema details.
+async function schemaConfiguration(): Promise<Check> {
+  try {
+    const rows = await prisma.$queryRaw<Array<{
+      missingTables: number;
+      missingColumns: number;
+      hasSessionAssurance: boolean;
+      hasMigrationTable: boolean;
+    }>>`
+      WITH expected_tables(table_name) AS (
+        VALUES
+          ('User'), ('Tenant'), ('Membership'), ('Session'), ('Product'),
+          ('License'), ('AuditEvent'), ('EmailContact'),
+          ('EmailContactVerificationToken'), ('AuthActionToken'), ('AuthRateLimit'),
+          ('MfaCredential'), ('MfaLoginChallenge'), ('MfaRecoveryCode')
+      ),
+      expected_columns(table_name, column_name) AS (
+        VALUES
+          ('Session', 'assurance'),
+          ('Session', 'mfaAuthenticatedAt'),
+          ('Session', 'revokedAt'),
+          ('Session', 'lastSeenAt'),
+          ('MfaCredential', 'secretCiphertext'),
+          ('MfaCredential', 'secretIv'),
+          ('MfaCredential', 'secretAuthTag'),
+          ('MfaCredential', 'keyVersion'),
+          ('MfaCredential', 'lastAcceptedStep'),
+          ('MfaCredential', 'pendingSecretCiphertext'),
+          ('MfaCredential', 'pendingSecretIv'),
+          ('MfaCredential', 'pendingSecretAuthTag'),
+          ('MfaCredential', 'pendingKeyVersion'),
+          ('MfaCredential', 'pendingExpiresAt'),
+          ('MfaLoginChallenge', 'tokenHash'),
+          ('MfaLoginChallenge', 'userId'),
+          ('MfaLoginChallenge', 'expiresAt'),
+          ('MfaRecoveryCode', 'codeHash'),
+          ('MfaRecoveryCode', 'userId'),
+          ('MfaRecoveryCode', 'usedAt')
+      )
+      SELECT
+        (SELECT count(*)::int
+         FROM expected_tables e
+         LEFT JOIN information_schema.tables t
+           ON t.table_schema = 'public'
+          AND t.table_type = 'BASE TABLE'
+          AND t.table_name = e.table_name
+         WHERE t.table_name IS NULL) AS "missingTables",
+        (SELECT count(*)::int
+         FROM expected_columns e
+         LEFT JOIN information_schema.columns c
+           ON c.table_schema = 'public'
+          AND c.table_name = e.table_name
+          AND c.column_name = e.column_name
+         WHERE c.column_name IS NULL) AS "missingColumns",
+        to_regtype('public."SessionAssurance"') IS NOT NULL AS "hasSessionAssurance",
+        to_regclass('public._prisma_migrations') IS NOT NULL AS "hasMigrationTable"
+    `;
+    const schema = rows[0];
+    if (!schema) return "unavailable";
+    return schema.missingTables === 0 &&
+      schema.missingColumns === 0 &&
+      schema.hasSessionAssurance &&
+      schema.hasMigrationTable
+      ? "ok"
+      : "not_configured";
+  } catch {
+    return "unavailable";
+  }
+}
+
 export async function GET() {
+  const [database, schema] = await Promise.all([
+    databaseConfiguration(),
+    schemaConfiguration()
+  ]);
   const checks = {
-    database: await databaseConfiguration(),
+    database,
+    schema,
     mfa: mfaConfiguration(),
     rateLimit: trustedProxyConfiguration(),
     email: emailConfiguration()
