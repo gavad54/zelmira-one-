@@ -184,3 +184,19 @@ A read-only live database inspection was recorded in [PRODUCTION-DB-DRIFT-2026-1
 - Next engineering gate is a reviewed schema-diff/baseline design plus isolated migration and tenant-RLS/runtime-role tests. Production execution requires a separately reviewed change plan, verified backup/restore evidence, and owner approval.
 
 **Release remains BLOCKED — NOT RELEASED.**
+
+
+## Verified schema reconciliation checkpoint — 2026-11-17 (latest)
+
+This section supersedes older status notes above where they conflict.
+
+- Current branch head at authoring time: `74f3b6f58ab52ef62c1c9ed3afb4866f9e9992c4`; PR #5 remains open, Draft and unmerged.
+- Added [SCHEMA-RECONCILIATION-2026-11-17.md](verification/SCHEMA-RECONCILIATION-2026-11-17.md), based on live read-only inspection and review of all six repository migration SQL files.
+- Added [live-schema-inventory.sql](../prisma/verification/live-schema-inventory.sql), a reusable SELECT-only inventory script for columns, types, constraints, indexes, enums, RLS policies, roles, grants and migration history.
+- Confirmed that the initial migration's 11 tables, inspected columns, timestamp precision, six enum definitions, primary/foreign keys and initial indexes correspond to the live catalog. This is object-shape evidence only; ownership and effective privilege equivalence still require separate verification before baseline acceptance.
+- Confirmed missing later-migration objects: three MFA tables; `Session.assurance`, `mfaAuthenticatedAt`, `revokedAt`, `lastSeenAt`; `SessionAssurance`; `Session_userId_revokedAt_idx`; and the pending-factor columns/check constraint (the parent MFA table is absent).
+- Migration history remains empty. The initial migration must not be replayed blindly. Baseline resolution is not authorized until backup/restore rehearsal and full privilege/ownership reconciliation pass on a disposable copy.
+- No production SQL mutation, grants, policies, role change, migration bookkeeping, secret access or deployment occurred.
+- New-head CI/check runs were still queued/in progress at the time of this commit; do not mark them green until polled on the exact resulting SHA.
+
+**Next gate:** prove backup restore on a separate disposable database, complete privilege/ownership comparison, rehearse initial-migration baseline plus five subsequent migrations, and test tenant isolation with a dedicated least-privilege runtime identity. Production remains **BLOCKED — NOT RELEASED**.
