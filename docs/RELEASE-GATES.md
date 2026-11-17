@@ -90,3 +90,15 @@ This section supersedes older commit identifiers and CI run references above.
 - Owner email-confirmation integration coverage now verifies successful confirmation, one-time token replay rejection, and rejection of disabled contacts. The confirmation write rechecks `enabled=true` atomically, preventing a concurrent disable from being overwritten by verification.
 - These are repository and isolated-CI results only. They do not verify production database migration, production backup/restore, production key custody, live email delivery, hosting, billing, Android, independent product operation or owner UAT.
 - Release posture remains **DEPLOYMENT BLOCKED — NOT RELEASED**. No merge, production deployment, production database change, payment activation or customer onboarding was performed.
+
+
+## CI readiness-role correction — 2026-11-17 08:06 UTC
+
+- Fresh PR #5 head before this correction was `72213244b211b6e3ef60736cb196daf8d1a48fb6`.
+- VAYRO CI run [44042302299](https://github.com/gavad54/zelmira-one-/actions/runs/44042302299) failed only in the production-HTTP integration suite: 22/23 tests passed. The failing assertion expected `/api/ready` to report the database role as `ok`, but the route correctly returned `not_configured`.
+- The CI workflow connects using the PostgreSQL container bootstrap account (`POSTGRES_USER=ci`), which is a superuser. The readiness endpoint deliberately rejects superuser/BYPASSRLS database identities. The implementation is fail-closed; the test expectation was incorrect.
+- Corrected the integration assertion to expect `not_configured` for this CI-only superuser and clarified the workflow step name: it creates client roles for privilege-boundary assertions; it does **not** establish or test a least-privilege application runtime role.
+- CI on the corrected commit is required before this change is considered verified. The dedicated production runtime database role remains unprovisioned/unverified. Because the live schema has RLS enabled without policies and the application does not yet establish a reviewed tenant-aware RLS context, do not create or switch the production runtime role by guesswork.
+- No production database, policy, grant, secret, deployment or customer data was changed.
+
+**Release remains BLOCKED — NOT RELEASED.**
