@@ -4,29 +4,73 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-// Readiness is separate from liveness: it verifies the database connection
-// without exposing connection details or internal error messages.
+type Check = "ok" | "not_configured" | "unavailable";
+
+function mfaConfiguration(): Check {
+  return /^[a-f0-9]{64}$/i.test(process.env.VAYRO_MFA_ENCRYPTION_KEY ?? "")
+    ? "ok"
+    : "not_configured";
+}
+
+function trustedProxyConfiguration(): Check {
+  const value = process.env.TRUSTED_PROXY_HOPS ?? "";
+  if (!/^\\d+$/.test(value)) return "not_configured";
+  const hops = Number(value);
+  return Number.isSafeInteger(hops) && hops >= 1 && hops <= 10
+    ? "ok"
+    : "not_configured";
+}
+
+function emailConfiguration(): Check {
+  const provider = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
+  if (provider === "resend") {
+    const apiKey = process.env.EMAIL_API_KEY?.trim() ?? "";
+    const from = process.env.EMAIL_FROM?.trim() ?? "";
+    const validFrom = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(from);
+    // Resend's shared test sender is deliberately not considered production-ready.
+    return apiKey.length > 0 && validFrom && !from.toLowerCase().endsWith("@resend.dev")
+      ? "ok"
+      : "not_configured";
+  }
+  if (provider === "gmail") {
+    const sender = process.env.GMAIL_SENDER_EMAIL?.trim() ?? "";
+    const validSender = /^[^\\s@]+@gmail\\.com$/i.test(sender);
+    return Boolean(
+      process.env.GMAIL_CLIENT_ID?.trim() &&
+      process.env.GMAIL_CLIENT_SECRET?.trim() &&
+      process.env.GMAIL_REFRESH_TOKEN?.trim() &&
+      validSender
+    ) ? "ok" : "not_configured";
+  }
+  return "not_configured";
+}
+
+// Readiness is separate from liveness. It verifies the database and the
+// security-critical runtime configuration required before accepting traffic.
+// Values and provider credentials are never returned to the caller.
 export async function GET() {
+  const checks = {
+    database: "unavailable" as Check,
+    mfa: mfaConfiguration(),
+    rateLimit: trustedProxyConfiguration(),
+    email: emailConfiguration()
+  };
+
   try {
     await prisma.$queryRaw`SELECT 1`;
-    return NextResponse.json(
-      {
-        status: "ready",
-        service: "vayro-web",
-        checks: { database: "ok" },
-        timestamp: new Date().toISOString()
-      },
-      { status: 200, headers: { "Cache-Control": "no-store" } }
-    );
+    checks.database = "ok";
   } catch {
-    return NextResponse.json(
-      {
-        status: "not_ready",
-        service: "vayro-web",
-        checks: { database: "unavailable" },
-        timestamp: new Date().toISOString()
-      },
-      { status: 503, headers: { "Cache-Control": "no-store" } }
-    );
+    checks.database = "unavailable";
   }
+
+  const ready = Object.values(checks).every(value => value === "ok");
+  return NextResponse.json(
+    {
+      status: ready ? "ready" : "not_ready",
+      service: "vayro-web",
+      checks,
+      timestamp: new Date().toISOString()
+    },
+    { status: ready ? 200 : 503, headers: { "Cache-Control": "no-store" } }
+  );
 }
