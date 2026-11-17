@@ -19,7 +19,7 @@ The primary blockers remain independent hosting/runtime configuration, live data
 - PR #2 is merged; PR #24 is merged. PR #23 and PR #4 are closed without merge.
 - PR #5 is OPEN/DRAFT, head `f836b026c3c476493492d184e736d9a1e1eeab86`, based on `experiment/cloudflare-free-hosting-audit` rather than main, with 147 commits. It is a parallel experimental dashboard branch, not a current mainline merge candidate: [PR #5](https://github.com/gavad54/zelmira-one-/pull/5).
 - PR #30 is OPEN/DRAFT, based on current main `f0d31804...`, head `c2d0e62d56c7ddb1c09a4bda0f03bd305432caac`. Its CI run [43690934818](https://github.com/gavad54/zelmira-one-/actions/runs/43690934818) and CodeQL run [43690934804](https://github.com/gavad54/zelmira-one-/actions/runs/43690934804) succeeded on that exact head. It is the more directly reviewable dashboard candidate; keep it separate from PR #5 until overlap is reconciled.
-- PR #27 remains OPEN/DRAFT, head `8e5a1e8f3b904cdd3a188c9be7beccd7afe833cd`; this audit is being added to its existing documentation branch.
+- PR #27 remained OPEN/DRAFT on its existing backup/recovery documentation branch at the start of this audit; this audit file is added on that same branch.
 - Main exact-head CI [43048676444](https://github.com/gavad54/zelmira-one-/actions/runs/43048676444) succeeded on `f0d31804...`; the `npm audit --audit-level=moderate` step reported **0 vulnerabilities**. No newer main CI run was present at observation time.
 - Main exact-head CodeQL [43870595208](https://github.com/gavad54/zelmira-one-/actions/runs/43870595208) succeeded on `f0d31804...` on 2026-11-16. The log records analysis of 94/94 TypeScript files, 46/46 JavaScript files and 5/5 GitHub Actions files.
 - Dependabot job [43844715110](https://github.com/gavad54/zelmira-one-/actions/runs/43844715110) succeeded on the same SHA. This is a Dependabot update job, not a substitute for the exact-head `npm audit` result or a complete security-alert inventory.
@@ -108,3 +108,16 @@ These observations establish live schema/security drift. They do not authorize a
 The smallest owner action is to configure the missing protected secret `VAYRO_BACKUP_DATABASE_URL` in the existing GitHub Environment `vayro-backup`, using the correct VAYRO-CORE connection string from the provider console. Do not send it in chat. Re-run the existing backup workflow only after confirming the private destination and all other required fields. A successful encrypted backup must then be followed by a separately authorized restore drill against an empty isolated PostgreSQL 17 target.
 
 Until backup and restore evidence exists, do not change the live schema, roles, grants or RLS policies. Keep all deployment, merge, billing and release gates blocked.
+
+
+## Additional exact-head finding — PR #5
+
+A fresh check of the newly updated PR #5 head `f836b026c3c476493492d184e736d9a1e1eeab86` found:
+
+- VAYRO CI [44057745777](https://github.com/gavad54/zelmira-one-/actions/runs/44057745777): **FAIL**.
+- Dashboard validation [44057745778](https://github.com/gavad54/zelmira-one-/actions/runs/44057745778): **FAIL**.
+- CodeQL [44057745807](https://github.com/gavad54/zelmira-one-/actions/runs/44057745807): **SUCCESS**.
+- Both failing jobs identify the product-catalogue test at `tests/product-catalog.test.mjs`: actual order places `ARIA` before `ARIANA`, while the expected list places `ARIANA` before `ARIA`. This is an order mismatch in the experimental PR branch, not evidence that either product should be removed or reclassified.
+- PR #5 is still based on `experiment/cloudflare-free-hosting-audit`, not current main, and has 147 commits. Do not merge it or duplicate its dashboard work into the mainline. PR #30 remains the main-based dashboard candidate with successful exact-head CI and CodeQL evidence.
+
+This finding does not change the approved product boundaries. Reconcile the duplicate dashboard branches and catalogue ordering before considering either branch for merge.
