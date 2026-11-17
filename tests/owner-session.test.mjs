@@ -99,11 +99,13 @@ test("owner session rejects unverified, non-owner, disabled and expired accounts
   }
 });
 
-test("owner session rejects future activity timestamps", async () => {
+test("owner session revokes future activity timestamps", async () => {
   const db = makeDb(ownerSession({ lastSeenAt: new Date(now.getTime() + 60_000) }));
   const result = await authorizeOwnerSession({ sessionToken: "a".repeat(64), db, now });
   assert.deepEqual(result, { authorized: false });
-  assert.equal(db.updates.length, 0);
+  assert.equal(db.updates.length, 1);
+  assert.deepEqual(db.updates[0].where, { id: "session-1", revokedAt: null });
+  assert.deepEqual(db.updates[0].data, { revokedAt: now });
 });
 
 test("owner session revokes idle sessions and rejects them", async () => {
