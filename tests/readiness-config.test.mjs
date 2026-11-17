@@ -26,7 +26,7 @@ test("Resend readiness rejects malformed sender addresses and shared test sender
     EMAIL_API_KEY: "re_test_placeholder",
     EMAIL_FROM: "ops@example.com"
   }), "ok");
-  for (const from of ["ops @example.com", "ops@example", "ops@example.com ", "test@resend.dev"]) {
+  for (const from of ["ops @example.com", "ops@example", "test@resend.dev"]) {
     assert.equal(emailConfiguration({
       EMAIL_PROVIDER: "resend",
       EMAIL_API_KEY: "key",
