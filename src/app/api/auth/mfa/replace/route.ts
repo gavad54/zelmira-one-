@@ -103,6 +103,17 @@ export async function POST(request: Request) {
     const expiresAt = new Date(now.getTime() + PENDING_FACTOR_TTL_MS);
     try {
       await prisma.$transaction(async tx => {
+        const activeSession = await tx.session.updateMany({
+          where: {
+            id: record.id,
+            userId: record.user.id,
+            revokedAt: null,
+            expiresAt: { gt: new Date() }
+          },
+          data: { assurance: "MFA", mfaAuthenticatedAt: new Date() }
+        });
+        if (activeSession.count !== 1) throw new Error("MFA_SESSION_REVOKED");
+
         const updated = await tx.mfaCredential.updateMany({
           where: {
             id: credential.id,
@@ -132,6 +143,9 @@ export async function POST(request: Request) {
     } catch (error) {
       if (error instanceof Error && error.message === "MFA_CODE_REPLAYED") {
         return noStoreJson({ error: "mfa_code_already_used" }, 401);
+      }
+      if (error instanceof Error && error.message === "MFA_SESSION_REVOKED") {
+        return noStoreJson({ error: "unauthorized" }, 401);
       }
       return noStoreJson({ error: "mfa_replacement_failed" }, 409);
     }
@@ -210,10 +224,16 @@ export async function POST(request: Request) {
       });
       if (promoted.count !== 1) throw new Error("MFA_PENDING_FACTOR_CHANGED");
 
-      await tx.session.updateMany({
-        where: { id: record.id, userId: record.user.id, revokedAt: null },
+      const activeSession = await tx.session.updateMany({
+        where: {
+          id: record.id,
+          userId: record.user.id,
+          revokedAt: null,
+          expiresAt: { gt: new Date() }
+        },
         data: { assurance: "MFA", mfaAuthenticatedAt: new Date() }
       });
+      if (activeSession.count !== 1) throw new Error("MFA_SESSION_REVOKED");
       await tx.mfaRecoveryCode.deleteMany({ where: { userId: record.user.id } });
       await tx.mfaRecoveryCode.createMany({
         data: recoveryCodes.map(code => ({
