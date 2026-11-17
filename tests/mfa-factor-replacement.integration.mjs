@@ -91,6 +91,7 @@ test("MFA factor replacement requires old-factor proof, confirms new factor, rot
       }
     });
     currentSessionId = session.id;
+    rateLimitKeys.push(createHash("sha256").update("mfa-factor-replace:" + session.id).digest("hex"));
     const otherSession = await db.session.create({
       data: {
         userId,
@@ -149,7 +150,9 @@ test("MFA factor replacement requires old-factor proof, confirms new factor, rot
     assert.ok(afterBegin.pendingSecretAuthTag);
     assert.ok(afterBegin.pendingExpiresAt > new Date());
 
-    const invalidConfirmation = await post({ action: "confirm", code: "000000" });
+    const expectedNewCode = totpCode(beginBody.secret);
+    const definitelyWrongCode = expectedNewCode === "000000" ? "000001" : "000000";
+    const invalidConfirmation = await post({ action: "confirm", code: definitelyWrongCode });
     assert.equal(invalidConfirmation.status, 401);
     const stillPending = await db.mfaCredential.findUnique({ where: { id: credential.id } });
     assert.ok(stillPending.pendingSecretCiphertext);
