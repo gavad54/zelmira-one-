@@ -170,3 +170,17 @@ No production database, external product repository, paid resource, production s
 - Security advisor continues to report 11 informational RLS-enabled-without-policy findings. No policy, grant, schema, role or data mutation was made.
 
 **Decision unchanged: DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Live VAYRO-CORE schema drift audit — 2026-11-17 14:20 UTC
+
+A read-only live database inspection was recorded in [PRODUCTION-DB-DRIFT-2026-11-17.md](verification/PRODUCTION-DB-DRIFT-2026-11-17.md).
+
+- Eleven public tables exist and all had RLS enabled, but the security advisor reports eleven RLS-enabled/no-policy findings.
+- Supabase migration history is empty although application tables already exist. Do not replay the initial create-table migration blindly.
+- The three MFA tables expected by Prisma are absent. The live Session table lacks `revokedAt`, `lastSeenAt`, `assurance`, and `mfaAuthenticatedAt`.
+- The inspected `postgres` role can log in and bypass RLS; no dedicated application runtime role was found in the inspected role set.
+- These findings establish production schema drift and reinforce the deployment block. No production DDL, grants, policies, migration, secrets, or data were changed.
+- Next engineering gate is a reviewed schema-diff/baseline design plus isolated migration and tenant-RLS/runtime-role tests. Production execution requires a separately reviewed change plan, verified backup/restore evidence, and owner approval.
+
+**Release remains BLOCKED — NOT RELEASED.**
