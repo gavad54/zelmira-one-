@@ -55,3 +55,17 @@ Before release, provision and verify a dedicated server-only runtime database ro
 6. Obtain explicit owner approval before any production migration or role change.
 
 No live schema, migration history, role, grant, policy, secret or data was changed during this inspection.
+
+
+## Fresh read-only verification addendum — 2026-11-17 14:14 UTC
+
+The following was rechecked directly against VAYRO-CORE after the earlier snapshot:
+
+- Public schema remains at 11 application tables; the table listing reports zero estimated rows for each.
+- Supabase migration listing remains empty.
+- Live `Session` columns remain exactly the five foundation columns: `id`, `tokenHash`, `userId`, `expiresAt`, and `createdAt`.
+- `MfaCredential`, `MfaLoginChallenge`, and `MfaRecoveryCode` remain absent; the `SessionAssurance` enum and session security columns are therefore not present in the live schema.
+- Role inspection: `anon` and `authenticated` are non-login and do not have BYPASSRLS; `service_role` is non-login with BYPASSRLS; `postgres` can log in with BYPASSRLS; proposed `vayro_app` does not exist.
+- Security advisor still reports 11 informational `rls_enabled_no_policy` findings.
+
+This confirms the drift described above; it does not authorize a baseline, role creation, grant, policy, or migration. No live database writes were performed. The safe next step remains an independently reviewed schema diff and a disposable PostgreSQL 17 rehearsal, followed by a separately approved backup and production change plan.
