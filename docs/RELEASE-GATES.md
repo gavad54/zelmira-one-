@@ -151,3 +151,22 @@ These results apply to the cited application-code commit and the listed checks o
 No production database, external product repository, paid resource, production secret, domain, deployment, merge, payment or customer data was changed in this checkpoint.
 
 **Release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Latest verification — 2026-11-17 14:14 UTC
+
+- PR #5 head verified: `2e74b824750d21228ab94870c262d1c42ec37669`; PR remains open, Draft, and unmerged.
+- All seven GitHub check runs attached to this exact head completed successfully: VAYRO CI, Dashboard Validation, CodeQL, and their associated validation/analyzer jobs. CodeQL reported no new alerts in code changed by this PR.
+- The legacy commit-status endpoint reports `pending` with zero status contexts; the authoritative check-runs endpoint reports all seven check runs completed with `success`. No failing or in-progress check run was observed.
+- This head is a documentation-only update after the last separately documented application-code test checkpoint. Do not infer that the 74 unit and 23 integration test counts were rerun on this documentation commit; those counts remain attached to the cited application-code SHA in the preceding checkpoint.
+- PR mergeability is reported true by GitHub, but draft status and open release gates remain. No merge or deployment was performed.
+
+### Fresh read-only VAYRO-CORE check — 2026-11-17 14:14 UTC
+
+- Supabase still reports 11 public application tables, all empty by estimated row count and all with RLS enabled.
+- The live `Session` table still has only five columns: `id`, `tokenHash`, `userId`, `expiresAt`, `createdAt`. It lacks `assurance`, `mfaAuthenticatedAt`, `revokedAt`, and `lastSeenAt`.
+- `MfaCredential`, `MfaLoginChallenge`, and `MfaRecoveryCode` remain absent. Supabase migration history remains empty.
+- Roles `anon` and `authenticated` cannot log in and do not bypass RLS. `service_role` cannot log in but has BYPASSRLS. `postgres` can log in and has BYPASSRLS. The proposed `vayro_app` role is absent.
+- Security advisor continues to report 11 informational RLS-enabled-without-policy findings. No policy, grant, schema, role or data mutation was made.
+
+**Decision unchanged: DEPLOYMENT BLOCKED — NOT RELEASED.**
