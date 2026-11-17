@@ -25,7 +25,7 @@
 - The production HTTP integration suite passed 11/11 tests: public homepage/account links, liveness/readiness, cross-origin rejection on eight auth mutation routes, malformed login JSON, absent/malformed `/api/auth/me` cookies with no-store behavior, idempotent logout/cookie expiry, valid-session lookup, HTTP logout revocation and post-logout denial, password-reset token single-use/session revocation transaction tests, and PostgreSQL-backed tenant/role authorization.
 - Production HTTP integration tests verify the public VAYRO homepage and account-entry links, liveness/readiness separation, cross-origin rejection across eight authentication mutation routes, malformed JSON handling for login, absent/malformed `/api/auth/me` cookies, idempotent logout with cookie expiry, valid-session lookup, HTTP session revocation and post-logout denial. The 11/11 integration suite also includes tenant HTTP API authorization and cross-tenant denial, password-reset transaction and PostgreSQL tenant/role authorization tests. These checks do not yet cover every authentication lifecycle or tenant API scenario.
 - The codebase includes Next.js App Router, React, TypeScript, PostgreSQL and Prisma; auth pages/API routes, password/session/token helpers, owner bootstrap and email-provider adapters; Prisma schema and migration files; health/readiness routes; product-family catalogue; architecture, security, backup, release and product-boundary documentation.
-- The eight specialist product entries are catalogue/roadmap items, not evidence that those eight products are operational integrations.
+- The eleven independent app entries are catalogue/roadmap items, not evidence that those eleven products are operational integrations. DANA is the shared command plane, not a standalone app.
 - `package-lock.json` is committed (npm lockfileVersion 3; 5,932 lines) and matches the root package metadata. The generated lock was validated by a clean `npm ci` before commit.
 - The Prisma migration files exist in the branch, but no production migration has been run or independently approved.
 - Email adapters exist in code, but no verified production sender or OAuth credentials have been configured or tested. No secrets are stored in the repository.
@@ -133,7 +133,7 @@ This update supersedes earlier statements above where they conflict.
 - [ ] Prove encrypted external backup and isolated restore with checksum and measured RPO/RTO.
 - [ ] Verify transactional email end-to-end after configuring protected runtime variables; ensure bootstrap failure recovery works as documented.
 - [ ] Complete licensing, billing, idempotent payment events, invoice/refund/reconciliation, entitlement enforcement and legal review.
-- [ ] Deliver the eight products as operational services and verify DANA tool boundaries; catalogue status is not live-service status.
+- [ ] Deliver all eleven independent apps as operational services and verify DANA command-plane boundaries; catalogue status is not live-service status.
 - [ ] Complete Android source/build/signing and real-device UAT.
 - [ ] Provision dedicated VAYRO hosting without reusing ARIA/LEADORA infrastructure; verify monitoring, rollback and commit parity.
 - [ ] Complete Persian RTL/mobile/accessibility review, privacy/legal review, owner UAT and explicit release approval.
