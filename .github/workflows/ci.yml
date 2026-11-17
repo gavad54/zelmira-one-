@@ -59,6 +59,21 @@ jobs:
         run: psql "postgresql://ci:ci@localhost:5432/vayro_ci" -v ON_ERROR_STOP=1 -f prisma/verification/assert-migration-contract.sql
       - name: Verify migration deployment is idempotent
         run: npx prisma migrate deploy
+      # Rehearse adoption of an existing legacy schema without replaying init.
+      # This database is disposable and exists only inside this GitHub Actions job.
+      - name: Rehearse safe baseline against a pre-existing schema
+        shell: bash
+        run: |
+          set -euo pipefail
+          admin_url="postgresql://ci:ci@localhost:5432/postgres"
+          baseline_url="postgresql://ci:ci@localhost:5432/vayro_baseline_ci"
+          psql "$admin_url" -v ON_ERROR_STOP=1 -c "CREATE DATABASE vayro_baseline_ci"
+          psql "$baseline_url" -v ON_ERROR_STOP=1 -f prisma/migrations/20261106055500_init_vayro_core/migration.sql
+          DATABASE_URL="$baseline_url" npx prisma migrate resolve --applied 20261106055500_init_vayro_core
+          DATABASE_URL="$baseline_url" npx prisma migrate deploy
+          psql "$baseline_url" -v ON_ERROR_STOP=1 -f prisma/verification/assert-migration-contract.sql
+          DATABASE_URL="$baseline_url" npx prisma migrate deploy
+          psql "$admin_url" -v ON_ERROR_STOP=1 -c "DROP DATABASE vayro_baseline_ci"
       # Exercise a complete logical backup/restore on the isolated CI database.
       # This does not replace encrypted off-site production backups.
       - name: Verify isolated PostgreSQL backup and restore
