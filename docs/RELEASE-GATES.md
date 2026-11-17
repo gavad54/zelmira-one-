@@ -9,11 +9,11 @@ This document is the current source of truth as of 2026-11-17. It supersedes old
 - Repository: `gavad54/zelmira-one-`
 - Active engineering branch: `feature/vayro-real-dashboard`
 - PR: [#5](https://github.com/gavad54/zelmira-one-/pull/5)
-- Current PR head: `c489b97f3fe9b10dd7cfd63ac0c0fa1ecb71e3d4`
+- Last fully verified application-code head: `c489b97f3fe9b10dd7cfd63ac0c0fa1ecb71e3d4`. The subsequent release-gate document refresh is documentation-only; always read the live PR head and its own workflow runs before treating a newer commit as verified.
 - PR #5 is **open, draft, not merged**. No production deployment or public release is authorized.
-- VAYRO CI [run 44020434688](https://github.com/gavad54/zelmira-one-/actions/runs/44020434688): completed successfully on the exact current PR head.
-- Dashboard Validation [run 44020434855](https://github.com/gavad54/zelmira-one-/actions/runs/44020434855): completed successfully on the exact current PR head.
-- CodeQL PR analysis [run 44020435183](https://github.com/gavad54/zelmira-one-/actions/runs/44020435183): completed successfully on the exact current PR head. This records a successful scan; it does not by itself prove that all historical alert records are closed or formally dispositioned.
+- VAYRO CI [run 44020434688](https://github.com/gavad54/zelmira-one-/actions/runs/44020434688): completed successfully on the verified application-code head above.
+- Dashboard Validation [run 44020434855](https://github.com/gavad54/zelmira-one-/actions/runs/44020434855): completed successfully on the verified application-code head above.
+- CodeQL PR analysis [run 44020435183](https://github.com/gavad54/zelmira-one-/actions/runs/44020435183): completed successfully on the verified application-code head above. This records a successful scan; it does not by itself prove that all historical alert records are closed or formally dispositioned.
 - A separate push-triggered CodeQL run [44020429639](https://github.com/gavad54/zelmira-one-/actions/runs/44020429639) was still running at the last check; the PR-triggered CodeQL run above is the completed evidence used for this head.
 
 ### Verified CI checks on current PR head
