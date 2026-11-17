@@ -84,3 +84,13 @@ The production database baseline, least-privilege runtime identity, protected MF
 - No production database writes, migration, role/grant/policy changes, secrets changes, deployment, PR merge, payment activation or customer onboarding were performed.
 
 **Current release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+## Latest repository verification — 2026-11-17 07:17 UTC
+
+The authoritative current release-gate status is maintained in `docs/RELEASE-GATES.md`. The most recent fully verified application-code commit before this documentation refresh was `cad0a4c7b155f0b02f7bf44732bbe790f76ba28b`:
+- 69 unit tests and 23 PostgreSQL/production-HTTP integration tests passed.
+- Dependency audit reported zero vulnerabilities.
+- Prisma validation, isolated migrations, least-privilege role setup, isolated backup/restore, lint, TypeScript and production build passed.
+- Session activity timestamps in the future are rejected by tenant, owner and `/api/auth/me` authorization paths.
+- Email-contact confirmation is single-use and rechecks enabled state at the database write boundary.
+- PR #5 remains open and Draft; the platform remains deployment blocked. The CI evidence is not production certification.
