@@ -200,10 +200,10 @@ export async function POST(request: Request) {
           pendingExpiresAt: { gt: new Date() }
         },
         data: {
-          secretCiphertext: credential.pendingSecretCiphertext,
-          secretIv: credential.pendingSecretIv,
-          secretAuthTag: credential.pendingSecretAuthTag,
-          keyVersion: credential.pendingKeyVersion,
+          secretCiphertext: credential.pendingSecretCiphertext!,
+          secretIv: credential.pendingSecretIv!,
+          secretAuthTag: credential.pendingSecretAuthTag!,
+          keyVersion: credential.pendingKeyVersion!,
           lastAcceptedStep: BigInt(acceptedStep),
           ...pendingFactorClear()
         }
