@@ -36,6 +36,7 @@ export async function GET() {
   try {
     const [products, tenants, activeLicenses, allLicenses] = await Promise.all([
       prisma.product.findMany({
+        where: { key: { in: PRODUCT_CATALOG.map(product => product.key) } },
         orderBy: { key: "asc" },
         select: {
           id: true, key: true, name: true, description: true, status: true,
