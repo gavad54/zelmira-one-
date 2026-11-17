@@ -50,3 +50,12 @@ LEADORA is distribution and sales operations; ARIANA is accounting and ERP; ARIA
 - Store encrypted backups outside the hosting provider and prove an isolated restore.
 - AI tools require allowlists, scoped identities, budgets, approval for consequential actions and audit trails.
 - No VAYRO application deployment, independent backup/restore drill, owner UAT or public commercial release is verified. Keep customer onboarding, real payments and production data collection disabled until release gates pass and the authorized owner approves release.
+
+
+## Repository implementation update — 2026-11-17
+
+The repository now includes a privileged MFA lifecycle: password login can require a short-lived MFA challenge; TOTP credentials are encrypted at rest; successful verification establishes MFA assurance on the session; recovery codes are one-time hashes; and the Persian security-settings area supports status inspection, recovery-code rotation and eligible non-privileged MFA disablement. Privileged disablement is rejected and the role is rechecked inside the transaction.
+
+The current verified PR #5 head is `5274fdf8333f5d9b0451265df7920c85436edab8`. VAYRO CI [43926257688](https://github.com/gavad54/zelmira-one-/actions/runs/43926257688), CodeQL [43926257680](https://github.com/gavad54/zelmira-one-/actions/runs/43926257680) and Dashboard Validation [43926257703](https://github.com/gavad54/zelmira-one-/actions/runs/43926257703) all completed successfully on that exact commit.
+
+Authenticator-device replacement is not yet implemented; it must use a pending encrypted secret and confirm-before-swap transaction. Production key custody, live database baseline reconciliation, external encrypted backup and restore, dedicated hosting, production email, billing, Android delivery, independently operational product integrations and owner UAT remain unverified. PR #5 remains open and draft. The platform remains **DEPLOYMENT BLOCKED — NOT RELEASED**.
