@@ -70,3 +70,17 @@ Authenticator-device replacement is not yet implemented; it must use a pending e
 - No dedicated VAYRO Railway project or Android/Gradle project exists in the current accessible workspace/repository tree.
 
 The production database baseline, least-privilege runtime identity, protected MFA key custody, external encrypted backups/restore, hosting, email, billing, independent product operations, Android release, UAT and explicit owner release approval remain separate gates. No production schema, secret, deployment or data was changed.
+
+
+## Current authoritative verification — 2026-11-17 (supersedes stale statements above)
+
+- Current PR #5 head: `353cf223f61680b625c35cec04a041f840b14c04`; PR remains open, Draft and unmerged.
+- On this exact head, VAYRO CI run [44021249035](https://github.com/gavad54/zelmira-one-/actions/runs/44021249035), Dashboard Validation run [44021249023](https://github.com/gavad54/zelmira-one-/actions/runs/44021249023), and CodeQL run [44021249114](https://github.com/gavad54/zelmira-one-/actions/runs/44021249114) all completed successfully.
+- CI evidence on this head: 68 unit tests passed; 23 PostgreSQL/HTTP integration tests passed; `npm audit` reported zero vulnerabilities; all six repository Prisma migrations applied successfully to disposable PostgreSQL 17; isolated logical backup/restore marker and migration-history checks matched; lint, TypeScript, Prisma validation, production build and dashboard validation passed.
+- Authenticator replacement is implemented in the repository. The older statement above that replacement was not implemented is superseded by the 2026-11-17 implementation note and the MFA factor-replacement tests.
+- CodeQL success confirms the analysis workflow completed and uploaded results. It does not establish that all historical code-scanning alerts are closed or accepted.
+- A fresh read-only Supabase inspection at 2026-11-17 05:36 UTC still finds 11 public tables with RLS enabled, zero estimated rows, no migration history, no client-role table grants, 11 informational RLS-without-policy notices and 10 unused-index notices. The live `Session` table lacks the newer MFA/session columns and the live database lacks MFA persistence tables; do not apply repository migrations directly until baseline reconciliation and independent backup/restore approval are complete.
+- Railway currently exposes only the existing ARIA Web and LEADORA projects; no separate VAYRO project exists. The accessible repository tree contains no Android/Gradle project.
+- No production database writes, migration, role/grant/policy changes, secrets changes, deployment, PR merge, payment activation or customer onboarding were performed.
+
+**Current release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
