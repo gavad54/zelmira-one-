@@ -32,7 +32,7 @@ Routes and helpers do not prove complete endpoint coverage, production email del
 6. Unknown entitlement, identity or authorization state fails closed.
 7. Database access is server-only; do not grant browser roles table privileges.
 
-## Product family
+## Eleven independent products
 - ARVAND: international trade, import and export.
 - CHARSU: marketplace and commerce network.
 - GANJINEH: digital stores and e-commerce.
@@ -40,10 +40,13 @@ Routes and helpers do not prove complete endpoint coverage, production email del
 - SEPEHR: cloud and digital infrastructure.
 - NAMA: website and landing-page builder.
 - PAYAM: marketing and customer growth.
-- DANA: AI intelligence and orchestration.
+- LEADORA: business management, distribution, sales, inventory and operations.
+- ARIANA: accounting, finance, tax and ERP.
+- ARIA: intelligent social, services and marketplace super-app; explicitly no accounting or ERP.
+- ARMIN MARKET: buyer requests and supplier quotations marketplace.
 
-## Independent products
-LEADORA is distribution and sales operations; ARIANA is accounting and ERP; ARIA is social, services and marketplace without accounting/ERP; ARMIN MARKET is request and supplier quotation marketplace. Keep their data stores separate. Integrate only through separately reviewed, versioned APIs. Purchasing one product must not require another.
+## Shared command plane
+DANA is the shared AI intelligence, management and orchestration command plane for the VAYRO ecosystem. It coordinates and assists the eleven independent products; it is not counted as a twelfth product or as one of the eleven standalone apps. Keep product data stores separate. Integrate only through separately reviewed, versioned APIs. Purchasing one product must not require another.
 
 ## Reliability and release boundary
 - Review migrations and test forward/rollback in isolated environments.
