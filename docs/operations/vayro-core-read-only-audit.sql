@@ -121,7 +121,7 @@ WHERE contype='f'
   AND (conrelid::regclass::text IN
        ('public."Tenant"','public."Membership"','public."License"',
         'public."AuditEvent"','public."AiGeneration"')
-       OR confrelid='public."Tenant"'::regclass)
+       OR confrelid=to_regclass('public."Tenant"'))
 ORDER BY source_table::text, constraint_name;
 
 -- 7) Migration ledger presence only. No migration rows or application data are read.
