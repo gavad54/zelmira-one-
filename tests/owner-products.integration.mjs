@@ -48,6 +48,7 @@ test("owner product configuration writes are rate limited without weakening auth
   const tokenHash = createHash("sha256").update(token).digest("hex");
   let userId;
   let productId;
+  let legacyProductId;
   let actualRateLimitKey;
 
   try {
@@ -65,7 +66,13 @@ test("owner product configuration writes are rate limited without weakening auth
     actualRateLimitKey = createHash("sha256").update("owner-products-update:" + userId).digest("hex");
 
     await db.session.create({
-      data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+      data: {
+        userId,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        assurance: "MFA",
+        mfaAuthenticatedAt: new Date()
+      }
     });
     const product = await db.product.create({
       data: {
@@ -76,6 +83,15 @@ test("owner product configuration writes are rate limited without weakening auth
       }
     });
     productId = product.id;
+    const legacyProduct = await db.product.create({
+      data: {
+        key: "DANA",
+        name: "DANA legacy catalogue row",
+        description: "Legacy row retained for audit; not an independent app",
+        status: ProductStatus.PLANNED
+      }
+    });
+    legacyProductId = legacyProduct.id;
 
     const headers = {
       Origin: origin,
@@ -83,6 +99,13 @@ test("owner product configuration writes are rate limited without weakening auth
       Cookie: `vayro_session=${token}`,
       "Content-Type": "application/json"
     };
+    const dashboardResponse = await fetch(`${origin}/api/owner/products`, { headers: { ...headers, "Content-Type": "application/json" } });
+    assert.equal(dashboardResponse.status, 200);
+    const dashboardData = await dashboardResponse.json();
+    assert.ok(!dashboardData.products.some((item) => item.key === "DANA"), "legacy DANA row must not appear as a twelfth independent app");
+    assert.equal(dashboardData.metrics.totalProducts, dashboardData.products.length, "the product metric must count only approved catalogue apps");
+    assert.equal(dashboardData.metrics.catalogSize, 11, "the dashboard must expose the approved eleven-app catalogue size");
+
     const crossOrigin = await fetch(`${origin}/api/owner/products`, {
       method: "PATCH",
       headers: { ...headers, Origin: "https://attacker.invalid" },
@@ -110,6 +133,7 @@ test("owner product configuration writes are rate limited without weakening auth
   } finally {
     if (actualRateLimitKey) await db.authRateLimit.deleteMany({ where: { keyHash: actualRateLimitKey } });
     if (productId) await db.product.deleteMany({ where: { id: productId } });
+    if (legacyProductId) await db.product.deleteMany({ where: { id: legacyProductId } });
     if (userId) {
       await db.auditEvent.deleteMany({ where: { actorUserId: userId } });
       await db.session.deleteMany({ where: { userId } });

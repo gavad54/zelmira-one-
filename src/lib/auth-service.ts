@@ -1,12 +1,26 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { Prisma, AuthTokenPurpose } from "@prisma/client";
+import { Prisma, AuthTokenPurpose, SessionAssurance } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createSessionToken, getTrustedClientAddress, hashSessionToken } from "@/lib/auth-core.mjs";
 
 export const SESSION_COOKIE = "vayro_session";
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const SESSION_IDLE_TTL_MS = 30 * 60 * 1000;
+export const SESSION_ACTIVITY_WRITE_INTERVAL_MS = 5 * 60 * 1000;
+export const MFA_ASSURANCE_TTL_MS = 12 * 60 * 60 * 1000;
+
+function hasRecentMfaAssurance(
+  assurance: SessionAssurance,
+  mfaAuthenticatedAt: Date | null,
+  now: Date
+): boolean {
+  return assurance === SessionAssurance.MFA &&
+    mfaAuthenticatedAt instanceof Date &&
+    mfaAuthenticatedAt.getTime() <= now.getTime() &&
+    mfaAuthenticatedAt.getTime() > now.getTime() - MFA_ASSURANCE_TTL_MS;
+}
 export function sha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }
@@ -65,10 +79,22 @@ export async function sendActionEmail(to: string, subject: string, url: string, 
     html: '<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;line-height:2"><h2>' + subject + '</h2><p>' + description + '</p><p><a href="' + safeUrl + '">ادامه در وایرو</a></p><p>اگر این درخواست را انجام نداده‌اید، پیام را نادیده بگیرید.</p></div>'
   });
 }
-export async function issueSession(userId: string) {
+export async function issueSession(
+  userId: string,
+  assurance: SessionAssurance = SessionAssurance.PASSWORD
+) {
   const token = createSessionToken();
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
-  await prisma.session.create({ data: { userId, tokenHash: hashSessionToken(token), expiresAt } });
+  const mfaAuthenticatedAt = assurance === SessionAssurance.MFA ? new Date() : null;
+  await prisma.session.create({
+    data: {
+      userId,
+      tokenHash: hashSessionToken(token),
+      expiresAt,
+      assurance,
+      mfaAuthenticatedAt
+    }
+  });
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true, secure: process.env.NODE_ENV === "production",
     sameSite: "lax", path: "/", expires: expiresAt
@@ -83,12 +109,82 @@ export async function clearSessionCookie() {
 export async function currentSession() {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token || !/^[a-f0-9]{64}$/.test(token)) return null;
+  const now = new Date();
   const session = await prisma.session.findUnique({
     where: { tokenHash: hashSessionToken(token) },
-    include: { user: { select: { id: true, email: true, displayName: true, platformRole: true, emailVerifiedAt: true, disabledAt: true } } }
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          displayName: true,
+          platformRole: true,
+          emailVerifiedAt: true,
+          disabledAt: true,
+          memberships: {
+            where: {
+              role: { in: ["OWNER", "ADMIN"] },
+              tenant: { status: "ACTIVE" }
+            },
+            select: { id: true }
+          }
+        }
+      }
+    }
   });
-  if (!session || session.expiresAt.getTime() <= Date.now() || session.user.disabledAt) return null;
-  return { sessionId: session.id, user: session.user };
+  if (
+    !session ||
+    !(session.createdAt instanceof Date) ||
+    !(session.expiresAt instanceof Date) ||
+    session.revokedAt !== null ||
+    session.expiresAt.getTime() <= now.getTime() ||
+    !session.user.emailVerifiedAt ||
+    session.user.disabledAt
+  ) return null;
+
+  // Existing sessions with NULL lastSeenAt use their creation time as the
+  // initial activity baseline. Idle sessions are revoked server-side.
+  const lastActivityAt = session.lastSeenAt instanceof Date ? session.lastSeenAt : session.createdAt;
+  // Reject impossible future activity timestamps; otherwise the negative idle
+  // age can keep an otherwise idle session alive until its absolute expiry.
+  if (lastActivityAt.getTime() > now.getTime()) return null;
+  if (now.getTime() - lastActivityAt.getTime() > SESSION_IDLE_TTL_MS) {
+    await prisma.session.updateMany({
+      where: { id: session.id, revokedAt: null },
+      data: { revokedAt: now }
+    });
+    return null;
+  }
+
+  // Avoid a database write on every request while still refreshing activity
+  // often enough that the 30-minute idle window remains meaningful.
+  if (now.getTime() - lastActivityAt.getTime() >= SESSION_ACTIVITY_WRITE_INTERVAL_MS) {
+    const touched = await prisma.session.updateMany({
+      where: { id: session.id, revokedAt: null, expiresAt: { gt: now } },
+      data: { lastSeenAt: now }
+    });
+    if (touched.count !== 1) return null;
+  }
+
+  const requiresMfa =
+    session.user.platformRole === "OWNER" ||
+    session.user.platformRole === "PLATFORM_ADMIN" ||
+    session.user.memberships.length > 0;
+  if (requiresMfa && !hasRecentMfaAssurance(session.assurance, session.mfaAuthenticatedAt, now)) {
+    return null;
+  }
+
+  return {
+    sessionId: session.id,
+    user: {
+      id: session.user.id,
+      email: session.user.email,
+      displayName: session.user.displayName,
+      platformRole: session.user.platformRole,
+      emailVerifiedAt: session.user.emailVerifiedAt,
+      disabledAt: session.user.disabledAt
+    }
+  };
 }
 export function noStoreJson(body: unknown, status = 200) {
   return NextResponse.json(body, { status, headers: { "Cache-Control": "no-store, max-age=0", Pragma: "no-cache" } });

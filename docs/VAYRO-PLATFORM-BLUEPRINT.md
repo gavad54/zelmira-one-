@@ -20,9 +20,9 @@ Platform/control plane:
 - Product catalogue and independent product entitlements
 - Licensing, subscriptions and owner administration
 - Notifications, support, audit, policy and consent
-- DANA AI orchestration with explicit tool permissions and human approval
+- DANA shared AI orchestration with explicit tool permissions and human approval
 
-Specialist family:
+Eleven independent specialist apps:
 - ARVAND: international trade and logistics workflows
 - CHARSU: marketplace and discovery
 - GANJINEH: e-commerce storefronts
@@ -30,13 +30,12 @@ Specialist family:
 - SEPEHR: cloud services and infrastructure controls
 - NAMA: website and landing-page builder
 - PAYAM: marketing, CRM campaigns and verified referral attribution
-- DANA: AI assistant and orchestration
-
-Independent products remain independent:
 - LEADORA: distribution, sales, inventory and commercial operations
-- ARIANA: accounting, finance and ERP
+- ARIANA: accounting, finance, tax and ERP
 - ARIA: social, services, listings and marketplace; explicitly no accounting or ERP
 - ARMIN MARKET: buyer requests and supplier quotations
+
+DANA is the shared AI intelligence, management and orchestration command plane for the eleven apps. It is not counted as an independent app or as a twelfth product.
 
 ## Broader needs coverage
 Treat the following as product opportunity domains, not a promise to launch every service in one release:

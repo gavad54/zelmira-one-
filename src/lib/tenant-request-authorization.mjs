@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { authorizeTenantAction } from "./authorization.mjs";
 
 const denied = Object.freeze({ authorized: false });
+const SESSION_IDLE_TTL_MS = 30 * 60 * 1000;
+const SESSION_ACTIVITY_WRITE_INTERVAL_MS = 5 * 60 * 1000;
 
 /**
  * Authorize a tenant request using a hashed opaque session token and
@@ -27,6 +29,7 @@ export async function authorizeTenantRequest({
     Number.isNaN(now.getTime()) ||
     !db?.session ||
     typeof db.session.findUnique !== "function" ||
+    typeof db.session.updateMany !== "function" ||
     !db?.membership ||
     typeof db.membership.findUnique !== "function"
   ) {
@@ -42,6 +45,9 @@ export async function authorizeTenantRequest({
 
     if (
       !session ||
+      typeof session.id !== "string" ||
+      !(session.createdAt instanceof Date) ||
+      session.revokedAt !== null ||
       !(session.expiresAt instanceof Date) ||
       session.expiresAt.getTime() <= now.getTime() ||
       !session.user ||
@@ -50,6 +56,33 @@ export async function authorizeTenantRequest({
       !session.user.emailVerifiedAt || session.user.disabledAt !== null
     ) {
       return denied;
+    }
+
+    const lastActivityAt = session.lastSeenAt instanceof Date ? session.lastSeenAt : session.createdAt;
+    // Future activity values indicate corrupted or skewed session state.
+    // Revoke the session rather than merely denying this request.
+    if (lastActivityAt.getTime() > now.getTime()) {
+      await db.session.updateMany({
+        where: { id: session.id, revokedAt: null },
+        data: { revokedAt: now }
+      });
+      return denied;
+    }
+
+    if (now.getTime() - lastActivityAt.getTime() > SESSION_IDLE_TTL_MS) {
+      await db.session.updateMany({
+        where: { id: session.id, revokedAt: null },
+        data: { revokedAt: now }
+      });
+      return denied;
+    }
+
+    if (now.getTime() - lastActivityAt.getTime() >= SESSION_ACTIVITY_WRITE_INTERVAL_MS) {
+      const touched = await db.session.updateMany({
+        where: { id: session.id, revokedAt: null, expiresAt: { gt: now } },
+        data: { lastSeenAt: now }
+      });
+      if (touched.count !== 1) return denied;
     }
 
     const membership = await db.membership.findUnique({
@@ -70,6 +103,16 @@ export async function authorizeTenantRequest({
       membership.tenant.status !== "ACTIVE"
     ) {
       return denied;
+    }
+
+    if (membership.role === "OWNER" || membership.role === "ADMIN") {
+      const mfaAuthenticatedAt = session.mfaAuthenticatedAt;
+      const hasRecentMfa =
+        session.assurance === "MFA" &&
+        mfaAuthenticatedAt instanceof Date &&
+        mfaAuthenticatedAt.getTime() <= now.getTime() &&
+        mfaAuthenticatedAt.getTime() > now.getTime() - 12 * 60 * 60 * 1000;
+      if (!hasRecentMfa) return denied;
     }
 
     if (!authorizeTenantAction({

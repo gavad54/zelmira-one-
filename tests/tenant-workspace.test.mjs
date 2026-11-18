@@ -8,7 +8,13 @@ const tokenHash = createHash("sha256").update(sessionToken).digest("hex");
 const now = new Date("2026-11-06T08:00:00.000Z");
 
 const activeSession = {
+  id: "session-1",
+  createdAt: new Date("2026-11-06T07:30:00.000Z"),
+  lastSeenAt: new Date("2026-11-06T07:30:00.000Z"),
+  revokedAt: null,
   expiresAt: new Date("2026-11-07T08:00:00.000Z"),
+  assurance: "MFA",
+  mfaAuthenticatedAt: new Date("2026-11-06T07:00:00.000Z"),
   user: { id: "user-1", emailVerifiedAt: new Date("2026-11-05T08:00:00.000Z"), disabledAt: null }
 };
 const activeMembership = {
@@ -39,13 +45,17 @@ const activeTenant = {
 };
 
 function makeDb({ session = activeSession, membership = activeMembership, tenant = activeTenant, tenantError } = {}) {
-  const calls = { session: [], membership: [], tenant: [] };
+  const calls = { session: [], membership: [], tenant: [], sessionUpdates: [] };
   return {
     calls,
     session: {
       async findUnique(args) {
         calls.session.push(args);
         return session;
+      },
+      async updateMany(args) {
+        calls.sessionUpdates.push(args);
+        return { count: 1 };
       }
     },
     membership: {

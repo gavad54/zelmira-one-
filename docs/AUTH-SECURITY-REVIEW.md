@@ -81,3 +81,64 @@ IP-based throttling must not trust an arbitrary `X-Forwarded-For` value. The app
 - Unit tests: 43 passed / 0 failed. PostgreSQL and production HTTP integration tests: 15 passed / 0 failed. The enforced npm audit reported 0 vulnerabilities; lint, typecheck, Prisma migration in isolated PostgreSQL and production build passed.
 - IP-only throttling now requires an explicit `TRUSTED_PROXY_HOPS` setting and parses the first untrusted hop from the right. Until the real ingress chain is verified, IP-only throttles are skipped; account/email/token-specific throttles remain active. The variable is intentionally unset in the example environment.
 - This change does not verify any live hosting proxy configuration and does not close production security review, MFA, tenant authorization coverage, or release gates.
+
+
+## Verification update — MFA cryptographic core (2026-11-10)
+
+- Added an isolated Node.js MFA cryptographic module using RFC 6238 TOTP (SHA-1, six digits, 30-second steps), a 160-bit random Base32 secret, bounded clock drift, constant-time code comparison and a caller-supplied monotonic replay watermark.
+- TOTP secrets can be protected at rest with AES-256-GCM using a separately provisioned 32-byte hexadecimal `VAYRO_MFA_ENCRYPTION_KEY`; each encryption uses a fresh 96-bit IV and authenticated 128-bit tag. The module fails closed when the key is missing or malformed.
+- Unit tests cover the RFC 6238 reference vector, drift and replay behavior, malformed inputs, encryption/decryption, authentication-tag tampering and authenticator URI encoding.
+- **This is not end-to-end MFA.** The helper is not yet connected to the Prisma schema, login challenge, session lifecycle, enrollment/disable endpoints, recovery codes, rate limiting, audit events or owner-route enforcement. No MFA encryption key has been provisioned. Do not treat owner accounts as MFA-protected and do not deploy this helper as an active control.
+- Next implementation slice: add versioned MFA credential/challenge/recovery-code persistence and transactional one-time verification, then integrate login and privileged-route enforcement with a tested owner recovery path. Production secret provisioning remains a separately authorized owner action.
+
+
+## Verification update — MFA persistence foundation (2026-11-11)
+
+- Added versioned Prisma persistence for one encrypted TOTP credential per user, short-lived login challenge hashes, and one-time recovery-code hashes.
+- Added a forward-only migration. The three MFA tables have row-level security enabled, no client policies, and no table privileges granted to `anon`, `authenticated` or `service_role`. They are intended for server-only access through the application database role.
+- The credential stores a monotonic `lastAcceptedStep` watermark. The integration test verifies an atomic conditional update accepts a step once, including a concurrent replay attempt. Challenge and recovery-code consumption are likewise tested as one-time conditional updates.
+- The integration test also verifies expiry rejection, per-user credential uniqueness, RLS enablement, absence of client policies and absence of client-role SELECT/INSERT/UPDATE/DELETE grants in isolated CI PostgreSQL.
+- **This is persistence groundwork, not end-to-end MFA.** Login still does not issue or validate MFA challenges; enrollment, verification, recovery, audit events, rate limits, owner/administrator enforcement and a tested recovery procedure remain unimplemented. The encryption key has not been provisioned.
+- This migration is included only in the repository's disposable CI migration history. It has not been applied to VAYRO-CORE or any production database.
+
+
+## Verification update — constant-work login password verification (2026-11-12)
+
+- On PR #5 branch head `393c2f53dc2e5024a386ae29bfc18ddb698b2cf0`, login password verification was changed to run the approved scrypt verifier for missing or unsupported stored hashes using a fixed dummy hash. The result can authenticate only when a supported stored hash exists and matches; the dummy hash is never sufficient to issue a session.
+- The regression test was added first and observed failing on workflow run [43182038789](https://github.com/gavad54/zelmira-one-/actions/runs/43182038789) because the verifier was not yet implemented. After implementation and declaration updates, the unit test passed.
+- Final code-head evidence: [VAYRO CI 43182818211](https://github.com/gavad54/zelmira-one-/actions/runs/43182818211), [Dashboard Validation 43182818183](https://github.com/gavad54/zelmira-one-/actions/runs/43182818183), and [CodeQL 43182818383](https://github.com/gavad54/zelmira-one-/actions/runs/43182818383) all completed successfully on `393c2f53dc2e5024a386ae29bfc18ddb698b2cf0`. CI reported 55/55 unit tests, 19/19 PostgreSQL/production-HTTP integration tests, and 0 dependency vulnerabilities; lint, typecheck, Prisma validation/migrations in isolated PostgreSQL and production build passed.
+- **This does not close privileged MFA.** PR #5 still contains the older password-only session-issuance route for privileged users. The current `main` branch contains the MFA challenge gate and related endpoints, while PR #5 remains divergent and 17 commits behind `main` at this inspection. Keep PR #5 open/draft and do not merge until its authentication/session/database-role changes are reconciled with the tested `main` implementation.
+- No production secret, database, deployment or public release was changed by this work.
+
+
+## Verification update — privileged MFA lifecycle management (2026-11-16)
+
+- Added same-origin `POST /api/auth/mfa/manage` for sensitive MFA lifecycle operations. It requires an existing valid session, a fresh six-digit TOTP value, per-session database-backed throttling and atomic replay-watermark advancement.
+- Recovery-code regeneration replaces the previous set transactionally, stores only SHA-256 hashes, returns ten new codes once, records an audit event, and revokes every other active session while retaining the current reauthenticated session.
+- MFA disablement requires both the current password and a fresh TOTP value. It is rejected for platform OWNER/PLATFORM_ADMIN and active-tenant OWNER/ADMIN accounts; mandatory privileged MFA cannot be removed through this endpoint. For accounts no longer privileged, successful disablement deletes credential/recovery-code records, revokes all sessions, clears the session cookie and writes an audit event.
+- Added production-mode HTTP/PostgreSQL integration coverage for cross-origin rejection, recovery-code replacement, privileged disable denial, non-privileged disable, credential deletion and session revocation.
+- This change does not implement authenticator-device replacement/rotation. A safe factor replacement requires pending encrypted credential state and a confirm-before-swap workflow; it remains a separate engineering item.
+- No live database, production secret, hosting configuration, deployment or public release was changed. CI on the resulting commit must pass before this code is treated as repository-verified.
+
+
+## Verification addendum — 2026-11-17
+
+- Latest verified application-code head: `5274fdf8333f5d9b0451265df7920c85436edab8`. Subsequent documentation-only commits advanced the PR head to `3e0632cdf6214a690d10571a6aa8c48fba35df90`; workflows for that documentation head were still running at the time of this note. PR #5 VAYRO CI [43926257688](https://github.com/gavad54/zelmira-one-/actions/runs/43926257688), CodeQL [43926257680](https://github.com/gavad54/zelmira-one-/actions/runs/43926257680) and Dashboard Validation [43926257703](https://github.com/gavad54/zelmira-one-/actions/runs/43926257703) completed successfully on that exact head.
+- MFA lifecycle now includes privileged login challenge enforcement, TOTP enrollment and verification, MFA-assured sessions, hashed one-time recovery codes, Persian security settings, recovery-code rotation and controlled disablement for non-privileged accounts.
+- Recovery-code rotation consumes a fresh TOTP step atomically, replaces the prior recovery set with hashes, returns the new codes once, records an audit event and revokes other active sessions.
+- Disablement requires password plus fresh TOTP, rejects platform OWNER/PLATFORM_ADMIN and active tenant OWNER/ADMIN roles, removes credentials/recovery codes only for eligible non-privileged accounts, revokes sessions and clears the current cookie. Privileged status is rechecked inside the transaction to reduce role-change race risk.
+- **Authenticator-device replacement is not implemented.** Required safe design: store a pending encrypted secret with a short expiry; verify it with a new-factor TOTP; atomically promote it only after successful confirmation; preserve the old factor until then; enforce replay/rate limits; audit begin/confirm/expiry; and define recovery-code/session rotation behavior. Do not treat an unconfirmed pending factor as active.
+- Production key custody, key rotation/recovery, secure-cookie verification on the deployed host, trusted-proxy topology, complete endpoint authorization review and independent security assessment remain open. CI success is repository evidence, not production certification.
+
+
+## Verification addendum — 2026-11-17 (authenticator replacement)
+
+- Added a confirm-before-swap authenticator replacement endpoint. Starting replacement requires a fresh TOTP from the active factor; the new secret is encrypted at rest in separate pending fields and expires after ten minutes. The existing active secret is never overwritten during setup.
+- Confirmation requires a valid code from the pending factor. A single transaction promotes the pending envelope, clears pending columns, updates the current session's MFA assurance, rotates recovery codes, revokes other active sessions and writes an audit event. Conditional updates prevent stale/replayed pending state from being promoted.
+- The endpoint is same-origin, no-store, session-bound and rate-limited. It rechecks session validity inside the database transaction. Invalid new-factor proof leaves the original active factor intact.
+- The Persian security page displays the temporary setup secret/provisioning URI and requires explicit new-factor confirmation. The new recovery-code set is shown once.
+- Integration test coverage includes invalid old-factor proof, invalid new-factor confirmation, successful factor promotion, pending-state cleanup, recovery-code rotation, current/other session handling, audit persistence and replay rejection.
+- Production key custody and recovery remain open. `VAYRO_MFA_ENCRYPTION_KEY` must be provisioned as a unique 32-byte hex key in protected runtime secrets and backed up under a separate controlled procedure. No real key was created, viewed, or changed.
+- The actual deployed application database identity remains unverified. The read-only Supabase catalog session ran as `postgres` with BYPASSRLS; do not assume that is the application's runtime identity, and do not use an owner/superuser connection for the application.
+
+CI success is repository-level evidence only; it does not certify live authentication or production security.

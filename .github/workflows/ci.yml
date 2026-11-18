@@ -2,9 +2,9 @@ name: VAYRO CI
 
 on:
   push:
-    branches: [main, brand/vayro-name-only]
+    branches: [main, brand/vayro-name-only, feature/vayro-real-dashboard]
   pull_request:
-    branches: [main]
+    branches: [main, experiment/cloudflare-free-hosting-audit]
 
 permissions:
   contents: read
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:17-alpine
         env:
           POSTGRES_USER: ci
           POSTGRES_PASSWORD: ci
@@ -42,19 +42,56 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-      # Enforce the dependency-security gate: moderate, high and critical advisories fail CI.
-      - name: Enforce locked dependency security audit
-        run: npm audit --audit-level=moderate
       - name: Run unit tests
         run: npm test
       - name: Generate Prisma client
         run: npx prisma generate
       - name: Validate Prisma schema
         run: npx prisma validate
-      - name: Prepare least-privilege roles in isolated PostgreSQL
+      - name: Prepare client roles for privilege-boundary assertions
         run: psql "postgresql://ci:ci@localhost:5432/vayro_ci" -v ON_ERROR_STOP=1 -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN;'
       - name: Apply real Prisma migration history
         run: npx prisma migrate deploy
+      - name: Assert complete VAYRO migration and privilege contract
+        run: psql "postgresql://ci:ci@localhost:5432/vayro_ci" -v ON_ERROR_STOP=1 -f prisma/verification/assert-migration-contract.sql
+      - name: Verify migration deployment is idempotent
+        run: npx prisma migrate deploy
+      # Rehearse adoption of an existing legacy schema without replaying init.
+      # This database is disposable and exists only inside this GitHub Actions job.
+      - name: Rehearse safe baseline against a pre-existing schema
+        shell: bash
+        run: |
+          set -euo pipefail
+          admin_url="postgresql://ci:ci@localhost:5432/postgres"
+          baseline_url="postgresql://ci:ci@localhost:5432/vayro_baseline_ci"
+          psql "$admin_url" -v ON_ERROR_STOP=1 -c "CREATE DATABASE vayro_baseline_ci"
+          psql "$baseline_url" -v ON_ERROR_STOP=1 -f prisma/migrations/20261106055500_init_vayro_core/migration.sql
+          DATABASE_URL="$baseline_url" npx prisma migrate resolve --applied 20261106055500_init_vayro_core
+          DATABASE_URL="$baseline_url" npx prisma migrate deploy
+          psql "$baseline_url" -v ON_ERROR_STOP=1 -f prisma/verification/assert-migration-contract.sql
+          DATABASE_URL="$baseline_url" npx prisma migrate deploy
+          psql "$admin_url" -v ON_ERROR_STOP=1 -c "DROP DATABASE vayro_baseline_ci"
+      # Exercise a complete logical backup/restore on the isolated CI database.
+      # This does not replace encrypted off-site production backups.
+      - name: Verify isolated PostgreSQL backup and restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          pg_url="postgresql://ci:ci@localhost:5432/vayro_ci"
+          restore_url="postgresql://ci:ci@localhost:5432/vayro_restore_ci"
+          psql "$pg_url" -v ON_ERROR_STOP=1 -c "INSERT INTO \"AuthRateLimit\" (\"keyHash\", \"windowStartedAt\", \"count\", \"expiresAt\") VALUES (repeat('a', 64), now(), 1, now() + interval '1 hour') ON CONFLICT (\"keyHash\") DO UPDATE SET \"count\" = 1;"
+          pg_dump "$pg_url" --format=custom --no-owner --file=/tmp/vayro-ci-backup.dump
+          psql "$pg_url" -v ON_ERROR_STOP=1 -c "CREATE DATABASE vayro_restore_ci"
+          pg_restore --exit-on-error --no-owner --dbname="$restore_url" /tmp/vayro-ci-backup.dump
+          source_marker="$(psql "$pg_url" -Atc "SELECT count(*) FROM \"AuthRateLimit\" WHERE \"keyHash\" = repeat('a', 64)")"
+          restored_marker="$(psql "$restore_url" -Atc "SELECT count(*) FROM \"AuthRateLimit\" WHERE \"keyHash\" = repeat('a', 64)")"
+          source_migrations="$(psql "$pg_url" -Atc 'SELECT count(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL')"
+          restored_migrations="$(psql "$restore_url" -Atc 'SELECT count(*) FROM "_prisma_migrations" WHERE "finished_at" IS NOT NULL')"
+          test "$source_marker" = "1"
+          test "$restored_marker" = "1"
+          test "$source_migrations" = "$restored_migrations"
+          psql "$pg_url" -v ON_ERROR_STOP=1 -c "DROP DATABASE vayro_restore_ci"
+          rm -f /tmp/vayro-ci-backup.dump
       - name: Lint
         run: npm run lint
       - name: Typecheck
@@ -65,3 +102,14 @@ jobs:
           NEXT_PUBLIC_APP_URL: http://localhost:3000
       - name: Run PostgreSQL and production HTTP integration tests
         run: npm run test:integration
+
+      # Run the full validation suite before the strict dependency gate so
+      # migration, baseline, restore, and application failures remain visible.
+      # This does not waive or lower the audit threshold.
+      # Diagnostic only: prove whether advisories affect runtime dependencies.
+      # The strict full-tree audit below remains mandatory and unchanged.
+      - name: Audit production dependency graph
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: Enforce locked dependency security audit
+        run: npm audit --audit-level=moderate

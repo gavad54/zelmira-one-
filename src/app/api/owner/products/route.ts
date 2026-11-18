@@ -6,6 +6,7 @@ import { authorizeOwnerSession } from "@/lib/owner-session.mjs";
 import { PRODUCT_CATALOG, validateProductConfiguration } from "@/lib/product-catalog.mjs";
 import { allowAttempt, noStoreJson, sha256 } from "@/lib/auth-service";
 import { prisma } from "@/lib/prisma";
+import { currentActiveLicenseWhere } from "@/lib/owner-metrics.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,6 +36,7 @@ export async function GET() {
   try {
     const [products, tenants, activeLicenses, allLicenses] = await Promise.all([
       prisma.product.findMany({
+        where: { key: { in: PRODUCT_CATALOG.map(product => product.key) } },
         orderBy: { key: "asc" },
         select: {
           id: true, key: true, name: true, description: true, status: true,
@@ -42,12 +44,12 @@ export async function GET() {
         }
       }),
       prisma.tenant.count(),
-      prisma.license.count({ where: { active: true, OR: [{ endsAt: null }, { endsAt: { gt: new Date() } }] } }),
+      prisma.license.count({ where: currentActiveLicenseWhere(new Date()) }),
       prisma.license.count()
     ]);
     return noStoreJson({
       products: products.map(({ _count, ...product }) => ({ ...product, licenseCount: _count.licenses })),
-      metrics: { totalProducts: products.length, totalTenants: tenants, activeLicenses, allLicenses }
+      metrics: { totalProducts: products.length, catalogSize: PRODUCT_CATALOG.length, totalTenants: tenants, activeLicenses, allLicenses }
     });
   } catch {
     return noStoreJson({ error: "dashboard_unavailable" }, 503);

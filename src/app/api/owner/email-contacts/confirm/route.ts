@@ -15,7 +15,13 @@ export async function POST(request: Request) {
       if (!record || record.consumedAt || record.expiresAt.getTime() <= Date.now() || !record.contact.enabled) return false;
       const consumed = await tx.emailContactVerificationToken.updateMany({ where: { id: record.id, consumedAt: null, expiresAt: { gt: new Date() } }, data: { consumedAt: new Date() } });
       if (consumed.count !== 1) return false;
-      await tx.emailContact.update({ where: { id: record.contactId }, data: { verifiedAt: new Date() } });
+      // Re-check enabled state in the write itself to close the race where an
+      // owner disables the contact after the token record was read.
+      const contactUpdated = await tx.emailContact.updateMany({
+        where: { id: record.contactId, enabled: true },
+        data: { verifiedAt: new Date() }
+      });
+      if (contactUpdated.count !== 1) return false;
       const account = await tx.user.findUnique({ where: { email: record.contact.email }, select: { id: true, emailVerifiedAt: true } });
       if (account && !account.emailVerifiedAt) {
         await tx.user.update({ where: { id: account.id }, data: { emailVerifiedAt: new Date() } });

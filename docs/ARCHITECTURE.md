@@ -32,7 +32,7 @@ Routes and helpers do not prove complete endpoint coverage, production email del
 6. Unknown entitlement, identity or authorization state fails closed.
 7. Database access is server-only; do not grant browser roles table privileges.
 
-## Product family
+## Eleven independent products
 - ARVAND: international trade, import and export.
 - CHARSU: marketplace and commerce network.
 - GANJINEH: digital stores and e-commerce.
@@ -40,13 +40,60 @@ Routes and helpers do not prove complete endpoint coverage, production email del
 - SEPEHR: cloud and digital infrastructure.
 - NAMA: website and landing-page builder.
 - PAYAM: marketing and customer growth.
-- DANA: AI intelligence and orchestration.
+- LEADORA: business management, distribution, sales, inventory and operations.
+- ARIANA: accounting, finance, tax and ERP.
+- ARIA: intelligent social, services and marketplace super-app; explicitly no accounting or ERP.
+- ARMIN MARKET: buyer requests and supplier quotations marketplace.
 
-## Independent products
-LEADORA is distribution and sales operations; ARIANA is accounting and ERP; ARIA is social, services and marketplace without accounting/ERP; ARMIN MARKET is request and supplier quotation marketplace. Keep their data stores separate. Integrate only through separately reviewed, versioned APIs. Purchasing one product must not require another.
+## Shared command plane
+DANA is the shared AI intelligence, management and orchestration command plane for the VAYRO ecosystem. It coordinates and assists the eleven independent products; it is not counted as a twelfth product or as one of the eleven standalone apps. Keep product data stores separate. Integrate only through separately reviewed, versioned APIs. Purchasing one product must not require another.
 
 ## Reliability and release boundary
 - Review migrations and test forward/rollback in isolated environments.
 - Store encrypted backups outside the hosting provider and prove an isolated restore.
 - AI tools require allowlists, scoped identities, budgets, approval for consequential actions and audit trails.
 - No VAYRO application deployment, independent backup/restore drill, owner UAT or public commercial release is verified. Keep customer onboarding, real payments and production data collection disabled until release gates pass and the authorized owner approves release.
+
+
+## Repository implementation update — 2026-11-17
+
+The repository now includes a privileged MFA lifecycle: password login can require a short-lived MFA challenge; TOTP credentials are encrypted at rest; successful verification establishes MFA assurance on the session; recovery codes are one-time hashes; and the Persian security-settings area supports status inspection, recovery-code rotation and eligible non-privileged MFA disablement. Privileged disablement is rejected and the role is rechecked inside the transaction.
+
+The latest verified application-code head is `5274fdf8333f5d9b0451265df7920c85436edab8`. Subsequent documentation-only commits advanced PR #5 to `3e0632cdf6214a690d10571a6aa8c48fba35df90`; CI, CodeQL and Dashboard Validation for that documentation-only head were still running at the time of this note. VAYRO CI [43926257688](https://github.com/gavad54/zelmira-one-/actions/runs/43926257688), CodeQL [43926257680](https://github.com/gavad54/zelmira-one-/actions/runs/43926257680) and Dashboard Validation [43926257703](https://github.com/gavad54/zelmira-one-/actions/runs/43926257703) all completed successfully on that exact commit.
+
+Authenticator-device replacement is not yet implemented; it must use a pending encrypted secret and confirm-before-swap transaction. Production key custody, live database baseline reconciliation, external encrypted backup and restore, dedicated hosting, production email, billing, Android delivery, independently operational product integrations and owner UAT remain unverified. PR #5 remains open and draft. The platform remains **DEPLOYMENT BLOCKED — NOT RELEASED**.
+
+
+## 2026-11-17 implementation and infrastructure verification
+
+- Added a safe TOTP authenticator replacement lifecycle: encrypted pending secret, ten-minute expiry, old-factor proof to begin, new-factor proof to confirm, atomic promotion, replay/rate-limit protection, audit events, recovery-code rotation and revocation of other sessions. The active factor remains intact until confirmation succeeds.
+- Added a Persian security-settings workflow for device replacement and one-time recovery-code display.
+- CI now uses PostgreSQL 17 and includes an isolated logical backup/restore smoke test. This validates CI restore mechanics only; no production backup or external encrypted storage is configured.
+- Fresh read-only VAYRO-CORE inspection shows 11 public tables, no data rows, RLS enabled, no client table grants and no migration history. The live schema has not yet received MFA persistence or later Session columns. The database inspection identity was `postgres` (BYPASSRLS); the application's runtime database identity remains unverified.
+- No dedicated VAYRO Railway project or Android/Gradle project exists in the current accessible workspace/repository tree.
+
+The production database baseline, least-privilege runtime identity, protected MFA key custody, external encrypted backups/restore, hosting, email, billing, independent product operations, Android release, UAT and explicit owner release approval remain separate gates. No production schema, secret, deployment or data was changed.
+
+
+## Current authoritative verification — 2026-11-17 (supersedes stale statements above)
+
+- Current PR #5 head: `353cf223f61680b625c35cec04a041f840b14c04`; PR remains open, Draft and unmerged.
+- On this exact head, VAYRO CI run [44021249035](https://github.com/gavad54/zelmira-one-/actions/runs/44021249035), Dashboard Validation run [44021249023](https://github.com/gavad54/zelmira-one-/actions/runs/44021249023), and CodeQL run [44021249114](https://github.com/gavad54/zelmira-one-/actions/runs/44021249114) all completed successfully.
+- CI evidence on this head: 68 unit tests passed; 23 PostgreSQL/HTTP integration tests passed; `npm audit` reported zero vulnerabilities; all six repository Prisma migrations applied successfully to disposable PostgreSQL 17; isolated logical backup/restore marker and migration-history checks matched; lint, TypeScript, Prisma validation, production build and dashboard validation passed.
+- Authenticator replacement is implemented in the repository. The older statement above that replacement was not implemented is superseded by the 2026-11-17 implementation note and the MFA factor-replacement tests.
+- CodeQL success confirms the analysis workflow completed and uploaded results. It does not establish that all historical code-scanning alerts are closed or accepted.
+- A fresh read-only Supabase inspection at 2026-11-17 05:36 UTC still finds 11 public tables with RLS enabled, zero estimated rows, no migration history, no client-role table grants, 11 informational RLS-without-policy notices and 10 unused-index notices. The live `Session` table lacks the newer MFA/session columns and the live database lacks MFA persistence tables; do not apply repository migrations directly until baseline reconciliation and independent backup/restore approval are complete.
+- Railway currently exposes only the existing ARIA Web and LEADORA projects; no separate VAYRO project exists. The accessible repository tree contains no Android/Gradle project.
+- No production database writes, migration, role/grant/policy changes, secrets changes, deployment, PR merge, payment activation or customer onboarding were performed.
+
+**Current release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+## Latest repository verification — 2026-11-17 07:17 UTC
+
+The authoritative current release-gate status is maintained in `docs/RELEASE-GATES.md`. The most recent fully verified application-code commit before this documentation refresh was `cad0a4c7b155f0b02f7bf44732bbe790f76ba28b`:
+- 69 unit tests and 23 PostgreSQL/production-HTTP integration tests passed.
+- Dependency audit reported zero vulnerabilities.
+- Prisma validation, isolated migrations, least-privilege role setup, isolated backup/restore, lint, TypeScript and production build passed.
+- Session activity timestamps in the future are rejected by tenant, owner and `/api/auth/me` authorization paths.
+- Email-contact confirmation is single-use and rechecks enabled state at the database write boundary.
+- PR #5 remains open and Draft; the platform remains deployment blocked. The CI evidence is not production certification.

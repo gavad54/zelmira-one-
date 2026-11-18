@@ -70,3 +70,17 @@ test("trusted proxy parsing fails closed when the chain or configuration is inva
   assert.equal(getTrustedClientAddress("203.0.113.25, 10.0.0.2", 1.5), null);
   assert.equal(getTrustedClientAddress("203.0.113.25, 10.0.0.2", Number.NaN), null);
 });
+
+test("login verification performs the approved scrypt check for unknown accounts without authenticating them", async () => {
+  const { verifyLoginPassword } = await import("../src/lib/auth-core.mjs");
+  assert.equal(typeof verifyLoginPassword, "function");
+
+  const unknownAccount = await verifyLoginPassword("a-long-and-valid-password", null);
+  assert.equal(unknownAccount, false);
+  assert.equal(await verifyLoginPassword("a-long-and-valid-password", "not-a-supported-hash"), false);
+
+  const password = "a-long-and-unique-password-42";
+  const passwordHash = await hashPassword(password);
+  assert.equal(await verifyLoginPassword(password, passwordHash), true);
+  assert.equal(await verifyLoginPassword("a-different-password-42", passwordHash), false);
+});

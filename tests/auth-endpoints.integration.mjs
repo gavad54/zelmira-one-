@@ -1,6 +1,7 @@
 import test, { before, after } from "node:test";
-import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { PrismaClient } from "@prisma/client";
+import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
+import { PrismaClient, PlatformRole, MembershipRole } from "@prisma/client";
+import { hashPassword } from "../src/lib/auth-core.mjs";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
@@ -9,6 +10,25 @@ import { setTimeout as delay } from "node:timers/promises";
 const port = 43179;
 const origin = `http://127.0.0.1:${port}`;
 const bootstrapToken = randomBytes(48).toString("hex");
+function totpCode(secret, now = Date.now()) {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let buffer = 0, bits = 0;
+  const bytes = [];
+  for (const character of secret) {
+    buffer = (buffer << 5) | alphabet.indexOf(character);
+    bits += 5;
+    if (bits >= 8) { bits -= 8; bytes.push((buffer >>> bits) & 255); }
+    buffer &= (1 << bits) - 1;
+  }
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(now / 30000)));
+  const digest = createHmac("sha1", Buffer.from(bytes)).update(counter).digest();
+  const offset = digest[digest.length - 1] & 15;
+  const binary = ((digest[offset] & 127) << 24) | ((digest[offset + 1] & 255) << 16) |
+    ((digest[offset + 2] & 255) << 8) | (digest[offset + 3] & 255);
+  return String(binary % 1000000).padStart(6, "0");
+}
+
 let server;
 let serverError = "";
 
@@ -17,7 +37,7 @@ before(async () => {
     process.execPath,
     ["server.js"],
     {
-      env: { ...process.env, NODE_ENV: "production", PORT: String(port), HOSTNAME: "127.0.0.1", NEXT_PUBLIC_APP_URL: origin, VAYRO_OWNER_BOOTSTRAP_TOKEN: bootstrapToken, EMAIL_PROVIDER: "disabled-for-test" },
+      env: { ...process.env, NODE_ENV: "production", PORT: String(port), HOSTNAME: "127.0.0.1", NEXT_PUBLIC_APP_URL: origin, VAYRO_OWNER_BOOTSTRAP_TOKEN: bootstrapToken, VAYRO_MFA_ENCRYPTION_KEY: "a".repeat(64), EMAIL_PROVIDER: "disabled-for-test" },
       cwd: join(process.cwd(), ".next/standalone"),
       stdio: ["ignore", "ignore", "pipe"]
     }
@@ -59,8 +79,17 @@ test("liveness and database readiness are independently verified", async () => {
   assert.equal((await live.json()).status, "alive");
 
   const ready = await fetch(`${origin}/api/ready`);
-  assert.equal(ready.status, 200);
-  assert.equal((await ready.json()).checks.database, "ok");
+  assert.equal(ready.status, 503);
+  const readiness = await ready.json();
+  assert.equal(readiness.status, "not_ready");
+  // CI connects with the PostgreSQL bootstrap superuser; readiness must fail closed until a dedicated runtime role is tested.
+  assert.equal(readiness.checks.database, "not_configured");
+  // CI applies all six migrations to its disposable database; schema must be complete.
+  assert.equal(readiness.checks.schema, "ok");
+  assert.equal(readiness.checks.mfa, "ok");
+  assert.equal("roleName" in readiness.checks, false);
+  assert.equal(readiness.checks.rateLimit, "not_configured");
+  assert.equal(readiness.checks.email, "not_configured");
 });
 
 test("authentication mutation endpoints reject cross-origin requests", async () => {
@@ -152,6 +181,20 @@ test("valid session is returned by /me and revoked by HTTP logout", async () => 
       data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
     });
 
+    await db.session.update({
+      where: { id: session.id },
+      data: { lastSeenAt: new Date(Date.now() + 60 * 1000) }
+    });
+    const futureActivity = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${token}` }
+    });
+    assert.equal(futureActivity.status, 401);
+    assert.deepEqual(await futureActivity.json(), { authenticated: false });
+
+    await db.session.update({
+      where: { id: session.id },
+      data: { lastSeenAt: new Date() }
+    });
     const me = await fetch(`${origin}/api/auth/me`, {
       headers: { Cookie: `vayro_session=${token}` }
     });
@@ -228,15 +271,22 @@ test("tenant HTTP APIs enforce authentication, verified email, membership and cr
     userId = user.id;
 
     await db.session.create({
-      data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+      data: {
+        userId,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        assurance: "MFA",
+        mfaAuthenticatedAt: new Date()
+      }
     });
     const cookie = `vayro_session=${token}`;
 
     const unverifiedList = await fetch(`${origin}/api/tenants`, {
       headers: { Cookie: cookie }
     });
-    assert.equal(unverifiedList.status, 403);
-    assert.deepEqual(await unverifiedList.json(), { error: "email_verification_required" });
+    assert.equal(unverifiedList.status, 401);
+    assert.deepEqual(await unverifiedList.json(), { error: "unauthorized" });
+    assert.match(unverifiedList.headers.get("cache-control") ?? "", /no-store/);
 
     await db.user.update({
       where: { id: userId },
@@ -361,7 +411,9 @@ test("tenant HTTP APIs enforce authentication, verified email, membership and cr
       data: {
         userId: adminUserId,
         tokenHash: adminTokenHash,
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        assurance: "MFA",
+        mfaAuthenticatedAt: new Date()
       }
     });
     const adminCookie = `vayro_session=${adminToken}`;
@@ -614,7 +666,13 @@ test("tenant members endpoint requires OWNER or ADMIN and never exposes credenti
 
     await db.session.createMany({
       data: [
-        { userId: ownerId, tokenHash: ownerTokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
+        {
+          userId: ownerId,
+          tokenHash: ownerTokenHash,
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+          assurance: "MFA",
+          mfaAuthenticatedAt: new Date()
+        },
         { userId: viewerId, tokenHash: viewerTokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
       ]
     });
@@ -664,6 +722,351 @@ test("tenant members endpoint requires OWNER or ADMIN and never exposes credenti
       await db.auditEvent.deleteMany({ where: { actorUserId: { in: userIds } } });
       await db.user.deleteMany({ where: { id: { in: userIds } } });
     }
+    await db.$disconnect();
+  }
+});
+
+
+test("session identity endpoint denies an unverified account even if a session row exists", async () => {
+  const db = new PrismaClient();
+  const suffix = randomUUID();
+  const token = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  let userId;
+
+  try {
+    await db.$connect();
+    const user = await db.user.create({
+      data: {
+        email: `unverified-session-${suffix}@example.invalid`,
+        passwordHash: "integration-test-only-hash",
+        displayName: "Unverified Session Test"
+      }
+    });
+    userId = user.id;
+    await db.session.create({
+      data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+    });
+
+    const response = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${token}` }
+    });
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { authenticated: false });
+  } finally {
+    if (userId) {
+      await db.session.deleteMany({ where: { userId } });
+      await db.user.deleteMany({ where: { id: userId } });
+    }
+    await db.$disconnect();
+  }
+});
+
+
+test("session identity endpoint denies expired sessions and disabled accounts", async () => {
+  const db = new PrismaClient();
+  const suffix = randomUUID();
+  const token = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  let userId;
+
+  try {
+    await db.$connect();
+    const user = await db.user.create({
+      data: {
+        email: `inactive-session-${suffix}@example.invalid`,
+        passwordHash: "integration-test-only-hash",
+        displayName: "Inactive Session Test",
+        emailVerifiedAt: new Date()
+      }
+    });
+    userId = user.id;
+
+    await db.session.create({
+      data: {
+        userId,
+        tokenHash,
+        expiresAt: new Date(Date.now() - 1000)
+      }
+    });
+
+    const expired = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${token}` }
+    });
+    assert.equal(expired.status, 401);
+    assert.deepEqual(await expired.json(), { authenticated: false });
+    assert.match(expired.headers.get("cache-control") ?? "", /no-store/);
+
+    await db.session.update({
+      where: { tokenHash },
+      data: { expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+    });
+    await db.user.update({
+      where: { id: userId },
+      data: { disabledAt: new Date() }
+    });
+
+    const disabled = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${token}` }
+    });
+    assert.equal(disabled.status, 401);
+    assert.deepEqual(await disabled.json(), { authenticated: false });
+    assert.match(disabled.headers.get("cache-control") ?? "", /no-store/);
+  } finally {
+    if (userId) {
+      await db.session.deleteMany({ where: { userId } });
+      await db.user.deleteMany({ where: { id: userId } });
+    }
+    await db.$disconnect();
+  }
+});
+
+test("privileged password login fails closed and old password sessions are rejected", async () => {
+  const db = new PrismaClient();
+  const suffix = randomUUID();
+  const password = "VAYRO-integration-password-2026";
+  const passwordHash = await hashPassword(password);
+  const ownerEmail = `owner-mfa-gate-${suffix}@example.invalid`;
+  const adminEmail = `tenant-admin-mfa-gate-${suffix}@example.invalid`;
+  const ordinaryEmail = `ordinary-mfa-gate-${suffix}@example.invalid`;
+  const loginRateLimitKeys = [ownerEmail, adminEmail, ordinaryEmail].map(email =>
+    createHash("sha256").update("login-email:identity:" + email.toLowerCase()).digest("hex")
+  );
+  let ownerId;
+  let adminId;
+  let ordinaryId;
+  let tenantId;
+
+  try {
+    await db.$connect();
+    const owner = await db.user.create({
+      data: {
+        email: ownerEmail,
+        passwordHash,
+        displayName: "MFA Gate Owner",
+        platformRole: PlatformRole.OWNER,
+        emailVerifiedAt: new Date()
+      }
+    });
+    ownerId = owner.id;
+
+    const admin = await db.user.create({
+      data: {
+        email: adminEmail,
+        passwordHash,
+        displayName: "MFA Gate Tenant Admin",
+        emailVerifiedAt: new Date()
+      }
+    });
+    adminId = admin.id;
+
+    const tenant = await db.tenant.create({
+      data: { name: "MFA Gate Tenant", slug: `mfa-gate-${suffix}` }
+    });
+    tenantId = tenant.id;
+    await db.membership.create({
+      data: { userId: adminId, tenantId, role: MembershipRole.ADMIN }
+    });
+
+    const ordinary = await db.user.create({
+      data: {
+        email: ordinaryEmail,
+        passwordHash,
+        displayName: "MFA Gate Ordinary User",
+        emailVerifiedAt: new Date()
+      }
+    });
+    ordinaryId = ordinary.id;
+
+    for (const [email, userId] of [[ownerEmail, ownerId], [adminEmail, adminId]]) {
+      const response = await fetch(`${origin}/api/auth/login`, {
+        method: "POST",
+        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      assert.equal(response.status, 200);
+      const login = await response.json();
+      assert.equal(login.authenticated, false);
+      assert.equal(login.mfaRequired, true);
+      assert.equal(login.mfaSetupRequired, true);
+      assert.match(login.challengeToken, /^[a-f0-9]{64}$/);
+      assert.equal(await db.session.count({ where: { userId } }), 0);
+
+      const enrollmentResponse = await fetch(`${origin}/api/auth/mfa/enroll`, {
+        method: "POST",
+        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeToken: login.challengeToken })
+      });
+      assert.equal(enrollmentResponse.status, 200);
+      const enrollment = await enrollmentResponse.json();
+      assert.match(enrollment.secret, /^[A-Z2-7]{32}$/);
+      assert.match(enrollment.otpauthUri, /^otpauth:\/\/totp\//);
+
+      const verifyResponse = await fetch(`${origin}/api/auth/mfa/verify`, {
+        method: "POST",
+        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeToken: login.challengeToken, code: totpCode(enrollment.secret) })
+      });
+      assert.equal(verifyResponse.status, 200);
+      const verified = await verifyResponse.json();
+      assert.equal(verified.authenticated, true);
+      assert.equal(verified.recoveryCodes.length, 10);
+      assert.match(verifyResponse.headers.get("set-cookie") ?? "", /vayro_session=/);
+      const credential = await db.mfaCredential.findUnique({ where: { userId } });
+      assert.ok(credential?.enabledAt instanceof Date);
+      assert.equal(await db.mfaRecoveryCode.count({ where: { userId, usedAt: null } }), 10);
+      const session = await db.session.findFirst({ where: { userId, revokedAt: null } });
+      assert.equal(session?.assurance, "MFA");
+      assert.ok(session?.mfaAuthenticatedAt instanceof Date);
+
+      const nextLoginResponse = await fetch(`${origin}/api/auth/login`, {
+        method: "POST",
+        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      assert.equal(nextLoginResponse.status, 200);
+      const nextLogin = await nextLoginResponse.json();
+      assert.equal(nextLogin.mfaRequired, true);
+      if (email === ownerEmail) {
+        const recovery = await fetch(`${origin}/api/auth/mfa/verify`, {
+          method: "POST",
+          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ challengeToken: nextLogin.challengeToken, code: verified.recoveryCodes[0] })
+        });
+        assert.equal(recovery.status, 200, "a recovery code must allow a single recovery login");
+
+        const retryLoginResponse = await fetch(`${origin}/api/auth/login`, {
+          method: "POST",
+          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const retryLogin = await retryLoginResponse.json();
+        const reusedRecovery = await fetch(`${origin}/api/auth/mfa/verify`, {
+          method: "POST",
+          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ challengeToken: retryLogin.challengeToken, code: verified.recoveryCodes[0] })
+        });
+        assert.equal(reusedRecovery.status, 401, "a recovery code must not be reusable");
+      } else {
+        const totpLogin = await fetch(`${origin}/api/auth/mfa/verify`, {
+          method: "POST",
+          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ challengeToken: nextLogin.challengeToken, code: totpCode(enrollment.secret, Date.now() + 30000) })
+        });
+        assert.equal(totpLogin.status, 200, "an enrolled authenticator must complete subsequent privileged logins");
+      }
+    }
+
+    for (const userId of [ownerId, adminId]) {
+      const legacyToken = randomBytes(32).toString("hex");
+      const legacyTokenHash = createHash("sha256").update(legacyToken).digest("hex");
+      await db.session.create({
+        data: {
+          userId,
+          tokenHash: legacyTokenHash,
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+        }
+      });
+      const me = await fetch(`${origin}/api/auth/me`, {
+        headers: { Cookie: `vayro_session=${legacyToken}` }
+      });
+      assert.equal(me.status, 401, "legacy password-only privileged sessions must fail closed");
+      assert.deepEqual(await me.json(), { authenticated: false });
+    }
+
+    const ordinaryLogin = await fetch(`${origin}/api/auth/login`, {
+      method: "POST",
+      headers: {
+        Origin: `http://localhost:${port}`,
+        Host: `localhost:${port}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email: ordinaryEmail, password })
+    });
+    assert.equal(ordinaryLogin.status, 200);
+    assert.equal((await ordinaryLogin.json()).authenticated, true);
+    const ordinarySession = await db.session.findFirst({ where: { userId: ordinaryId } });
+    assert.equal(ordinarySession?.assurance, "PASSWORD");
+    assert.equal(ordinarySession?.mfaAuthenticatedAt, null);
+
+    const revokedToken = randomBytes(32).toString("hex");
+    await db.session.create({
+      data: {
+        userId: ordinaryId,
+        tokenHash: createHash("sha256").update(revokedToken).digest("hex"),
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        revokedAt: new Date()
+      }
+    });
+    const revokedMe = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${revokedToken}` }
+    });
+    assert.equal(revokedMe.status, 401, "revoked sessions must not authenticate");
+    assert.deepEqual(await revokedMe.json(), { authenticated: false });
+  } finally {
+    await db.authRateLimit.deleteMany({ where: { keyHash: { in: loginRateLimitKeys } } });
+    if (ownerId) await db.user.deleteMany({ where: { id: ownerId } });
+    if (adminId) await db.user.deleteMany({ where: { id: adminId } });
+    if (ordinaryId) await db.user.deleteMany({ where: { id: ordinaryId } });
+    if (tenantId) await db.tenant.deleteMany({ where: { id: tenantId } });
+    await db.$disconnect();
+  }
+});
+
+
+test("idle sessions are revoked and active sessions refresh lastSeenAt over HTTP", async () => {
+  const db = new PrismaClient();
+  let userId;
+  try {
+    await db.$connect();
+    const user = await db.user.create({
+      data: {
+        email: `idle-session-${randomUUID()}@example.invalid`,
+        passwordHash: "integration-test-only-hash",
+        displayName: "Idle Session Test",
+        emailVerifiedAt: new Date()
+      }
+    });
+    userId = user.id;
+
+    const now = Date.now();
+    const idleToken = randomBytes(32).toString("hex");
+    const activeToken = randomBytes(32).toString("hex");
+    const idleTokenHash = createHash("sha256").update(idleToken, "utf8").digest("hex");
+    const activeTokenHash = createHash("sha256").update(activeToken, "utf8").digest("hex");
+    const idleLastSeenAt = new Date(now - 31 * 60 * 1000);
+    const activeLastSeenAt = new Date(now - 6 * 60 * 1000);
+    const expiresAt = new Date(now + 60 * 60 * 1000);
+
+    await db.session.createMany({
+      data: [
+        { userId, tokenHash: idleTokenHash, expiresAt, lastSeenAt: idleLastSeenAt },
+        { userId, tokenHash: activeTokenHash, expiresAt, lastSeenAt: activeLastSeenAt }
+      ]
+    });
+
+    const idleResponse = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${idleToken}` }
+    });
+    assert.equal(idleResponse.status, 401, "sessions idle for more than 30 minutes must be rejected");
+    const idleSession = await db.session.findUnique({
+      where: { tokenHash: idleTokenHash },
+      select: { revokedAt: true }
+    });
+    assert.ok(idleSession?.revokedAt instanceof Date, "idle session must be revoked in the database");
+
+    const activeResponse = await fetch(`${origin}/api/auth/me`, {
+      headers: { Cookie: `vayro_session=${activeToken}` }
+    });
+    assert.equal(activeResponse.status, 200, "recently active sessions remain valid");
+    const activeSession = await db.session.findUnique({
+      where: { tokenHash: activeTokenHash },
+      select: { lastSeenAt: true, revokedAt: true }
+    });
+    assert.equal(activeSession?.revokedAt, null);
+    assert.ok(activeSession?.lastSeenAt && activeSession.lastSeenAt.getTime() > activeLastSeenAt.getTime());
+  } finally {
+    if (userId) await db.user.deleteMany({ where: { id: userId } });
     await db.$disconnect();
   }
 });

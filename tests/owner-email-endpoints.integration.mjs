@@ -68,7 +68,13 @@ test("owner email APIs enforce authorization, same-origin writes, audit, throttl
     userId = user.id;
 
     await db.session.create({
-      data: { userId, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }
+      data: {
+        userId,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        assurance: "MFA",
+        mfaAuthenticatedAt: new Date()
+      }
     });
     const cookie = `vayro_session=${token}`;
     const writeHeaders = {
@@ -100,6 +106,66 @@ test("owner email APIs enforce authorization, same-origin writes, audit, throttl
       where: { actorUserId: userId, action: "email_contact.created", resourceId: contactId }
     });
     assert.ok(audit, "contact creation must be audited");
+
+    const confirmationContact = await db.emailContact.create({
+      data: {
+        email: `confirm-${suffix}@example.invalid`,
+        label: "Confirmation test",
+        purposes: [EmailPurpose.SUPPORT],
+        enabled: true
+      }
+    });
+    createdContactIds.push(confirmationContact.id);
+    const confirmationToken = randomBytes(32).toString("hex");
+    const confirmationHash = createHash("sha256").update(confirmationToken).digest("hex");
+    await db.emailContactVerificationToken.create({
+      data: {
+        tokenHash: confirmationHash,
+        contactId: confirmationContact.id,
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000)
+      }
+    });
+    const confirmed = await fetch(`${origin}/api/owner/email-contacts/confirm`, {
+      method: "POST",
+      headers: { Origin: origin, Host: `localhost:${port}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ token: confirmationToken })
+    });
+    assert.equal(confirmed.status, 200);
+    assert.deepEqual(await confirmed.json(), { verified: true });
+    assert.ok((await db.emailContact.findUnique({ where: { id: confirmationContact.id } })).verifiedAt instanceof Date);
+    const replayed = await fetch(`${origin}/api/owner/email-contacts/confirm`, {
+      method: "POST",
+      headers: { Origin: origin, Host: `localhost:${port}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ token: confirmationToken })
+    });
+    assert.equal(replayed.status, 400, "a consumed confirmation token must not be reusable");
+
+    const disabledContact = await db.emailContact.create({
+      data: {
+        email: `disabled-confirm-${suffix}@example.invalid`,
+        label: "Disabled confirmation test",
+        purposes: [EmailPurpose.SUPPORT],
+        enabled: false
+      }
+    });
+    createdContactIds.push(disabledContact.id);
+    const disabledToken = randomBytes(32).toString("hex");
+    const disabledTokenHash = createHash("sha256").update(disabledToken).digest("hex");
+    await db.emailContactVerificationToken.create({
+      data: {
+        tokenHash: disabledTokenHash,
+        contactId: disabledContact.id,
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000)
+      }
+    });
+    const disabledConfirmation = await fetch(`${origin}/api/owner/email-contacts/confirm`, {
+      method: "POST",
+      headers: { Origin: origin, Host: `localhost:${port}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ token: disabledToken })
+    });
+    assert.equal(disabledConfirmation.status, 400);
+    assert.equal((await db.emailContact.findUnique({ where: { id: disabledContact.id } })).verifiedAt, null);
+    assert.equal((await db.emailContactVerificationToken.findUnique({ where: { tokenHash: disabledTokenHash } })).consumedAt, null);
 
     const list = await fetch(`${origin}/api/owner/email-contacts`, {
       headers: { Cookie: cookie }
@@ -261,7 +327,7 @@ test("owner email APIs enforce authorization, same-origin writes, audit, throttl
     });
     assert.equal(blockedLastDelete.status, 409, "the final verified OWNER contact cannot be deleted");
   } finally {
-    if (contactId) await db.emailContactVerificationToken.deleteMany({ where: { contactId } });
+    if (createdContactIds.length) await db.emailContactVerificationToken.deleteMany({ where: { contactId: { in: createdContactIds } } });
     await db.emailContact.deleteMany({ where: { id: { in: [...createdContactIds, ...ownerContactIds].filter(Boolean) } } });
     if (userId) {
       await db.auditEvent.deleteMany({ where: { actorUserId: userId } });
