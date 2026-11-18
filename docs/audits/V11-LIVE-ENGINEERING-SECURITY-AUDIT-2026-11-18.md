@@ -128,3 +128,70 @@ The next safe engineering sequence is:
 7. Only then prepare a reviewed production migration and deployment plan.
 
 **Release decision: BLOCKED — NOT RELEASED.**
+
+
+## V12 live revalidation addendum — 2026-11-18 09:43 UTC
+
+This addendum supersedes the V11 statements below where they describe current GitHub, Railway, or Supabase state. It does not authorize production changes or release.
+
+### 1. GitHub exact-head verification
+
+- The repository default branch is `main`; its current head remains `f0d31804e695cd3d73b452c7507affdca9573740` (last commit timestamp: 2026-11-11 15:28:13 UTC).
+- VAYRO CI run [43048676444](https://github.com/gavad54/zelmira-one-/actions/runs/43048676444) completed successfully on that exact main SHA on 2026-11-11. Its job steps include the locked dependency audit, unit tests, Prisma generation/validation, isolated PostgreSQL role and migration checks, lint, typecheck, production build, Docker build, and PostgreSQL/HTTP integration tests.
+- CodeQL run [43870595208](https://github.com/gavad54/zelmira-one-/actions/runs/43870595208) completed successfully on the same exact main SHA on 2026-11-16.
+- The combined commit-status endpoint currently reports one successful Railway context only. No newer VAYRO CI run on main was present in the retrieved run list.
+- The most recent main backup run [44067328879](https://github.com/gavad54/zelmira-one-/actions/runs/44067328879) failed on 2026-11-17. The workflow is configured for the `vayro-backup` GitHub Environment and a daily `17 2 * * *` UTC schedule. No 2026-11-18 run was present in the retrieved main workflow-run list.
+- On the exact PR #33 audit head `b17c3f084e14beaf956e647537c519d4c44d0db2`, CodeQL run [44265503364](https://github.com/gavad54/zelmira-one-/actions/runs/44265503364) passed, while VAYRO CI run [44265503304](https://github.com/gavad54/zelmira-one-/actions/runs/44265503304) failed at the enforced dependency-audit step before the remaining validation steps.
+- Fresh audit evidence on PR #32 head `7257dfedce96401e7e960af8aff1da56423f0b2a` reports 13 high-severity npm audit findings, including the `picomatch` ReDoS advisory [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf), through the development-toolchain dependency chain (`eslint-config-next`, `@next/eslint-plugin-next`, `fast-glob`, `micromatch`, `tinyglobby`). The PR #32 validation job passed its unit, isolated database, lint, typecheck, build, and integration steps, but its separate dependency-audit job failed.
+- PR #34, #37 and #38 also have successful CodeQL runs but their VAYRO CI validation jobs stop at the same enforced `npm audit --audit-level=moderate` step; later test/build steps are skipped. The audit output suggests `npm audit fix --force` would downgrade `eslint-config-next` to 14.2.35, a breaking change. No forced downgrade or dependency change was made.
+- PR #33 remains open/Draft/unmerged. Its head is updated by this addendum only; no PR was merged.
+
+### 2. Backup workflow result
+
+The failed run [44067328879](https://github.com/gavad54/zelmira-one-/actions/runs/44067328879) reports all seven required protected inputs as absent/empty in the workflow environment: `BACKUP_DATABASE_URL`, `AGE_RECIPIENT`, `B2_KEY_ID`, `B2_APPLICATION_KEY`, `B2_BUCKET`, `B2_S3_ENDPOINT`, and `B2_REGION`. This records names and missing-state only; no secret values were read or printed. The workflow stopped at configuration validation, so no database dump, encryption, upload, remote checksum, or restore occurred. Backup remains FAIL; isolated restore remains NOT RUN.
+
+### 3. Railway live state
+
+- The connected Railway workspace lists only projects `ARIA Web` and `LEADORA`; there is no dedicated VAYRO project.
+- The `VAYRO` service in `ARIA Web` production (project `c936dddd-5aa7-46d9-bd04-aa77f2164586`, service `ea06b2d7-b28e-462e-9251-2613af769d8e`) is live with one of one replicas online. Its latest successful deployment is `ac14c881-c38b-40cc-95ef-003de49c4fd7`, created 2026-11-11 15:28:15 UTC from main SHA `f0d31804e695cd3d73b452c7507affdca9573740`.
+- The service has no runtime variable names, no mounted volume, and no custom domain; only the Railway hostname `vayro-production.up.railway.app` is listed. The absence of variable names means a VAYRO database connection configuration is not evidenced in this service.
+- A three-change staged patch `b9d85124-4dfe-42fe-8fe2-136f239987b0` remains pending and includes a staged-create service on branch `brand/vayro-name-only`. It was not accepted or deployed.
+- A second service named `VAYRO` exists in the `LEADORA` project on branch `security/mfa-session-endpoint-gates`, commit `47792d4a891795d60a4b65c11c4a4ffb8cab2f74`; it has no public domain, runtime variable names, or volume. It is not independent VAYRO production hosting.
+- Railway's 24-hour HTTP metrics returned no samples. The retained HTTP log's newest request was `GET /` → 200 at 2026-11-17 08:12:31 UTC; earlier 2026-11-14 logs include 404s for `/vayro-mark.svg`, `/manifest.webmanifest`, and `/favicon.ico`. A fresh external probe of `/`, `/api/health`, and `/api/ready` could not be completed from the available web probe. Therefore current HTTP/API/DB readiness is UNVERIFIED; runtime `Ready` messages are not treated as HTTP or DB proof.
+
+### 4. Supabase VAYRO-CORE read-only revalidation
+
+- Project `wdqhdnhpgxhmmfeyxwxr`: `ACTIVE_HEALTHY`, PostgreSQL 17.11, region `eu-central-1`.
+- Migration history remains empty.
+- The live `public` schema contains 11 application tables, all with RLS enabled, zero policies, and zero FORCE RLS settings; the tables report zero rows.
+- Main's `prisma/schema.prisma` contains 15 models. `UserMfa`, `MfaRecoveryCode`, `AuthChallenge`, and `AiGeneration` have no corresponding live public tables in the current inventory. This is an unresolved schema mismatch, not authorization to migrate.
+- No custom role with the `vayro_` prefix was found. The 77 public table grant entries are all for `postgres` (seven privilege types across 11 tables); no `anon` or `authenticated` table grants were returned by the grant query. The `postgres` and Supabase `service_role` roles have BYPASSRLS attributes; no dedicated VAYRO application runtime role is evidenced.
+- Security Advisor: 11 RLS-enabled/no-policy findings. Performance Advisor: 10 unused-index findings. Health Advisor: no findings.
+- All Supabase checks in this addendum were read-only. No DDL, grants, policies, roles, migrations, seeds, or data changes were executed.
+
+### 5. Documentation and product-scope drift
+
+- Main `docs/RELEASE-GATES.md` still says PR #2 is open/Draft, but PR #2 was merged on 2026-11-09. Its historical CI/dependency statements also need a dated current-status section.
+- Main `docs/ARCHITECTURE.md` says no VAYRO application hosting/deployment exists. A VAYRO service does exist inside the shared `ARIA Web` Railway project; the accurate status is “service exists, independent VAYRO hosting is BLOCKED.”
+- Main `docs/PRODUCT-BOUNDARIES.md` defines eleven independent products including `ARMIN MARKET`, while the current owner-provided family list names DANA plus ARIA, ARIANA, LEADORA, ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM. Both documents classify DANA as a platform capability rather than an independent product. This is an owner-level scope discrepancy; no product was added, removed, or renamed here.
+
+### 6. Current gate decision
+
+| Gate | Current evidence status |
+|---|---|
+| Dedicated VAYRO hosting | BLOCKED |
+| Runtime DB configuration | BLOCKED / no variable names observed |
+| Migration baseline and schema reconciliation | BLOCKED |
+| Least privilege, RLS policies and tenant isolation | BLOCKED |
+| MFA source implementation | Present in main; production activation UNVERIFIED |
+| Complete endpoint authorization acceptance | UNVERIFIED |
+| CSP/security headers/trusted proxy runtime validation | UNVERIFIED |
+| Encrypted offsite backup | FAIL |
+| Isolated PostgreSQL restore | NOT RUN |
+| Independent operation of the ten named products | UNVERIFIED |
+| DANA orchestration capability | Present as a platform capability; production end-to-end acceptance UNVERIFIED |
+| Android signed release/device acceptance | NOT RUN |
+| Email, licensing, payments, legal review and UAT | NOT RUN |
+| Owner release approval | BLOCKED |
+
+No production resources, secrets, databases, deployments, domains, or billing settings were changed. The conservative 20% V11 engineering-foundation estimate is not increased by documentation-only work; no new product or release evidence justifies recalculation.
