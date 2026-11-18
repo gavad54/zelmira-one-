@@ -55,3 +55,22 @@ This branch establishes a current, inspectable engineering checkpoint and correc
 - Repository changes on this branch are proposals until CI/CodeQL and review pass.
 - No production release is approved by this checkpoint.
 - Current production state remains **BLOCKED** for database schema/tenant security, independent backup/restore, independent hosting, and end-to-end commercial/mobile acceptance.
+
+
+## Follow-up live read-only diagnostic — 2026-11-18
+
+The new read-only catalog query was executed against VAYRO-CORE project `wdqhdnhpgxhmmfeyxwxr`. It performed catalog SELECTs only; no data or schema was changed.
+
+- Prisma expects 15 models/tables; only 11 exist in the live public schema.
+- Missing live tables: `AiGeneration`, `AuthChallenge`, `MfaRecoveryCode`, `UserMfa`.
+- The four expected MFA/session lifecycle columns are absent from live `Session`: `revokedAt`, `lastSeenAt`, `assurance`, `mfaAuthenticatedAt`.
+- All 11 existing tables report RLS enabled, zero policies, and FORCE RLS disabled; all 11 are owned by `postgres`.
+- Runtime roles `vayro_app`, `vayro_auth`, `vayro_platform`, and `vayro_platform_bootstrap` are absent. Supabase `service_role` exists and has BYPASSRLS.
+- `public._prisma_migrations` is absent.
+- The live FK inventory showed tenant FKs for `License` and `Membership`; the expected `AuditEvent.tenantId` FK was not present in the result.
+
+This confirms that the issue is not only a stale dashboard or advisor message: live schema and runtime role provisioning are materially behind the repository migration contract. Do not attempt a production migration, baseline, grant, policy creation or owner change before an independently verified backup/restore and reviewed schema reconciliation.
+
+## PR #39 verification status
+
+The documentation and read-only diagnostic are on PR #39. GitHub Actions runs were started for the current PR head: CI run `44314253855` and CodeQL run `44314253046`. At the time of this update both were still in progress; no pass result is claimed.
