@@ -85,3 +85,23 @@ CodeQL run `44314570787` completed successfully for the prior PR head. This is a
 A workflow-only change was committed after that attempt (`fc0970da4a20c4219857bd7cc43c56764897e693`): the full unit/schema/isolated-DB/lint/typecheck/build/Docker/integration checks now execute before the dependency audit. The audit remains blocking at `--audit-level=moderate`; no advisory suppression, threshold reduction, or force-upgrade was introduced. This ordering change is intended to expose independent test results while preserving the security gate. A fresh CI run on this new head is still required before any pass claim.
 
 No dependency version was force-upgraded because the upstream advisory does not currently list a patched release. The issue remains an explicit release blocker pending a vendor patch or a reviewed, testable mitigation that does not misrepresent the advisory status.
+
+
+## Verification update — 2026-11-18, after full CI completion
+
+CI run `44319284985` on head `e4f7786ebb0b10ce48cec3599d382b7a6954cf96` has now completed. Unit tests, Prisma generation/validation, migration replay on isolated PostgreSQL, authentication/platform/tenant role boundary checks, tenant RLS isolation, lint, typecheck, production build, Docker build and PostgreSQL/HTTP integration tests all passed. The only failed step was the final full dependency audit, which reported 13 High findings in the picomatch dependency chain. CodeQL run `44319285028` completed successfully.
+
+The audit log shows the affected paths are `node_modules/picomatch`, `node_modules/tinyglobby/node_modules/picomatch`, `fdir`, `micromatch`, `fast-glob`, `tinyglobby`, `@typescript-eslint/typescript-estree` and `eslint-import-resolver-typescript`. The lockfile marks these paths as development dependencies. The advisory remains High and identifies versions through 4.0.7; no patched version is listed. A separate production-only audit has been added to CI, but its result must be verified on the new head. The full audit remains blocking.
+
+A fresh Supabase project inventory/advisor check reconfirmed:
+- VAYRO-CORE ACTIVE_HEALTHY, PostgreSQL 17.11.
+- 11 live public tables, all RLS-enabled; all table inventories report zero rows.
+- Security Advisor: 11 RLS-enabled/no-policy findings.
+- Migration history: empty.
+- Performance Advisor: 10 unused indexes; no index removals are justified without a real workload.
+- Health Advisor: no findings.
+- No production changes were performed.
+
+The repository now includes [PRODUCTION-RECONCILIATION-AND-RECOVERY-PLAN](PRODUCTION-RECONCILIATION-AND-RECOVERY-PLAN.md), with exact schema drift, security interpretation, staged baseline plan, table-level policy design requirements, and the precise protected GitHub Environment configuration names for backup and isolated restore. It does not contain secrets.
+
+The CI workflow now runs `npm audit --omit=dev --audit-level=moderate` as a separate production dependency gate, followed by the full `npm audit --audit-level=moderate` gate. This is a diagnostic separation, not an exception or suppression. Both checks must be verified on the new PR head.
