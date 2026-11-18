@@ -44,3 +44,8 @@ The diagnostic queries were executed against the VAYRO-CORE catalog using read-o
 - Tenant FK evidence exists for `License` and `Membership`; `AuditEvent.tenantId` FK was not found.
 
 No schema, data, permissions, or production configuration was changed by this diagnostic. The findings are a release blocker, not a reason to apply the migration files directly.
+
+
+## Script execution verification
+
+The complete committed SQL diagnostic was executed through the connected Supabase SQL interface against VAYRO-CORE. It completed without SQL errors. The execution returned the final result grid (`prisma_migration_ledger_status = MISSING`); the detailed table, column, RLS, policy, role and foreign-key result grids were also collected using equivalent individual read-only SELECTs and are recorded above and in the engineering checkpoint. The script ends with `ROLLBACK`; no production changes were made.
