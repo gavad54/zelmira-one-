@@ -89,7 +89,7 @@ export async function withTenantRequestTransaction({
     // validated cookie/session and requested tenant membership.
     await tx.$queryRaw`SELECT
       set_config('app.user_id', ${initial.userId}, true),
-      set_config('app.tenant_id', '', true),
+      set_config('app.tenant_id', ${tenantId}, true),
       set_config('app.session_token_hash', ${tokenHash}, true),
       set_config('app.user_role', '', true)
     `;
@@ -214,7 +214,7 @@ export async function createTenantForAuthenticatedUser({
     await assertTenantRuntimeRole(tx);
     await tx.$queryRaw`SELECT
       set_config('app.user_id', ${initial.user.id}, true),
-      set_config('app.tenant_id', ${tenantId}, true),
+      set_config('app.tenant_id', '', true),
       set_config('app.session_token_hash', ${tokenHash}, true),
       set_config('app.user_role', '', true)
     `;
@@ -255,9 +255,9 @@ export async function createTenantForAuthenticatedUser({
 }
 
 /**
- * User-scoped transaction for self-service tenant listing/creation.
- * The caller must not use this to read tenant business data without a
- * membership-scoped withTenantRequestTransaction boundary.
+ * User-scoped transaction for self-service tenant listing only.
+ * Tenant creation uses createTenantForAuthenticatedUser; tenant business data
+ * must use the membership-scoped withTenantRequestTransaction boundary.
  */
 export async function withAuthenticatedUserTransaction({
   authDb,
