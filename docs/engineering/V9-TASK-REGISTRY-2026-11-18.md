@@ -51,3 +51,34 @@ Accessible projects: `ARIA Web` and `LEADORA`; no dedicated VAYRO project. Servi
 ## Execution and safety record
 
 This checkpoint created only this task-registry branch and document. No production database writes, DDL, migrations, grants, policies, secrets, Railway configuration, deployment, PR merge, public release, purchase, or deletion were performed. No local build/test execution is claimed.
+
+
+## V10 backup root-cause addendum — 2026-11-18
+
+### Exact failed run evidence
+
+- Workflow run: [44067328879](https://github.com/gavad54/zelmira-one-/actions/runs/44067328879)
+- Run head: `main` at `f0d31804e695cd3d73b452c7507affdca9573740`; event: scheduled; run conclusion: failure.
+- Job: `Dump, encrypt and upload private backup`; job ID `133984275924`.
+- Failed step: `Validate required protected configuration`; all later steps (install age/AWS CLI, PostgreSQL 17 dump, encrypted upload) were skipped.
+- The job log explicitly shows all seven mapped environment inputs empty: `BACKUP_DATABASE_URL`, `AGE_RECIPIENT`, `B2_KEY_ID`, `B2_APPLICATION_KEY`, `B2_BUCKET`, `B2_S3_ENDPOINT`, `B2_REGION`. The first reported missing input is `BACKUP_DATABASE_URL`, mapped from `secrets.VAYRO_BACKUP_DATABASE_URL`.
+- Workflow file `.github/workflows/vayro-db-backup.yml` binds the job to GitHub Environment `vayro-backup`. It reads the database and B2 credentials from Environment secrets, and the age recipient, bucket, endpoint and region from Environment variables.
+- Root cause at the evidence boundary: protected configuration is not being injected into this job. Possible causes include missing values, values stored at a different scope/environment, or environment protection/configuration mismatch. The logs cannot distinguish these cases. GitHub's secret-value APIs are not accessible through this read-only connector; no secret value was requested or exposed.
+- This is a configuration-injection failure before any database connection. It is not evidence of a PostgreSQL dump failure, encryption failure, B2 upload failure, or checksum failure.
+- The workflow currently verifies remote object sizes, while a SHA-256 sidecar is uploaded; remote checksum content is not independently downloaded and compared in the backup job. This should be tightened before accepting a backup as verified.
+- Restore workflow `.github/workflows/vayro-db-restore-drill.yml` requires `VAYRO_ISOLATED_RESTORE_DATABASE_URL`, `VAYRO_BACKUP_AGE_IDENTITY`, and the same B2 variables/secrets. It checks target host differs from production and requires an empty PostgreSQL 17 target, but no successful restore evidence exists.
+- No retry was triggered, no workflow or secret was changed, no database dump was created, no B2 object was uploaded, and no restore was run.
+
+### V10 task status
+
+| Task ID | Priority | Domain | Status | Acceptance evidence |
+|---|---|---|---|---|
+| V10-001 | P0 | Backup protected configuration | BLOCKED — exact failure stage and all seven empty injected inputs identified; actual Environment values cannot be inspected with current connector | Owner verifies the seven exact names under GitHub Settings → Environments → `vayro-backup`; verify environment protection allows scheduled/manual job; run a controlled backup and confirm each value is injected without printing it |
+| V10-002 | P0 | Backup integrity | NOT RUN | Add remote SHA-256 verification by downloading checksum and object to a temporary secure runner directory and comparing; preserve no plaintext dump after encryption |
+| V10-003 | P0 | External backup | BLOCKED | Successful PostgreSQL 17 dump, age encryption, private B2 upload, remote checksum verification, object ID/key and evidence |
+| V10-004 | P0 | Isolated restore | BLOCKED | Successful checksum verification, decryption and restore into a separately hosted empty PostgreSQL 17 database; schema/data/invariant comparison |
+| V10-005 | P1 | Secret scope audit | BLOCKED | Confirm secrets/variables exist at the exact `vayro-backup` environment scope; do not copy credentials into repository files, logs, chat or a different product environment |
+
+### V10 safety decision
+
+Do not change workflow code to bypass missing credentials, do not move production credentials into plaintext repository variables, and do not rerun backup until the protected configuration is correctly populated. The only owner-side action that cannot be completed by the current connector is verifying/adding the required protected values in the GitHub Environment. No credential values should be sent in chat.
