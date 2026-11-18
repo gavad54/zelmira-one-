@@ -88,7 +88,7 @@ test("liveness and database readiness are independently verified", async () => {
   assert.equal(readiness.checks.schema, "ok");
   assert.equal(readiness.checks.mfa, "ok");
   assert.equal("roleName" in readiness.checks, false);
-  assert.equal(readiness.checks.rateLimit, "not_configured");
+  assert.equal(readiness.checks.rateLimit, "ok");
   assert.equal(readiness.checks.email, "not_configured");
 });
 
