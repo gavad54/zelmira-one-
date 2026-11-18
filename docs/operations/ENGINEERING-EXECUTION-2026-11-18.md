@@ -105,3 +105,22 @@ A fresh Supabase project inventory/advisor check reconfirmed:
 The repository now includes [PRODUCTION-RECONCILIATION-AND-RECOVERY-PLAN](PRODUCTION-RECONCILIATION-AND-RECOVERY-PLAN.md), with exact schema drift, security interpretation, staged baseline plan, table-level policy design requirements, and the precise protected GitHub Environment configuration names for backup and isolated restore. It does not contain secrets.
 
 The CI workflow now runs `npm audit --omit=dev --audit-level=moderate` as a separate production dependency gate, followed by the full `npm audit --audit-level=moderate` gate. This is a diagnostic separation, not an exception or suppression. Both checks must be verified on the new PR head.
+
+
+## Final verification update — 2026-11-18 21:18 +0330
+
+This section supersedes the earlier "still in progress" and "full dependency audit remains blocking" statements above for the exact head recorded here.
+
+- Latest verified PR head at this checkpoint: `fa6d5f0496a81d7dd61f59e0b745dadff3bc2a91`.
+- CI run [44361902540](https://github.com/gavad54/zelmira-one-/actions/runs/44361902540) completed successfully. All workflow steps passed, including unit tests, Prisma generation and validation, isolated PostgreSQL migration and least-privilege role checks, tenant RLS isolation, lint, typecheck, production build, Docker build, PostgreSQL/HTTP integration tests, production-only dependency audit, and the full locked dependency audit.
+- CodeQL run [44361902383](https://github.com/gavad54/zelmira-one-/actions/runs/44361902383) completed successfully on the same head.
+- The prior tenant provisioning/RLS integration failure was traced to the transaction-local tenant context used by the constrained provisioning helper. Commit `fa6d5f0496a81d7dd61f59e0b745dadff3bc2a91` corrected that context. The successful CI run now verifies the constrained provisioning path and associated integration tests.
+- The full dependency audit passed on this exact head. Earlier 13-High dependency audit failures are historical results from earlier heads and are not reproduced by this latest passing audit; retain the full audit as a blocking check.
+- PR #39 remains OPEN and UNMERGED. GitHub reports mergeable=true / mergeable_state=clean, but no merge or deployment was performed.
+- The PR description was updated to record the latest evidence and distinguish repository CI success from production release readiness.
+
+### Production blockers remain unchanged
+
+The CI uses disposable isolated PostgreSQL and cannot certify the live VAYRO-CORE project. The last live read-only inventory still records 11 public tables with RLS enabled but no policies, empty migration history, four missing Prisma tables, four missing Session columns, absent dedicated runtime roles, and the missing AuditEvent tenant FK. The backup workflow has not completed with real protected credentials, no independent restore drill is evidenced, and no independently controlled VAYRO hosting deployment is verified.
+
+No production DDL, migration, role grant, RLS policy, data write, secret, paid resource, payment activation, merge, or deployment was performed. Release remains **BLOCKED** until independent backup/restore, reviewed production schema reconciliation, least-privilege runtime provisioning, hosting, mobile/UAT and owner release gates are evidenced.
