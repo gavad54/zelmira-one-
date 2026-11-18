@@ -29,3 +29,18 @@ Use a read-only database role if available. Do not run migration files, baseline
 
 ## Release decision
 A clean diagnostic is necessary but not sufficient. Production changes still require a verified encrypted offsite backup, a successful isolated restore, reviewed table-by-table policy semantics, and a separately approved production change window.
+
+
+## Latest live diagnostic result — 2026-11-18
+
+The diagnostic queries were executed against the VAYRO-CORE catalog using read-only SELECT statements. The live schema currently reports:
+
+- 11 of 15 expected Prisma tables present.
+- Missing: `AiGeneration`, `AuthChallenge`, `MfaRecoveryCode`, and `UserMfa`.
+- Four missing session columns: `revokedAt`, `lastSeenAt`, `assurance`, and `mfaAuthenticatedAt`.
+- All 11 existing tables: RLS enabled, zero policies, FORCE RLS disabled, owner `postgres`.
+- The four dedicated VAYRO application roles are absent; Supabase `service_role` exists with BYPASSRLS.
+- Prisma migration ledger absent.
+- Tenant FK evidence exists for `License` and `Membership`; `AuditEvent.tenantId` FK was not found.
+
+No schema, data, permissions, or production configuration was changed by this diagnostic. The findings are a release blocker, not a reason to apply the migration files directly.
