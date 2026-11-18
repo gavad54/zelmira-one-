@@ -4,8 +4,7 @@ The application must not be described as production-ready until every applicable
 
 ## Repository verification
 
-- PR #2 targets `main`, remains open and draft, and is not merged.
-- Current branch and PR head: `c811b2b620dbca68c714ab038291ada42a099fd3`.
+- PR #2 is merged into `main` (merge commit `4e98a25503f94c2dc5d4ebc11a804f64d6568d5c`). The following 2026-11-06 PR #2 status notes are historical and superseded by this correction.
 - This exact head passed VAYRO CI (PR run 42194051921) and CodeQL (PR run 42194051963), both completed successfully on 2026-11-06.
 - The CI job on this exact head passed locked dependency installation, unit tests, Prisma client generation/schema validation, least-privilege role setup in isolated PostgreSQL, real Prisma migration history in isolated PostgreSQL, lint, typecheck, production build, and PostgreSQL/production HTTP integration tests.
 - The dependency-audit step itself reported 6 moderate findings and is explicitly configured with `continue-on-error: true`; its green step/job status is not a passed dependency-security gate.
@@ -475,3 +474,8 @@ This addendum supersedes earlier product-count and product-catalogue wording abo
 - [ ] Verify deployed commit parity and obtain explicit release approval.
 
 **Decision: EXACT-MAIN CI PASS + CODEQL EXECUTION PASS — LIVE DATABASE SECURITY/BASELINE AND HOSTING CONFIGURATION OPEN — DEPLOYMENT/COMMERCIAL RELEASE BLOCKED.**
+
+
+## Current engineering checkpoint — 2026-11-18
+
+See [the dated execution checkpoint](operations/ENGINEERING-EXECUTION-2026-11-18.md) for the exact inspected main SHA, current CI/CodeQL evidence, live VAYRO-CORE/RLS findings, Railway independence status, backup blockers and next acceptance gates. This dated checkpoint supersedes conflicting older status notes above. No production database migration or public release is authorized by a green repository CI run.
