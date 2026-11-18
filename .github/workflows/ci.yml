@@ -106,5 +106,10 @@ jobs:
       # Run the full validation suite before the strict dependency gate so
       # migration, baseline, restore, and application failures remain visible.
       # This does not waive or lower the audit threshold.
+      # Diagnostic only: prove whether advisories affect runtime dependencies.
+      # The strict full-tree audit below remains mandatory and unchanged.
+      - name: Audit production dependency graph
+        run: npm audit --omit=dev --audit-level=moderate
+
       - name: Enforce locked dependency security audit
         run: npm audit --audit-level=moderate

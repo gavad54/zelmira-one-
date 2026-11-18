@@ -147,3 +147,17 @@ The Supabase advisor remediation reference is [RLS enabled without policies](htt
 - No branch protection setting was changed because the available GitHub connection does not expose repository administration/write permissions. No secret or environment value was read.
 
 **Release decision remains BLOCKED — NOT RELEASED.**
+
+
+## 2026-11-18 — Dependency exposure classification and regression guard
+
+Observed PR #5 HEAD before this change: `a0a5ca910b0e4978a0efb912a389d04172beff21`.
+- Exact-HEAD CI run [44171651420](https://github.com/gavad54/zelmira-one-/actions/runs/44171651420) completed unit, Prisma, migration-contract, baseline-rehearsal, isolated backup/restore, lint, typecheck, production build, and PostgreSQL/HTTP integration steps successfully, then failed at the strict dependency audit.
+- The audit reported 13 high-severity findings in the picomatch/fdir/tinyglobby/micromatch/fast-glob toolchain. The lockfile contains affected `picomatch@2.3.2` and `picomatch@4.0.7`; both package entries are marked `dev: true`. The other packages in the reported path are also development-only in this lockfile.
+- The current GitHub advisory [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) describes ReDoS through picomatch 4.0.7 and does not publish a fixed version. No version substitution, audit suppression, threshold reduction, or forced downgrade is justified.
+
+This change adds:
+1. A unit regression guard that rejects any known affected picomatch lockfile instance that becomes a production dependency.
+2. A separate `npm audit --omit=dev --audit-level=moderate` CI step to classify runtime dependency exposure.
+
+The existing full-tree `npm audit --audit-level=moderate` step is preserved unchanged and remains a hard gate. These checks do not remediate the development-toolchain advisory or certify the complete application as secure. Exact-HEAD results for the added checks are pending.
