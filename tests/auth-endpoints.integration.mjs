@@ -762,6 +762,7 @@ test("privileged login requires enrollment, TOTP replay is rejected, and recover
   const password = "Vayro-MFA-Integration-2026!";
   let userId;
   let normalUserId;
+  let normalMfaUserId;
   const requestHeaders = {
     Origin: `http://localhost:${port}`,
     Host: `localhost:${port}`,
@@ -938,7 +939,37 @@ test("privileged login requires enrollment, TOTP replay is rejected, and recover
     });
     assert.ok(disabledSession?.revokedAt);
 
-    // Ordinary non-privileged users retain the password-only login path.
+    // A non-privileged account that has explicitly enabled MFA must not fall back to password-only login.
+    const normalMfaEmail = `mfa-normal-enabled-${suffix}@example.invalid`;
+    const normalMfaUser = await db.user.create({
+      data: {
+        email: normalMfaEmail, passwordHash: await hashPassword(password),
+        displayName: "Non-Privileged MFA Integration User", emailVerifiedAt: new Date()
+      }
+    });
+    normalMfaUserId = normalMfaUser.id;
+    await db.userMfa.create({
+      data: { userId: normalMfaUserId, secretCiphertext: "integration-test-ciphertext", enabledAt: new Date() }
+    });
+    const normalMfaResponse = await fetch(`${origin}/api/auth/login`, {
+      method: "POST", headers: requestHeaders,
+      body: JSON.stringify({ email: normalMfaEmail, password })
+    });
+    assert.equal(normalMfaResponse.status, 202, "an enabled MFA factor must be required even for a non-privileged account");
+    const normalMfaChallenge = await normalMfaResponse.json();
+    assert.equal(normalMfaChallenge.authenticated, false);
+    assert.equal(normalMfaChallenge.mfaRequired, true);
+    assert.equal(normalMfaChallenge.enrollmentRequired, false);
+    assert.match(normalMfaChallenge.challengeToken, /^[a-f0-9]{64}$/);
+    assert.equal(normalMfaResponse.headers.get("set-cookie"), null, "password-only session must not be issued when MFA is enabled");
+    const storedNormalMfaChallenge = await db.authChallenge.findUnique({
+      where: { challengeHash: createHash("sha256").update(normalMfaChallenge.challengeToken).digest("hex") }
+    });
+    assert.equal(storedNormalMfaChallenge?.userId, normalMfaUserId);
+    assert.equal(storedNormalMfaChallenge?.purpose, "LOGIN_MFA");
+    assert.equal(await db.session.count({ where: { userId: normalMfaUserId } }), 0);
+
+    // Ordinary non-privileged users without MFA retain the password-only login path.
     const normalEmail = `mfa-normal-${suffix}@example.invalid`;
     const normalUser = await db.user.create({
       data: {
@@ -959,6 +990,13 @@ test("privileged login requires enrollment, TOTP replay is rejected, and recover
     });
     assert.equal(normalSession?.assurance, "PASSWORD");
   } finally {
+    if (normalMfaUserId) {
+      await db.authChallenge.deleteMany({ where: { userId: normalMfaUserId } });
+      await db.userMfa.deleteMany({ where: { userId: normalMfaUserId } });
+      await db.session.deleteMany({ where: { userId: normalMfaUserId } });
+      await db.auditEvent.deleteMany({ where: { actorUserId: normalMfaUserId } });
+      await db.user.deleteMany({ where: { id: normalMfaUserId } });
+    }
     if (normalUserId) {
       await db.session.deleteMany({ where: { userId: normalUserId } });
       await db.auditEvent.deleteMany({ where: { actorUserId: normalUserId } });
