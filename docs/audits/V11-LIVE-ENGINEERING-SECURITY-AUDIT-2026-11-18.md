@@ -195,3 +195,41 @@ The failed run [44067328879](https://github.com/gavad54/zelmira-one-/actions/run
 | Owner release approval | BLOCKED |
 
 No production resources, secrets, databases, deployments, domains, or billing settings were changed. The conservative 20% V11 engineering-foundation estimate is not increased by documentation-only work; no new product or release evidence justifies recalculation.
+
+
+## V12.1 live revalidation addendum — 2026-11-18 (UTC)
+
+This section records a further read-only recheck after the V12 snapshot. It supersedes earlier statements where the newer observations differ. It does not authorize production changes.
+
+### 1. GitHub and CI
+- Main remains `f0d31804e695cd3d73b452c7507affdca9573740`. The combined status endpoint returns only the successful Railway context; the workflow-run lookup for this main SHA returned no PR-triggered runs. Current main CI/CodeQL/dependency-audit state is therefore **UNVERIFIED** by this lookup.
+- PR #2 is confirmed **CLOSED and MERGED** by the current GitHub PR API response. Historical PR body text still contains stale “open/unmerged” wording; trust the current API state.
+- PR #32 head `7257dfedce96401e7e960af8aff1da56423f0b2a`: CodeQL [44182307113](https://github.com/gavad54/zelmira-one-/actions/runs/44182307113) passed; VAYRO CI [44182307274](https://github.com/gavad54/zelmira-one-/actions/runs/44182307274) had `validate` PASS and `dependency-audit` FAIL.
+- PR #33 head `f6d85b09613d1733ebf3a7990f5455e418aaf92f`: CodeQL [44279542395](https://github.com/gavad54/zelmira-one-/actions/runs/44279542395) passed; VAYRO CI [44279542487](https://github.com/gavad54/zelmira-one-/actions/runs/44279542487) failed at `npm audit --audit-level=moderate`; later test/build steps were skipped.
+- PR #34 CI [44265798824](https://github.com/gavad54/zelmira-one-/actions/runs/44265798824) and PR #38 CI [44275039998](https://github.com/gavad54/zelmira-one-/actions/runs/44275039998) also failed at the same audit step; their CodeQL runs passed. CodeQL success is scan execution evidence, not a clean dependency audit.
+- The inspected failing audit logs report **13 high-severity findings** through the picomatch ReDoS advisory. GitHub Advisory Database currently lists picomatch through 4.0.7 as affected and does not state a patched version: [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf). Do not run `npm audit fix --force`; it proposes a breaking ESLint/Next.js downgrade. No dependency change was made.
+
+### 2. Railway live observations
+- The accessible workspace still has only projects `ARIA Web` and `LEADORA`; there is no dedicated VAYRO project.
+- The live VAYRO service in `ARIA Web` is deployed from main SHA `f0d31804e695cd3d73b452c7507affdca9573740` (deployment `ac14c881-c38-40cc-95ef-003de49c4fd7`, 2026-11-11). It has the Railway-generated hostname `vayro-production.up.railway.app`, no custom domain, and no mounted volume.
+- The variable-name inventory exposes only Railway-provided `RAILWAY_*` names; no application database/auth/email configuration variable names were observed. No variable values or secrets were read.
+- Seven-day HTTP proxy metrics: 55 requests total, 44 2xx, 11 4xx, 0 5xx. This aggregate traffic signal does not prove endpoint-specific readiness or live DB connectivity. Retained HTTP logs include 200 responses for page routes and 404s for `/manifest.webmanifest` and `/vayro-mark.svg`; no fresh external probe of health/readiness endpoints was verified.
+- A staged Railway patch remains pending and was not accepted or deployed.
+- A second VAYRO-named service appears in the LEADORA project inventory. It was not inspected further or modified; it is not evidence of independent VAYRO hosting. LEADORA infrastructure remains out of scope for changes.
+
+### 3. Supabase VAYRO-CORE read-only observations
+- Project is `ACTIVE_HEALTHY`, PostgreSQL 17.11.
+- Live public catalog: 11 tables, RLS enabled on all 11, zero policies, zero FORCE RLS tables.
+- Read-only catalog query returned zero `vayro_*` roles and zero table grants to `anon`, `authenticated`, or `public` in the inspected grant view.
+- Supabase migration history is empty.
+- Main Prisma schema contains 15 models. Live catalog still lacks `UserMfa`, `MfaRecoveryCode`, `AuthChallenge`, and `AiGeneration`; live `Session` lacks `revokedAt`, `lastSeenAt`, `assurance`, and `mfaAuthenticatedAt`.
+- Security Advisor reports 11 RLS-enabled/no-policy findings; Health Advisor reports no findings.
+- All database queries in this revalidation were read-only. No production DDL, DML, grants, policies, roles, migrations, resets, or deletes were executed.
+
+### 4. Current decision and next safe sequence
+1. Keep the strict dependency audit visible; wait for a reviewed upstream fix or a separately reviewed compatible mitigation, then update only on a development branch and rerun the full suite.
+2. Resolve the protected backup workflow configuration through the authorized repository/environment owner without sharing secret values in chat; then obtain an encrypted off-host backup and independently restore it into isolated PostgreSQL 17.
+3. Reconcile the restored catalog against Prisma/migration SQL; design roles and table-specific RLS only in that isolated restore; prove positive and negative two-tenant access through the actual restricted runtime role.
+4. Only after those gates, prepare a reviewed production migration and independent hosting plan. Do not change production or reuse ARIA/LEADORA infrastructure.
+
+**Disposition: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.** No production resources, secrets, databases, domains, billing settings, or customer data were changed.
