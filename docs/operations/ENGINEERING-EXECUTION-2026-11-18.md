@@ -74,3 +74,14 @@ This confirms that the issue is not only a stale dashboard or advisor message: l
 ## PR #39 verification status
 
 The documentation and read-only diagnostic are on PR #39. GitHub Actions runs were started for the current PR head: CI run `44314253855` and CodeQL run `44314253046`. At the time of this update both were still in progress; no pass result is claimed.
+
+
+## CI audit finding and workflow adjustment — 2026-11-18
+
+The latest-head CI attempt `44314570768` failed at the dependency audit step before unit tests, Prisma validation, isolated PostgreSQL role/RLS checks, lint, typecheck, build and integration tests could run. The audit identified 13 High findings in the `picomatch` dependency chain, including `GHSA-fc5q-39xc-vjpf` (CVE-2026-112366). The GitHub Advisory currently describes versions through 4.0.7 as affected and does not list a patched version. The advisory is available at https://github.com/advisories/GHSA-fc5q-39xc-vjpf.
+
+CodeQL run `44314570787` completed successfully for the prior PR head. This is a static-analysis pass only; it does not clear the dependency audit finding or production blockers.
+
+A workflow-only change was committed after that attempt (`fc0970da4a20c4219857bd7cc43c56764897e693`): the full unit/schema/isolated-DB/lint/typecheck/build/Docker/integration checks now execute before the dependency audit. The audit remains blocking at `--audit-level=moderate`; no advisory suppression, threshold reduction, or force-upgrade was introduced. This ordering change is intended to expose independent test results while preserving the security gate. A fresh CI run on this new head is still required before any pass claim.
+
+No dependency version was force-upgraded because the upstream advisory does not currently list a patched release. The issue remains an explicit release blocker pending a vendor patch or a reviewed, testable mitigation that does not misrepresent the advisory status.
