@@ -37,7 +37,7 @@ before(async () => {
     process.execPath,
     ["server.js"],
     {
-      env: { ...process.env, NODE_ENV: "production", PORT: String(port), HOSTNAME: "127.0.0.1", NEXT_PUBLIC_APP_URL: origin, VAYRO_OWNER_BOOTSTRAP_TOKEN: bootstrapToken, VAYRO_MFA_ENCRYPTION_KEY: "a".repeat(64), EMAIL_PROVIDER: "disabled-for-test" },
+      env: { ...process.env, NODE_ENV: "production", PORT: String(port), HOSTNAME: "127.0.0.1", NEXT_PUBLIC_APP_URL: origin, VAYRO_OWNER_BOOTSTRAP_TOKEN: bootstrapToken, VAYRO_MFA_ENCRYPTION_KEY: "a".repeat(64), TRUSTED_PROXY_HOPS: "1", EMAIL_PROVIDER: "disabled-for-test" },
       cwd: join(process.cwd(), ".next/standalone"),
       stdio: ["ignore", "ignore", "pipe"]
     }
@@ -881,7 +881,7 @@ test("privileged password login fails closed and old password sessions are rejec
     for (const [email, userId] of [[ownerEmail, ownerId], [adminEmail, adminId]]) {
       const response = await fetch(`${origin}/api/auth/login`, {
         method: "POST",
-        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "X-Forwarded-For": "198.51.100.77, 127.0.0.1", "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
       assert.equal(response.status, 200);
@@ -894,7 +894,7 @@ test("privileged password login fails closed and old password sessions are rejec
 
       const enrollmentResponse = await fetch(`${origin}/api/auth/mfa/enroll`, {
         method: "POST",
-        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "X-Forwarded-For": "198.51.100.77, 127.0.0.1", "Content-Type": "application/json" },
         body: JSON.stringify({ challengeToken: login.challengeToken })
       });
       assert.equal(enrollmentResponse.status, 200);
@@ -904,7 +904,7 @@ test("privileged password login fails closed and old password sessions are rejec
 
       const verifyResponse = await fetch(`${origin}/api/auth/mfa/verify`, {
         method: "POST",
-        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "X-Forwarded-For": "198.51.100.77, 127.0.0.1", "Content-Type": "application/json" },
         body: JSON.stringify({ challengeToken: login.challengeToken, code: totpCode(enrollment.secret) })
       });
       assert.equal(verifyResponse.status, 200);
@@ -921,7 +921,7 @@ test("privileged password login fails closed and old password sessions are rejec
 
       const nextLoginResponse = await fetch(`${origin}/api/auth/login`, {
         method: "POST",
-        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+        headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "X-Forwarded-For": "198.51.100.77, 127.0.0.1", "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
       assert.equal(nextLoginResponse.status, 200);
@@ -930,27 +930,27 @@ test("privileged password login fails closed and old password sessions are rejec
       if (email === ownerEmail) {
         const recovery = await fetch(`${origin}/api/auth/mfa/verify`, {
           method: "POST",
-          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "X-Forwarded-For": "198.51.100.77, 127.0.0.1", "Content-Type": "application/json" },
           body: JSON.stringify({ challengeToken: nextLogin.challengeToken, code: verified.recoveryCodes[0] })
         });
         assert.equal(recovery.status, 200, "a recovery code must allow a single recovery login");
 
         const retryLoginResponse = await fetch(`${origin}/api/auth/login`, {
           method: "POST",
-          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "X-Forwarded-For": "198.51.100.77, 127.0.0.1", "Content-Type": "application/json" },
           body: JSON.stringify({ email, password })
         });
         const retryLogin = await retryLoginResponse.json();
         const reusedRecovery = await fetch(`${origin}/api/auth/mfa/verify`, {
           method: "POST",
-          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "X-Forwarded-For": "198.51.100.77, 127.0.0.1", "Content-Type": "application/json" },
           body: JSON.stringify({ challengeToken: retryLogin.challengeToken, code: verified.recoveryCodes[0] })
         });
         assert.equal(reusedRecovery.status, 401, "a recovery code must not be reusable");
       } else {
         const totpLogin = await fetch(`${origin}/api/auth/mfa/verify`, {
           method: "POST",
-          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "Content-Type": "application/json" },
+          headers: { Origin: `http://localhost:${port}`, Host: `localhost:${port}`, "X-Forwarded-For": "198.51.100.77, 127.0.0.1", "Content-Type": "application/json" },
           body: JSON.stringify({ challengeToken: nextLogin.challengeToken, code: totpCode(enrollment.secret, Date.now() + 30000) })
         });
         assert.equal(totpLogin.status, 200, "an enrolled authenticator must complete subsequent privileged logins");
@@ -979,6 +979,7 @@ test("privileged password login fails closed and old password sessions are rejec
       headers: {
         Origin: `http://localhost:${port}`,
         Host: `localhost:${port}`,
+        "X-Forwarded-For": "198.51.100.77, 127.0.0.1",
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ email: ordinaryEmail, password })
