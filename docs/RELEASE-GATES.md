@@ -479,3 +479,19 @@ This addendum supersedes earlier product-count and product-catalogue wording abo
 ## Current engineering checkpoint — 2026-11-18
 
 See [the dated execution checkpoint](operations/ENGINEERING-EXECUTION-2026-11-18.md) for the exact inspected main SHA, current CI/CodeQL evidence, live VAYRO-CORE/RLS findings, Railway independence status, backup blockers and next acceptance gates. This dated checkpoint supersedes conflicting older status notes above. No production database migration or public release is authorized by a green repository CI run.
+
+
+## Verification update — 2026-11-18 (PR #39 current evidence)
+
+This update supersedes older CI/dependency statements where they conflict.
+
+- CI run [44319284985](https://github.com/gavad54/zelmira-one-/actions/runs/44319284985) on head `e4f7786ebb0b10ce48cec3599d382b7a6954cf96` completed all unit tests, Prisma generation/validation, isolated PostgreSQL migration and role/RLS tests, lint, typecheck, production build, Docker build and PostgreSQL/HTTP integration tests successfully.
+- The only failed CI step was the final full dependency audit: 13 High findings in the development dependency chain involving picomatch/tinyglobby. The lockfile marks the affected paths as development dependencies. The advisory GHSA-fc5q-39xc-vjpf identifies versions through 4.0.7 and lists no patched version.
+- CodeQL run [44319285028](https://github.com/gavad54/zelmira-one-/actions/runs/44319285028) completed successfully.
+- The CI workflow has been updated to run a separate production dependency audit (`npm audit --omit=dev --audit-level=moderate`) before the still-blocking full audit. No audit threshold was lowered, no advisory was suppressed, and no force-upgrade was performed. A fresh result on the new head is required.
+- Fresh VAYRO-CORE Supabase inventory: ACTIVE_HEALTHY PostgreSQL 17.11; 11 public tables, all RLS-enabled, zero rows reported; 11 Security Advisor findings for RLS enabled without policies; empty migration history; 10 unused-index observations; no Health Advisor findings. No production changes were made.
+- [Production reconciliation and recovery plan](operations/PRODUCTION-RECONCILIATION-AND-RECOVERY-PLAN.md) records the exact live-schema drift, role boundaries, staged baseline strategy, required table policy matrix, and precise GitHub Environment secret/variable names for offsite backup and isolated restore. No secrets are stored in the repository.
+
+**Open blockers:** full development dependency audit; missing protected backup/restore configuration and successful restore evidence; live schema/migration baseline and RLS policy reconciliation; dedicated least-privilege runtime roles; independent VAYRO hosting; email, billing, product integrations, Android and UAT.
+
+**Release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
