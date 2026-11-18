@@ -2,9 +2,9 @@ name: VAYRO CI
 
 on:
   push:
-    branches: [main, brand/vayro-name-only, feature/vayro-real-dashboard]
+    branches: [main, brand/vayro-name-only, feature/vayro-real-dashboard, fix/trusted-proxy-rate-limit-fail-closed]
   pull_request:
-    branches: [main, experiment/cloudflare-free-hosting-audit]
+    branches: [main, experiment/cloudflare-free-hosting-audit, feature/vayro-real-dashboard]
 
 permissions:
   contents: read
