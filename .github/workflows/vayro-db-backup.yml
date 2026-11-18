@@ -103,13 +103,28 @@ jobs:
             exit 1
           fi
 
-          echo "Encrypted backup uploaded and object sizes verified: s3://$B2_BUCKET/$key"
+          # Verify the bytes actually stored remotely, not only their metadata sizes.
+          remote_verify_dir="$RUNNER_TEMP/vayro-backup/remote-verify"
+          mkdir -p "$remote_verify_dir"
+          chmod 700 "$remote_verify_dir"
+          aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
+            s3 cp "s3://$B2_BUCKET/$key" "$remote_verify_dir/vayro.dump.age" --only-show-errors
+          aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
+            s3 cp "s3://$B2_BUCKET/$key.sha256" "$remote_verify_dir/vayro.dump.age.sha256" --only-show-errors
+          (
+            cd "$remote_verify_dir"
+            sha256sum --check --strict vayro.dump.age.sha256
+          )
+          rm -rf "$remote_verify_dir"
+
+          echo "Encrypted backup uploaded; remote bytes and SHA-256 verified: s3://$B2_BUCKET/$key"
           {
             echo "## VAYRO encrypted backup upload"
             echo "- Object: s3://$B2_BUCKET/$key"
             echo "- Encrypted object bytes: $remote_dump_size"
             echo "- Checksum sidecar bytes: $remote_checksum_size"
             echo "- B2 HEAD metadata size verification: passed"
+            echo "- Downloaded remote object SHA-256 verification: passed"
             echo "- This does not replace an independent restore drill."
           } >> "$GITHUB_STEP_SUMMARY"
           echo "object_key=$key" >> "$GITHUB_OUTPUT"
