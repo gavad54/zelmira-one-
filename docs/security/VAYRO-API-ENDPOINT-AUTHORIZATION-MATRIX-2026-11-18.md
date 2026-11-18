@@ -2,8 +2,10 @@
 **تاریخ:** 2026-11-18  
 **مخزن:** `gavad54/zelmira-one-`  
 **شاخه:** `engineering/vayro-hardening-2026-11-18`  
-**Commit مبنای بررسی کد:** `f16aa370b7cdc0c28b0b3e8820f0d33ef23b57f5`  
-**Commit آزمون افزوده‌شده برای نقص MFA:** `ac5a2390bd5ad7c00b85bf7099a1708ac158ad59`  
+**Commit مبنای کد پس از اصلاحات:** `cefae369dfe975068a5006e32187d61645d1ecc6`  
+**Commit آزمون قرمز اولیه:** `ac5a2390bd5ad7c00b85bf7099a1708ac158ad59`  
+**Commit اصلاح login:** `7e34dc6a2a68c879dcf76e8fa612ab5fdcc3cccb`  
+**Commit آزمون و مرزبندی DANA:** `7560e0cb0ee051697477260aff8fd337bc8cee88` / `cefae369dfe975068a5006e32187d61645d1ecc6`  
 **محدوده:** تمام مسیرهای `src/app/api/**/route.ts`، میان‌افزار، auth/session/MFA، owner/platform transaction، tenant authorization/transaction و تست‌های مرتبط.
 
 ## 1. خلاصه ممیزی
@@ -100,16 +102,14 @@
 ## 5. یافته‌های ممیزی و اولویت اصلاح
 
 ### API-AUTH-001 — High: عبور از MFA برای حساب عادی دارای MFA فعال
-**وضعیت در Commit مبنا: OPEN / CONFIRMED BY CODE REVIEW**
+**وضعیت: FIX APPLIED IN ENGINEERING BRANCH; CI VALIDATION PENDING**
 
-در `/api/auth/login` شرط challenge فقط `isPrivilegedRole(...)` بود. نتیجه: کاربر غیرممتاز با `UserMfa.enabledAt` می‌توانست نشست PASSWORD دریافت کند، هرچند عامل MFA برای حسابش فعال باشد.
+در `/api/auth/login` شرط challenge فقط `isPrivilegedRole(...)` بود. آزمون HTTP جدید روی commit `ac5a239` این نقص را به‌صورت قطعی بازتولید کرد: برای حساب عادی دارای MFA، پاسخ `200` و session PASSWORD صادر شد، درحالی‌که انتظار `202` و MFA challenge بود.
 
-**اصلاح لازم:** ورود به challenge اگر حساب ممتاز است یا `mfa.enabledAt` دارد. purpose برای حساب MFAدار باید LOGIN_MFA و برای حساب ممتاز بدون عامل فعال باید MFA_ENROLLMENT باشد. آزمون HTTP جدید افزوده شده که باید اثبات کند حساب عادی MFAدار challenge می‌گیرد و Cookie/نشست PASSWORD صادر نمی‌شود؛ حساب عادی بدون MFA همچنان می‌تواند password-only وارد شود.
+**اصلاح انجام‌شده:** شرط ورود به challenge اکنون `privileged || mfa?.enabledAt` است. purpose برای حساب MFAدار `LOGIN_MFA` و برای حساب ممتاز بدون عامل فعال `MFA_ENROLLMENT` باقی می‌ماند. آزمون جدید همچنین نبود Cookie و نبود session را بررسی می‌کند؛ آزمون موجود حساب عادی بدون MFA همچنان مسیر PASSWORD را می‌سنجد. CI پس از اصلاح روی commit `cefae36` در حال اجراست؛ تا تکمیل آن، این اصلاح `TESTED` اعلام نمی‌شود.
 
-### API-ARCH-002 — Medium: DANA در API کاتالوگ به‌عنوان Product معرفی می‌شود
-در `/api/ai-business-suite/capabilities` مقدار DANA در مجموعه `PRODUCTS` است، درحالی‌که قرارداد محصولی پروژه DANA را موتور داخلی می‌داند، نه محصول مستقل. API مالک محصولات، DANA را از سبد ۱۱ محصول حذف می‌کند؛ این endpoint باید همسو شود.
-
-**اقدام:** حذف DANA از فهرست محصولات مستقل و نگه‌داشتن DANA صرفاً در فهرست موتور/قابلیت داخلی در صورت نیاز.
+### API-ARCH-002 — Medium: DANA در API کاتالوگ به‌عنوان Product معرفی می‌شد
+در نسخه بررسی‌شده مقدار DANA در مجموعه `PRODUCTS` بود، درحالی‌که قرارداد محصولی پروژه DANA را موتور داخلی می‌داند. این مورد اصلاح شد: DANA از مجموعه محصولات مستقل حذف شده و در صورت نیاز فقط در فهرست موتورهای داخلی باقی می‌ماند. آزمون API اکنون صریحاً بررسی می‌کند که `body.products` شامل DANA نباشد. نتیجه CI این تغییر هنوز در انتظار است.
 
 ### API-AUTH-003 — Medium: تازگی MFA برای عملیات ممتاز ۱۲ ساعت است
 `authorizeOwnerSession` و `withPlatformOwnerTransaction` نشست MFA تا ۱۲ ساعت را برای تمام عملیات Owner می‌پذیرند. این یک سیاست پیاده‌سازی‌شده است، نه خطای احراز هویت؛ اما برای تغییرات پراثر مانند صدور/لغو License، تغییر مقصد ایمیل مالک و تغییر وضعیت محصول، پیشنهاد می‌شود Step-up کوتاه‌تر (مثلاً ۱۵ دقیقه) یا تأیید مجدد رمز/عامل MFA تعریف شود.
@@ -161,7 +161,7 @@
 6. پس از Backup/Restore مستقل، schema reconciliation و RLS policy review، ارائه گزارش مستقل تطبیق Production؛ تا آن زمان Production همچنان BLOCKED است.
 
 ## 8. تصمیم امنیتی
-- **کد API:** ممیزی ایستا انجام شد؛ یک نقص MFA و یک مغایرت مرزبندی DANA شناسایی شد.
+- **کد API:** ممیزی ایستا انجام شد؛ نقص MFA و مغایرت DANA شناسایی شدند؛ هر دو در شاخه مهندسی اصلاح شده‌اند و نتیجه CI نسخه اصلاحی هنوز در انتظار است.
 - **آزمون‌ها:** پوشش قابل توجه وجود دارد اما تمام ۴۹ عملیات هنوز آزمون پذیرش مستقل ندارند.
 - **دیتابیس Production:** BLOCKED؛ ۱۱ جدول RLS-enabled، صفر policy، migration ledger خالی و runtime roles اختصاصی مشاهده‌نشده در ممیزی زنده قبلی.
 - **تغییر Production:** هیچ‌کدام انجام نشده و مجاز نیست.
