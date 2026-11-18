@@ -11,8 +11,8 @@ Scope: evidence-led engineering checkpoint. No production mutations, migrations,
 - Default branch: `main`; current ref resolves to `f0d31804e695cd3d73b452c7507affdca9573740`.
 - Historical anchor `28e1990ade2a5dc6efd4656091ec9a135de83245` exists, authored 2026-11-18T05:48:32Z, unsigned. It is not main. Comparison main...28e1990 reports `diverged`, 533 ahead / 17 behind; this is not a safe integration base.
 - PR #2 is MERGED (2026-11-09T18:07:01Z), merge commit `4e98a25503f94c2dc5d4ebc11a804f64d6568d5c`. Earlier reports describing it as open are stale.
-- PR #31 is OPEN / DRAFT / unmerged; current PR head `7a0426421fe4942c840dee28f6ab9c1626d437c2`, base `feature/vayro-real-dashboard` at `a0a5ca910b0e4978a0efb912a389d04172beff21`. PR description says repository CI does not run on this base branch and no full local suite was run. An earlier commit `28e1990...` has VAYRO CI run 44246815056 with conclusion FAILURE.
-- Exact main combined status endpoint currently reports one success status context: Railway deployment status only. This is not a complete CI/CodeQL result.
+- PR #31 is OPEN / DRAFT / unmerged; current PR head `7a0426421fe4942c840dee28f6ab9c1626d437c2`, base `feature/vayro-real-dashboard` at `a0a5ca910b0e4978a0efb912a389d04172beff21`. Exact-head VAYRO CI push run 44251679056 and PR run 44251684140 both completed with FAILURE on 2026-11-18. An earlier commit `28e1990...` also has VAYRO CI run 44246815056 with FAILURE.
+- Exact main combined status endpoint reports only one success status context (Railway deployment status). The last main VAYRO CI and CodeQL successes are 43048676444 and 43048671466 from 2026-11-11; no fresh main CI/CodeQL run was found for 2026-11-18.
 - The files `docs/RELEASE-GATES.md`, `docs/ARCHITECTURE.md`, and `docs/PRODUCT-BOUNDARIES.md` exist on main. The file `docs/verification/SCHEMA-RECONCILIATION-2026-11-17.md` was not found at the requested main path (404); do not assume it is present on main based on PR text.
 
 ## Task registry
@@ -20,7 +20,7 @@ Scope: evidence-led engineering checkpoint. No production mutations, migrations,
 | Task ID | Priority | Domain | Root cause / finding | Status | Acceptance evidence required |
 |---|---|---|---|---|---|
 | V9-001 | P0 | Git governance | Main remains at f0d3180; historical anchor 28e1990 is divergent and cannot be treated as current main | VERIFIED | Current ref and compare API snapshots |
-| V9-002 | P0 | CI / PR31 | PR31 head is 7a04264 on a non-main base; earlier 28e1990 CI failed; exact current-head complete CI not established | BLOCKED | CI, CodeQL and audit on exact PR head; independent review; no merge in this task |
+| V9-002 | P0 | CI / PR31 | PR31 head 7a04264 is on a non-main base; exact-head CI runs 44251679056 and 44251684140 both failed | BLOCKED | CI, CodeQL and audit on exact PR head; independent review; no merge in this task |
 | V9-003 | P0 | Dependency security | Earlier audit evidence reports 13 High findings, but the exact current main lockfile audit has not been freshly executed in this pass | IN_PROGRESS | Full current-lockfile advisory inventory, dependency paths, compatible patched versions, exact-head audit and tests |
 | V9-004 | P0 | Database schema | Live VAYRO-CORE has 11 public tables; Prisma defines 15 models; MFA/AI models and Session columns are absent | BLOCKED | Object-by-object catalog diff, migration-chain rehearsal on verified isolated restore, forward/rollback evidence |
 | V9-005 | P0 | Migration history | Live Supabase migration history is empty; no baseline is recorded | BLOCKED | Independently verified backup and isolated restore before baseline design/rehearsal; no production baseline action |
