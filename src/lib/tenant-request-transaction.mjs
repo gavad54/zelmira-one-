@@ -214,7 +214,7 @@ export async function createTenantForAuthenticatedUser({
     await assertTenantRuntimeRole(tx);
     await tx.$queryRaw`SELECT
       set_config('app.user_id', ${initial.user.id}, true),
-      set_config('app.tenant_id', '', true),
+      set_config('app.tenant_id', ${tenantId}, true),
       set_config('app.session_token_hash', ${tokenHash}, true),
       set_config('app.user_role', '', true)
     `;
