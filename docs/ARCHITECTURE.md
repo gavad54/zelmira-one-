@@ -10,7 +10,7 @@ VAYRO is the platform shell and governance plane for independent specialist prod
 - Eleven initial Prisma-aligned tables are provisioned. RLS is enabled on all eleven; client-role table privileges are revoked. No user, tenant or sample records were inserted.
 - The schema was provisioned directly. Prisma migration history is not yet baselined; do not run migrate deploy until baseline reconciliation and isolated forward/rollback testing are complete.
 - GitHub Actions CI and CodeQL are configured.
-- No VAYRO application hosting or production deployment exists. Railway free-plan resource limits blocked a separate project.
+- No independently controlled VAYRO hosting project or production deployment was verified. A VAYRO-named service exists inside the ARIA Web Railway project; a similarly named service exists inside LEADORA. These are not independent VAYRO hosting and must not be repurposed as a shortcut.
 
 ## Implemented foundation (not production certification)
 - Public Persian-first product directory and responsive web shell.
@@ -69,3 +69,8 @@ The Command Center provides portfolio oversight, people/access, commercial opera
 - A Railway service named `VAYRO` exists in project `ARIA Web`, not in an independently controlled VAYRO project. Its latest deployment reports SUCCESS on 2026-11-11, but the service has no configured variable names, no mounted volumes and no custom domain. Deployment success alone does not prove the application can connect to VAYRO-CORE or pass runtime readiness.
 - VAYRO-CORE remains ACTIVE_HEALTHY (PostgreSQL 17.11), but its live Prisma migration history is empty. The live catalog contains 11 public tables, all with RLS enabled, but no RLS policies; Supabase Security Advisor reports 11 RLS-enabled/no-policy findings. The tables currently report zero rows.
 - Repository migrations and isolated CI prove the intended schema works in disposable PostgreSQL; they do not reconcile or secure the live database. Do not apply migrations or grants to production until encrypted external backup, successful isolated restore, schema/object reconciliation, and rehearsed recovery are evidenced.
+
+
+## Current infrastructure reconciliation — 2026-11-18
+
+The dated read-only checkpoint in [ENGINEERING-EXECUTION-2026-11-18](operations/ENGINEERING-EXECUTION-2026-11-18.md) supersedes older hosting and database status notes. In particular, the live VAYRO-CORE catalog currently has RLS enabled but no policies, an empty migration history, and schema drift from the Prisma models. The backup workflow has not produced a verified production backup because protected credentials/configuration are absent. Do not run production migrations or grant runtime access until the schema diff, least-privilege role design, offsite backup and independent restore drill are complete.
