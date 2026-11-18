@@ -74,3 +74,14 @@ The Command Center provides portfolio oversight, people/access, commercial opera
 ## Current infrastructure reconciliation — 2026-11-18
 
 The dated read-only checkpoint in [ENGINEERING-EXECUTION-2026-11-18](operations/ENGINEERING-EXECUTION-2026-11-18.md) supersedes older hosting and database status notes. In particular, the live VAYRO-CORE catalog currently has RLS enabled but no policies, an empty migration history, and schema drift from the Prisma models. The backup workflow has not produced a verified production backup because protected credentials/configuration are absent. Do not run production migrations or grant runtime access until the schema diff, least-privilege role design, offsite backup and independent restore drill are complete.
+
+
+## Database recovery and RLS evidence — 2026-11-18
+
+The latest live VAYRO-CORE inventory is documented in [the production reconciliation and recovery plan](operations/PRODUCTION-RECONCILIATION-AND-RECOVERY-PLAN.md). Supabase reports 11 existing public tables, all with RLS enabled but no policies; migration history is empty; four Prisma tables and four Session lifecycle columns are missing; dedicated runtime roles are absent; and the AuditEvent tenant FK is missing. The inventory reported zero rows in the 11 existing tables. These observations do not authorize production DDL.
+
+The intended security boundary remains fail-closed: ordinary tenant requests must use a dedicated non-BYPASSRLS runtime role; auth and platform/owner operations use separate least-privilege roles; browser roles receive no direct table access absent a separately reviewed public-read requirement. Policies must be built from a table-by-table access matrix and negative tests, not generic allow-all rules.
+
+The encrypted backup and isolated restore workflows are present but have not completed successfully with real protected credentials and an independently controlled restore target. The exact required environment configuration is recorded in the recovery plan. No secret values belong in this repository.
+
+On PR #39, CI run 44319284985 completed tests, isolated migration/role/RLS checks, lint, typecheck, production build, Docker build and integration tests; the full dependency audit alone failed with 13 High dev-dependency findings in the picomatch chain. CodeQL run 44319285028 passed. A separate production-only audit is now part of CI, but requires a fresh result on the new head.
