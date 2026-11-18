@@ -1090,6 +1090,7 @@ test("AI capability catalogue is public, read-only and validates its filters", a
   assert.ok(Array.isArray(body.products));
   assert.ok(Array.isArray(body.engines));
   assert.ok(Array.isArray(body.capabilities));
+  assert.ok(!body.products.includes("DANA"), "DANA is an internal engine, not an independent product");
   assert.match(response.headers.get("cache-control") ?? "", /public/);
 
   const invalidProduct = await fetch(`${origin}/api/ai-business-suite/capabilities?product=NOT_A_PRODUCT`);
