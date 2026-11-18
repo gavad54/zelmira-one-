@@ -60,7 +60,10 @@ export async function POST(request: Request) {
     }),
     authPrisma.userMfa.findUnique({ where: { userId: user.id }, select: { enabledAt: true } })
   ]);
-  if (isPrivilegedRole(user.platformRole, membership ? [membership.role] : [])) {
+  const privileged = isPrivilegedRole(user.platformRole, membership ? [membership.role] : []);
+  // Every account that has enrolled an MFA factor must prove it at each login;
+  // privileged accounts must enroll before receiving their first session.
+  if (privileged || mfa?.enabledAt) {
     const purpose = mfa?.enabledAt ? "LOGIN_MFA" : "MFA_ENROLLMENT";
     const challenge = await createMfaChallenge(user.id, purpose);
     await authPrisma.auditEvent.create({
