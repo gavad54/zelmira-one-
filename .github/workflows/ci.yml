@@ -2,9 +2,9 @@ name: VAYRO CI
 
 on:
   push:
-    branches: [main, brand/vayro-name-only, feature/vayro-real-dashboard]
+    branches: [main, brand/vayro-name-only, feature/vayro-real-dashboard, fix/trusted-proxy-rate-limit-fail-closed]
   pull_request:
-    branches: [main, experiment/cloudflare-free-hosting-audit]
+    branches: [main, experiment/cloudflare-free-hosting-audit, feature/vayro-real-dashboard]
 
 permissions:
   contents: read
@@ -54,6 +54,8 @@ jobs:
         run: npx prisma migrate deploy
       - name: Assert complete VAYRO migration and privilege contract
         run: psql "postgresql://ci:ci@localhost:5432/vayro_ci" -v ON_ERROR_STOP=1 -f prisma/verification/assert-migration-contract.sql
+      - name: Execute read-only privilege and ownership inventory
+        run: psql "postgresql://ci:ci@localhost:5432/vayro_ci" -v ON_ERROR_STOP=1 -f prisma/verification/live-privilege-inventory.sql
       - name: Verify migration deployment is idempotent
         run: npx prisma migrate deploy
       # Rehearse adoption of an existing legacy schema without replaying init.
