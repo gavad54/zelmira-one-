@@ -6,3 +6,4 @@ export function hashSessionToken(token: string): string;
 export function isSameOriginRequest(request: Request): boolean;
 
 export function getTrustedClientAddress(forwardedFor: string | null, trustedProxyHops: number): string | null;
+export function shouldAllowIpAttempt(nodeEnv: string | undefined, fingerprint: string | null): boolean;
