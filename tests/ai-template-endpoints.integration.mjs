@@ -108,7 +108,9 @@ test("DANA and NEGAH template endpoints enforce tenant roles and NEGAH license b
   };
   const rateKeys = [
     createHash("sha256").update("ai:dana-prompt-studio:" + user.id).digest("hex"),
-    createHash("sha256").update("ai:negah-creative-brief:" + user.id).digest("hex")
+    createHash("sha256").update("ai:negah-creative-brief:" + user.id).digest("hex"),
+    createHash("sha256").update("ai:dana:" + user.id).digest("hex"),
+    createHash("sha256").update("ai:negah:" + user.id).digest("hex")
   ];
 
   try {
@@ -138,6 +140,12 @@ test("DANA and NEGAH template endpoints enforce tenant roles and NEGAH license b
       where: { userId_tenantId: { userId: user.id, tenantId: tenant.id } },
       data: { role: "MEMBER" }
     });
+    const unlicensedNegahGeneration = await fetch(`${origin}/api/negah/generate`, {
+      method: "POST", headers, body: JSON.stringify({ tenantId: tenant.id, prompt: "Create a clean product image" })
+    });
+    assert.equal(unlicensedNegahGeneration.status, 403, "NEGAH image generation requires a valid product license");
+    assert.equal((await unlicensedNegahGeneration.json()).error, "negah_license_required");
+
     const unlicensedNegah = await fetch(`${origin}/api/negah/creative-brief`, {
       method: "POST", headers, body: JSON.stringify(negahPayload)
     });
@@ -178,6 +186,24 @@ test("DANA and NEGAH template endpoints enforce tenant roles and NEGAH license b
     assert.equal(negahBody.imageProviderUsed, false);
     assert.equal(negahBody.assetRendered, false);
     assert.equal(negahBody.persisted, false);
+
+    const danaGenerationBefore = await db.aiGeneration.count({ where: { tenantId: tenant.id, kind: "DANA_TEXT" } });
+    const danaGeneration = await fetch(`${origin}/api/dana/generate`, {
+      method: "POST", headers, body: JSON.stringify({ tenantId: tenant.id, prompt: "Create a business plan" })
+    });
+    assert.equal(danaGeneration.status, 503, "DANA provider execution must remain blocked until usage billing is implemented");
+    assert.equal((await danaGeneration.json()).error, "billing_not_configured");
+    assert.equal(await db.aiGeneration.count({ where: { tenantId: tenant.id, kind: "DANA_TEXT" } }), danaGenerationBefore,
+      "blocked DANA execution must not call or persist a provider result");
+
+    const negahGenerationBefore = await db.aiGeneration.count({ where: { tenantId: tenant.id, kind: "NEGAH_IMAGE" } });
+    const negahGeneration = await fetch(`${origin}/api/negah/generate`, {
+      method: "POST", headers, body: JSON.stringify({ tenantId: tenant.id, prompt: "Create a clean product image" })
+    });
+    assert.equal(negahGeneration.status, 503, "NEGAH provider execution must remain blocked until usage billing is implemented");
+    assert.equal((await negahGeneration.json()).error, "billing_not_configured");
+    assert.equal(await db.aiGeneration.count({ where: { tenantId: tenant.id, kind: "NEGAH_IMAGE" } }), negahGenerationBefore,
+      "blocked NEGAH execution must not call or persist a provider result");
 
     const crossOrigin = await fetch(`${origin}/api/negah/creative-brief`, {
       method: "POST",
