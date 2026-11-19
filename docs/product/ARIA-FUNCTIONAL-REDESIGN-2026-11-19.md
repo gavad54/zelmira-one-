@@ -45,4 +45,4 @@ VAYRO has five direct independent applications: DANA, ARIA, ARIANA, LEADORA and 
 7. Enable commercial transactions only after sandbox, reconciliation, refunds, privacy/legal review and owner approval.
 
 ## Evidence rule
-The current web source has 60 catalogue records (2 foundation, 5 prototype, 53 planned) at main SHA 350a05a7e80189df4b24359d03ed1c0fc7e7f178. This is not the full Android registry. Catalogue presence, a green syntax test, or an HTTP 200 response does not prove a complete capability. The full source and all historical products remain subject to inventory.
+The current web source has 65 catalogue records (2 foundation, 5 prototype, 58 planned) at main SHA 350a05a7e80189df4b24359d03ed1c0fc7e7f178. This is not the full Android registry. Catalogue presence, a green syntax test, or an HTTP 200 response does not prove a complete capability. The full source and all historical products remain subject to inventory.
