@@ -315,3 +315,100 @@ test("public owner email-contact confirmation endpoint throttles repeated invali
     await db.$disconnect();
   }
 });
+
+
+test("public owner email-contact confirmation accepts one valid token once and rejects expired tokens", async () => {
+  const db = new PrismaClient();
+  await db.$connect();
+  const suffix = randomUUID();
+  const validIpKey = createHash("sha256")
+    .update("owner-email-contact-confirm:ip:198.51.100.45")
+    .digest("hex");
+  const expiredIpKey = createHash("sha256")
+    .update("owner-email-contact-confirm:ip:198.51.100.46")
+    .digest("hex");
+  const validRawToken = randomBytes(32).toString("hex");
+  const expiredRawToken = randomBytes(32).toString("hex");
+  let validContactId;
+  let expiredContactId;
+  const headersFor = ip => ({
+    Origin: origin,
+    Host: `localhost:${port}`,
+    "Content-Type": "application/json",
+    "X-Forwarded-For": `${ip}, 127.0.0.1`
+  });
+  try {
+    await db.authRateLimit.deleteMany({ where: { keyHash: { in: [validIpKey, expiredIpKey] } } });
+    const validContact = await db.emailContact.create({
+      data: {
+        email: `confirm-valid-${suffix}@example.invalid`,
+        label: "Valid confirmation",
+        purposes: [EmailPurpose.SUPPORT],
+        enabled: true
+      }
+    });
+    validContactId = validContact.id;
+    await db.emailContactVerificationToken.create({
+      data: {
+        contactId: validContact.id,
+        tokenHash: createHash("sha256").update(validRawToken).digest("hex"),
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000)
+      }
+    });
+
+    const valid = await fetch(`${origin}/api/owner/email-contacts/confirm`, {
+      method: "POST",
+      headers: headersFor("198.51.100.45"),
+      body: JSON.stringify({ token: validRawToken })
+    });
+    assert.equal(valid.status, 200, "a valid bearer capability verifies the selected contact");
+    assert.deepEqual(await valid.json(), { verified: true });
+    const verifiedContact = await db.emailContact.findUnique({ where: { id: validContact.id } });
+    assert.ok(verifiedContact?.verifiedAt, "contact must be marked verified");
+    const consumedToken = await db.emailContactVerificationToken.findUnique({
+      where: { tokenHash: createHash("sha256").update(validRawToken).digest("hex") }
+    });
+    assert.ok(consumedToken?.consumedAt, "the bearer token must be consumed atomically");
+    assert.ok(await db.auditEvent.findFirst({
+      where: { action: "email_contact.verified", resourceId: validContact.id }
+    }), "successful verification must be audited");
+
+    const replay = await fetch(`${origin}/api/owner/email-contacts/confirm`, {
+      method: "POST",
+      headers: headersFor("198.51.100.45"),
+      body: JSON.stringify({ token: validRawToken })
+    });
+    assert.equal(replay.status, 400, "a consumed bearer token cannot be replayed");
+
+    const expiredContact = await db.emailContact.create({
+      data: {
+        email: `confirm-expired-${suffix}@example.invalid`,
+        label: "Expired confirmation",
+        purposes: [EmailPurpose.SUPPORT],
+        enabled: true
+      }
+    });
+    expiredContactId = expiredContact.id;
+    await db.emailContactVerificationToken.create({
+      data: {
+        contactId: expiredContact.id,
+        tokenHash: createHash("sha256").update(expiredRawToken).digest("hex"),
+        expiresAt: new Date(Date.now() - 60_000)
+      }
+    });
+    const expired = await fetch(`${origin}/api/owner/email-contacts/confirm`, {
+      method: "POST",
+      headers: headersFor("198.51.100.46"),
+      body: JSON.stringify({ token: expiredRawToken })
+    });
+    assert.equal(expired.status, 400, "expired bearer tokens must be rejected");
+    assert.equal((await db.emailContact.findUnique({ where: { id: expiredContact.id } })).verifiedAt, null);
+  } finally {
+    const contactIds = [validContactId, expiredContactId].filter(Boolean);
+    await db.emailContactVerificationToken.deleteMany({ where: { contactId: { in: contactIds } } });
+    await db.auditEvent.deleteMany({ where: { resource: "EmailContact", resourceId: { in: contactIds } } });
+    await db.emailContact.deleteMany({ where: { id: { in: contactIds } } });
+    await db.authRateLimit.deleteMany({ where: { keyHash: { in: [validIpKey, expiredIpKey] } } });
+    await db.$disconnect();
+  }
+});
