@@ -187,6 +187,13 @@ The authorization test suite now enumerates all five tenant roles against all se
 - Ordinary PASSWORD-only sessions for non-privileged users retain self-service revocation; platform privileged roles cannot use PASSWORD-only sessions.
 - tests/session-lifecycle.integration.mjs verifies stale-MFA denial for both single-session and revoke-all operations and confirms target sessions remain active.
 
+### Paid DANA / NEGAH provider routes
+
+- POST /api/dana/generate and POST /api/negah/generate remain tenant-authorized and rate-limited, but provider execution is now fail-closed while the credit ledger, idempotent charging and provider-usage reconciliation do not exist.
+- Both routes return HTTP 503 billing_not_configured before invoking an external provider or writing an AiGeneration record.
+- NEGAH image generation additionally requires an active NEGAH product and a valid license for the selected tenant. DANA remains an internal capability and does not require a separate DANA product license.
+- The production HTTP integration test asserts that unlicensed NEGAH generation is denied and that both provider routes remain blocked without provider calls or generation persistence. The DANA and NEGAH UI pages explain this state to the user.
+
 ### Verification state
 
 - Changes are committed to engineering/vayro-hardening-2026-11-18.
