@@ -141,3 +141,54 @@ Several authenticated template endpoints do not visibly use the same rate-limit 
 - Integration evidence: **PASS** on the cited CI head.
 - Production authorization assurance: **BLOCKED** by the previously observed Production RLS/schema/runtime-role drift.
 - Commercial readiness: **NOT VERIFIED**.
+
+
+---
+
+## 8. Engineering re-audit and hardening addendum — 2026-11-19
+
+This addendum supersedes the earlier source observations in this document for the routes listed below. It records code changes on the engineering branch; it does **not** claim CI or Production verification for these new commits.
+
+### Tenant role/action matrix
+
+The authorization test suite now enumerates all five tenant roles against all seven declared actions:
+
+| Role | tenant_read | tenant_manage | members_manage | billing_manage | tenant_delete | ai_generate | ai_read |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| OWNER | Allow | Allow | Allow | Allow | Allow | Allow | Allow |
+| ADMIN | Allow | Allow | Allow | Deny | Deny | Allow | Allow |
+| MANAGER | Allow | Deny | Deny | Deny | Deny | Allow | Allow |
+| MEMBER | Allow | Deny | Deny | Deny | Deny | Allow | Allow |
+| VIEWER | Allow | Deny | Deny | Deny | Deny | Deny | Deny |
+
+- Unit coverage exercises the full matrix through both the pure permission evaluator and the DB-backed request authorization boundary.
+- PostgreSQL integration coverage now exercises every role/action pair, plus OWNER/ADMIN password-only, stale-MFA and future-dated-MFA denials.
+- Cross-tenant, expired, revoked, disabled-user and inactive-tenant denial cases remain covered by the existing integration suite.
+- OWNER and ADMIN require a valid MFA assurance timestamp no more than 12 hours old for tenant requests; MANAGER, MEMBER and VIEWER do not receive that privileged step-up requirement.
+
+### DANA and NEGAH template endpoints
+
+- POST /api/dana/prompt-studio now requires tenantId, a verified active session, active tenant membership, and ai_generate permission. OWNER/ADMIN are subject to the existing fresh-MFA gate. It is rate-limited to 30 requests per user per minute. DANA is an internal VAYRO capability, so no separate DANA product license is required. It remains a template-only operation: no external AI provider call and no persistence.
+- POST /api/negah/creative-brief now requires the same tenant authorization and ai_generate permission, plus an active NEGAH product and a currently valid license for that tenant. It is rate-limited to 20 requests per user per minute. The endpoint remains a brief/template operation, not image generation, asset rendering or persistence.
+- Both routes reject cross-origin writes and return no-store responses. Tenant context is removed from the prompt-builder input after authorization so it is not copied into generated prompt text.
+- tests/ai-template-endpoints.integration.mjs exercises own-tenant success, cross-tenant denial, VIEWER denial, NEGAH unlicensed denial, licensed NEGAH success, and cross-origin rejection.
+
+### Owner email confirmation
+
+- POST /api/owner/email-contacts/confirm now applies a database-backed IP throttle before parsing or looking up a bearer token: 20 attempts per trusted client IP per 15 minutes.
+- Missing/untrusted proxy identity fails closed. Production must set TRUSTED_PROXY_HOPS to the exact trusted proxy chain; do not trust arbitrary client-supplied forwarding headers.
+- Responses for invalid tokens, rate limits and service failures are non-cacheable.
+- tests/owner-email-endpoints.integration.mjs now checks that the 21st attempt from one trusted test IP is throttled.
+
+### Session revocation
+
+- POST /api/auth/sessions/revoke and POST /api/auth/sessions/revoke-all now require fresh MFA for platform OWNER/PLATFORM_ADMIN sessions and for sessions carrying MFA assurance.
+- A stale or invalid MFA timestamp returns HTTP 403 mfa_required without revoking any session.
+- Ordinary PASSWORD-only sessions for non-privileged users retain self-service revocation; platform privileged roles cannot use PASSWORD-only sessions.
+- tests/session-lifecycle.integration.mjs verifies stale-MFA denial for both single-session and revoke-all operations and confirms target sessions remain active.
+
+### Verification state
+
+- Changes are committed to engineering/vayro-hardening-2026-11-18.
+- CI and CodeQL for the earlier API-matrix documentation commit passed. The new tests and code changes listed in this addendum have not yet produced a visible Actions run in the current connector evidence; do not mark them CI-verified until a run is observed on the exact final head.
+- No Production DDL, migration, role grant, RLS policy, data write, merge, deployment, payment activation or paid provider activation was performed.
