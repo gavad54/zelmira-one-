@@ -18,10 +18,11 @@ All five are direct children of VAYRO. DANA is not a parent of the other applica
 
 ## ARIA legacy consolidation
 
-The currently known legacy initiatives to audit as ARIA modules are **ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM**, plus the existing ARIA capabilities. The historical count of eleven or twelve apps is not yet reconciled from all original source repositories and archives. Do not treat the seven names as a complete inventory.
+The currently known legacy initiatives to audit as ARIA modules are **ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM**, plus the existing ARIA capabilities. The 2026-11-18 execution matrix names eleven historical products: the seven ARIA consolidation targets plus ARIA, ARIANA, LEADORA and ARMIN MARKET. DANA was then recorded as an internal VAYRO engine; the current owner decision makes it the fifth independent app. Source completeness for all seven consolidation targets is still not proven.
 
 - [ARIA functional redesign and delivery gates](https://github.com/gavad54/aria-android/blob/engineering/aria-functional-redesign-2026-11-19/docs/ARIA_FUNCTIONAL_REDESIGN_2026-11-19_FA.md)
 - [ARIA legacy source and capability inventory](https://github.com/gavad54/aria-android/blob/engineering/aria-functional-redesign-2026-11-19/docs/ARIA_LEGACY_CAPABILITY_INVENTORY_2026-11-19_FA.md)
+- [ARIA 32 source repair report](https://github.com/gavad54/aria-android/blob/engineering/aria-functional-redesign-2026-11-19/docs/ARIA_32_SOURCE_REPAIR_REPORT_FA.md)
 
 Every legacy capability must be mapped to a source, owner, target module, API/data contract, test and disposition. No capability or data may be silently deleted or migrated. Any data movement requires source-to-target mapping, independent backup, dry run, integrity checks and rollback/forward-repair plan.
 
