@@ -2,9 +2,9 @@
 **Audit date:** 2026-11-19  
 **Repository:** `gavad54/zelmira-one-`  
 **Branch:** `engineering/vayro-hardening-2026-11-18`  
-**Audited tree:** `cc32fe6abd79cf45dda85381ea19ca36928bd42e`  
+**Audited tree:** `d8f2e762d2d744b10a8c0359de262eb75e06377d`  
 **Scope:** All 38 route files under `src/app/api/**/route.ts`; each exported HTTP handler; auth/session/MFA/tenant/platform authorization helpers.  
-**Production impact:** None. Read-only repository inspection and branch-only documentation/test changes. No Production database, secret, migration, role, policy, or deployment was changed.
+**Production impact:** Engineering-branch application, test, and documentation changes only. No Production database, secret, migration, role, policy, data, or deployment was changed.
 
 ## 1. Interpretation and assurance levels
 
@@ -34,20 +34,20 @@
 | 12 | POST `/api/auth/register` | Public; registration is gated on initial platform owner existing | None | None | Creates only the registering account; does not accept client role | Same-origin, schema validation, rate limits, generic accepted response, email verification. |
 | 13 | POST `/api/auth/resend-verification` | Public; email identity | None | None | Own email verification capability issued to account mailbox | Generic accepted response and rate limiting reduce account enumeration. |
 | 14 | POST `/api/auth/reset-password` | Public bearer reset-token holder | None | None | Token identifies one account; sessions for that account are deleted on success | Same-origin, rate-limited, single-use/expiry checked by token transaction. |
-| 15 | POST `/api/auth/sessions/revoke-all` | Authenticated account | Active own session | No additional fresh-MFA gate visible | Revokes only sessions belonging to current user | Same-origin and audit logged; caller is signed out. |
-| 16 | POST `/api/auth/sessions/revoke` | Authenticated account | Active own session | No additional fresh-MFA gate visible | Target session is queried and revoked with `userId = current user` | Cross-account session ID cannot be revoked through this route. |
+| 15 | POST `/api/auth/sessions/revoke-all` | Authenticated account | Active own session | Fresh MFA for platform OWNER/PLATFORM_ADMIN and any session carrying MFA assurance | Revokes only sessions belonging to current user | Same-origin, audit logged; stale/invalid MFA returns 403 without revocation. Ordinary non-privileged PASSWORD-only users retain self-service. |
+| 16 | POST `/api/auth/sessions/revoke` | Authenticated account | Active own session | Fresh MFA for platform OWNER/PLATFORM_ADMIN and any session carrying MFA assurance | Target session is queried and revoked with `userId = current user` | Cross-account session ID cannot be revoked; stale/invalid MFA returns 403 without revocation. Ordinary non-privileged PASSWORD-only users retain self-service. |
 | 17 | GET `/api/auth/sessions` | Authenticated account | Active own session | No additional fresh-MFA gate visible | Lists only current user's sessions | Session inventory includes assurance and MFA timestamp. |
 | 18 | POST `/api/auth/verify-email` | Public bearer email-verification token holder | None | None | Token identifies one account and purpose | Same-origin; token hash and expiry/consumption checked. |
-| 19 | POST `/api/dana/generate` | Verified account with tenant membership role OWNER/ADMIN/MANAGER/MEMBER | Active own session | Fresh MFA for tenant OWNER/ADMIN; no MFA gate for MANAGER/MEMBER | Active tenant + matching membership; `ai_generate`; tenant transaction revalidates context | Tenant-isolated AI generation and persistence; rate-limited. |
-| 20 | POST `/api/dana/prompt-studio` | Any authenticated account | Active own session | None visible | No tenant ID, membership, or product entitlement check visible | **Gap:** authenticated-only template generation; not tenant-scoped and no route-level rate limit or email-verification requirement visible. Response states provider unused and persistence false. |
+| 19 | POST `/api/dana/generate` | Verified account with tenant membership role OWNER/ADMIN/MANAGER/MEMBER | Active own session | Fresh MFA for tenant OWNER/ADMIN; no MFA gate for MANAGER/MEMBER | Active tenant + matching membership; `ai_generate`; tenant transaction revalidates context | Rate-limited; provider call and persistence fail closed with `billing_not_configured` until credit ledger, idempotent charging and usage reconciliation exist. |
+| 20 | POST `/api/dana/prompt-studio` | Verified active tenant member with OWNER/ADMIN/MANAGER/MEMBER role | Active own session | Fresh MFA for tenant OWNER/ADMIN | Exact active tenant membership; `ai_generate`; DANA is internal capability, no separate product license | Per-user rate limit (30/min); template only, no provider call or persistence. |
 | 21 | GET `/api/health` | Public liveness probe | None | None | N/A | Public liveness only; should not return secrets or detailed infrastructure diagnostics. |
-| 22 | POST `/api/negah/creative-brief` | Any authenticated account | Active own session | None visible | No tenant ID, membership, or product entitlement check visible | **Gap:** authenticated-only template output; no tenant scope, verified-email requirement, or route-level rate limit visible. |
-| 23 | POST `/api/negah/generate` | Verified account with tenant membership role OWNER/ADMIN/MANAGER/MEMBER | Active own session | Fresh MFA for tenant OWNER/ADMIN; no MFA gate for MANAGER/MEMBER | Active tenant + matching membership; `ai_generate`; tenant transaction revalidates context | Tenant-scoped generation and persistence; rate-limited. |
+| 22 | POST `/api/negah/creative-brief` | Verified active tenant member with OWNER/ADMIN/MANAGER/MEMBER role | Active own session | Fresh MFA for tenant OWNER/ADMIN | Exact active tenant membership + `ai_generate` + active NEGAH product and valid tenant license | Per-user rate limit (20/min); brief template only, no image provider, rendering or persistence. |
+| 23 | POST `/api/negah/generate` | Verified active tenant member with OWNER/ADMIN/MANAGER/MEMBER role | Active own session | Fresh MFA for tenant OWNER/ADMIN | Exact active tenant membership + `ai_generate` + active NEGAH product and valid tenant license | Rate-limited; provider call and persistence fail closed with `billing_not_configured` until credit ledger and usage reconciliation exist. |
 | 24 | POST `/api/owner/bootstrap` | Public holder of one-time high-entropy `VAYRO_OWNER_BOOTSTRAP_TOKEN`; one-time bootstrap procedure | No session; no owner session issued | None at bootstrap; owner access remains unavailable until email verification and subsequent MFA enrollment | Creates the initial platform owner only through guarded database function | Same-origin, constant-time token comparison, shared rate limit, database role assertion; **critical bootstrap secret must be provisioned outside Git/chat**. |
 | 25 | PATCH `/api/owner/email-contacts/[contactId]` | Platform OWNER only | Active own session | Fresh MFA (12h) | Platform-owner transaction; target contact belongs to platform settings | Prevents disabling/reassigning the last verified owner contact. |
 | 26 | DELETE `/api/owner/email-contacts/[contactId]` | Platform OWNER only | Active own session | Fresh MFA (12h) | Platform-owner transaction; target contact belongs to platform settings | Same last-owner-contact guard and audit transaction. |
 | 27 | POST `/api/owner/email-contacts/[contactId]/verify` | Platform OWNER only | Active own session | Fresh MFA (12h) | Platform-owner transaction for the selected contact | Owner session, same-origin, rate limits, token issuance and mail delivery. |
-| 28 | POST `/api/owner/email-contacts/confirm` | Public bearer verification-token holder | No session | None | Narrow email-verification capability only; transaction installs token hash, not owner actor context | Capability is hash-checked, expiry and single-use enforced. **Rate-limit coverage not evident in route.** |
+| 28 | POST `/api/owner/email-contacts/confirm` | Public bearer verification-token holder | No session | None | Narrow email-verification capability only; transaction installs token hash, not owner actor context | Hash-checked, expiring, single-use token; 20 attempts per trusted client IP per 15 minutes; fail-closed if trusted proxy identity is unavailable. |
 | 29 | GET `/api/owner/email-contacts` | Platform OWNER only | Active own session | Fresh MFA (12h) | Platform-owner transaction | Lists platform owner email contacts only. |
 | 30 | POST `/api/owner/email-contacts` | Platform OWNER only | Active own session | Fresh MFA (12h) | Platform-owner transaction | Same-origin, rate-limited; new contact remains unverified until bearer confirmation. |
 | 31 | GET `/api/owner/future-lab` | Platform OWNER only | Active own session | Fresh MFA (12h) | Platform-level owner transaction | Reads owner proposals/decisions; no production execution implied. |
@@ -91,6 +91,10 @@
 ### P0 — Production database authorization remains blocked
 The separate read-only database audit recorded 11 public tables with RLS enabled but no policies, FORCE RLS disabled, empty migration history, missing Prisma objects/columns, and missing dedicated runtime roles. The API code's intended authorization model is therefore **not proof of Production enforcement**. Keep all Production schema/role/policy changes blocked until the independent encrypted backup and restore rehearsal, schema reconciliation, and controlled migration plan are evidenced.
 
+### RESOLVED IN ENGINEERING BRANCH — Tenant role/MFA policy
+The full OWNER/ADMIN/MANAGER/MEMBER/VIEWER × seven-action matrix is now exercised by unit and PostgreSQL-backed integration tests. OWNER/ADMIN password-only, stale and future-dated MFA cases are denied. See section 8 for exact coverage and passing CI evidence.
+
+<!-- Historical finding heading retained below for audit traceability -->
 ### P1 — Tenant role/MFA policy needs explicit test expansion
 The helper enforces OWNER/ADMIN fresh MFA and the central permission map restricts actions. Add negative and positive integration cases for every role across each action, including:
 - VIEWER denied `ai_read`, `ai_generate`, `members_manage`, `tenant_manage`, `tenant_delete`.
@@ -99,15 +103,27 @@ The helper enforces OWNER/ADMIN fresh MFA and the central permission map restric
 - OWNER allowed tenant closure; all tenant OWNER/ADMIN privileged actions rejected with PASSWORD assurance, stale MFA, future timestamp, revoked session, expired session, inactive tenant, or cross-tenant ID.
 - Verify the central `billing_manage` permission is either connected to a real route with owner-only checks or explicitly marked unused.
 
+### RESOLVED IN ENGINEERING BRANCH — DANA Prompt Studio and NEGAH Creative Brief
+Both endpoints are now tenant-scoped and rate-limited. DANA requires `ai_generate` but no separate product license because it is an internal VAYRO capability. NEGAH additionally requires an active NEGAH product and valid tenant license. See section 8.
+
+<!-- Historical finding heading retained below for audit traceability -->
 ### P1 — DANA Prompt Studio and NEGAH Creative Brief lack product/tenant authorization
 These endpoints currently require only a valid session. They do not bind work to a tenant, check verified email, enforce product entitlement/license, or expose a rate limit in the route. Decide whether they are intentionally account-level, free template utilities; otherwise require tenant context, product entitlement and a server-side action permission. Do not describe these template endpoints as paid AI-provider generation: current DANA prompt-studio response says `aiProviderUsed=false` and `persisted=false`; NEGAH creative brief similarly returns a template engine marker.
 
 ### P1 — Readiness endpoint exposure
 `/api/ready` is unauthenticated and reports component check states. Restrict it at the deployment ingress/network boundary or return only a minimal readiness status if public probing is required. Do not expose credentials or detailed exception strings.
 
+### RESOLVED IN ENGINEERING BRANCH — Email contact confirmation abuse controls
+The public confirmation endpoint now applies a database-backed 20-attempt / 15-minute trusted-IP throttle before bearer-token parsing. Missing or invalid trusted-proxy configuration fails closed. See section 8.
+
+<!-- Historical finding heading retained below for audit traceability -->
 ### P2 — Email contact confirmation abuse controls
 The email contact confirmation endpoint uses a narrowly scoped, high-entropy, expiring, single-use bearer capability and a dedicated RLS transaction. Add an IP-level or token-hash failure budget and audit failed attempts without leaking whether a contact exists.
 
+### PARTIALLY RESOLVED IN ENGINEERING BRANCH — Session revocation step-up
+Fresh MFA is enforced for platform OWNER/PLATFORM_ADMIN and sessions already carrying MFA assurance. Non-privileged PASSWORD-only users without MFA retain self-service revocation; this is an explicit usability/security trade-off and should be revisited if policy requires universal reauthentication. See section 8.
+
+<!-- Historical finding heading retained below for audit traceability -->
 ### P2 — Session revocation step-up
 Session listing/revocation and revoke-all currently require a valid session but no fresh MFA gate is visible. Consider requiring fresh MFA for revoke-all and for revoking sessions other than the current device, especially for platform OWNER/ADMIN accounts.
 
@@ -119,9 +135,9 @@ Several authenticated template endpoints do not visibly use the same rate-limit 
 - Repository tree inspection found 38 API route files and 49 exported HTTP handlers.
 - Existing integration tests cover authentication lifecycle, MFA enrollment/login/recovery, session lifecycle, owner email/product routes, tenant authorization/RLS, cross-origin mutation rejection, and AI route unauthenticated rejection.
 - A regression test was added to `tests/auth-endpoints.integration.mjs` asserting that a non-privileged account with MFA enabled receives a LOGIN_MFA challenge and no PASSWORD session. The current login implementation now checks `privileged || mfa?.enabledAt`.
-- Latest observed branch head during verification: `cc32fe6abd79cf45dda85381ea19ca36928bd42e`.
-- CI run `44374223524`: **success**; all listed steps passed, including unit tests, Prisma schema validation, isolated role/RLS checks, lint, typecheck, production build, Docker build, PostgreSQL/production HTTP integration tests, and dependency audits.
-- CodeQL run `44374223531`: **success**; JavaScript/TypeScript analysis completed successfully.
+- Latest observed branch head during re-audit: `d8f2e762d2d744b10a8c0359de262eb75e06377d`.
+- CI run `44453921133`: **success** on the exact current branch head; unit tests, Prisma schema validation, isolated role/RLS checks, lint, typecheck, production build, Docker build, PostgreSQL/production HTTP integration tests, production dependency audit and full locked dependency audit all passed.
+- CodeQL run `44453921226`: **success** on the exact current branch head; JavaScript/TypeScript analysis completed successfully.
 - PR #39 remains open and unmerged at the observed head. No Production deployment was performed.
 
 ## 6. Release and implementation guardrails
@@ -187,6 +203,15 @@ The authorization test suite now enumerates all five tenant roles against all se
 - Ordinary PASSWORD-only sessions for non-privileged users retain self-service revocation; platform privileged roles cannot use PASSWORD-only sessions.
 - tests/session-lifecycle.integration.mjs verifies stale-MFA denial for both single-session and revoke-all operations and confirms target sessions remain active.
 
+
+### Platform-owner authorization re-audit
+
+- The owner session helper accepts only a canonical session token resolving to an active, unexpired, non-revoked session for `platformRole=OWNER`, a verified and non-disabled account, and fresh MFA (`assurance=MFA`, timestamp not in the future and within 12 hours). Idle sessions older than 30 minutes are revoked; activity is persisted at most once per five minutes.
+- Platform-owner transactions independently revalidate the same OWNER account and exact session inside the platform database transaction/RLS context. `PLATFORM_ADMIN` is not accepted as a substitute for OWNER on owner-only operations.
+- Owner email-contact, product, license and future-lab handlers are gated by the owner transaction, same-origin protection on mutations, per-owner rate limits where applicable, and audit events. Email-contact changes preserve at least one enabled, verified OWNER contact and use serializable transactions for concurrent disable/delete protection.
+- License issuance accepts only an existing ACTIVE tenant and ACTIVE/sellable product, validates date ranges, and records an audit event. Future-lab entries and decisions remain proposals/decisions only; they do not grant production execution authority.
+- No dedicated payment/credit ledger or billing API is implemented; `billing_manage` remains a declared permission without a billing endpoint. Do not treat license issuance as payment collection or recurring billing.
+
 ### Paid DANA / NEGAH provider routes
 
 - POST /api/dana/generate and POST /api/negah/generate remain tenant-authorized and rate-limited, but provider execution is now fail-closed while the credit ledger, idempotent charging and provider-usage reconciliation do not exist.
@@ -196,6 +221,6 @@ The authorization test suite now enumerates all five tenant roles against all se
 
 ### Verification state
 
-- Changes are committed to engineering/vayro-hardening-2026-11-18.
-- CI and CodeQL for the earlier API-matrix documentation commit passed. The new tests and code changes listed in this addendum have not yet produced a visible Actions run in the current connector evidence; do not mark them CI-verified until a run is observed on the exact final head.
+- Changes are committed to `engineering/vayro-hardening-2026-11-18` at exact audited head `d8f2e762d2d744b10a8c0359de262eb75e06377d`.
+- CI run `44453921133` and CodeQL run `44453921226` both completed successfully on this exact head. The CI job confirms unit tests, Prisma generation/validation, isolated PostgreSQL migration and role/RLS checks, lint, typecheck, production build, Docker build, HTTP/PostgreSQL integration tests, production-only dependency audit and full dependency audit all passed.
 - No Production DDL, migration, role grant, RLS policy, data write, merge, deployment, payment activation or paid provider activation was performed.
