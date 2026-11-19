@@ -44,9 +44,13 @@ export default function NegahCreativeStudioPage() {
       const data = await response.json();
       if (response.status === 401) { window.location.assign("/login"); return; }
       if (!response.ok) {
-        setError(data.error === "provider_not_configured"
-          ? "اتصال موتور تصویر هنوز پیکربندی نشده است."
-          : "تولید تصویر انجام نشد؛ ورودی یا سرویس را بررسی کنید.");
+        setError(data.error === "negah_license_required"
+          ? "برای این سازمان مجوز فعال NEGAH وجود ندارد."
+          : data.error === "billing_not_configured"
+            ? "تولید تصویر تا تکمیل دفترکل اعتبار و صورتحساب متوقف است؛ در این وضعیت هزینه API ایجاد نمی‌شود."
+            : data.error === "provider_not_configured"
+              ? "اتصال موتور تصویر هنوز پیکربندی نشده است."
+              : "تولید تصویر انجام نشد؛ ورودی یا سرویس را بررسی کنید.");
         return;
       }
       setImageUrl(data.result.imageUrl);
