@@ -11,6 +11,10 @@ import { withTenantRequestTransaction } from "@/lib/tenant-request-transaction.m
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// Paid AI execution stays disabled until an idempotent credit ledger, provider
+// usage reconciliation and tenant billing controls are implemented and tested.
+const BILLING_LEDGER_READY = false;
+
 const schema = z.object({
   tenantId: z.string().min(1).max(128),
   prompt: z.string().trim().min(2).max(12000)
@@ -45,6 +49,7 @@ export async function POST(request: NextRequest) {
       callback: async (_tx, actor) => actor.userId
     });
     if (!access.authorized) return noStoreJson({ error: "tenant_access_denied" }, 403);
+    if (!BILLING_LEDGER_READY) return noStoreJson({ error: "billing_not_configured" }, 503);
     const generated = await generateText({ prompt: parsed.data.prompt });
     // Build a plain JSON object so Prisma's InputJsonValue accepts the provider DTO.
     const output = {
