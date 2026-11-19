@@ -73,3 +73,18 @@ A green CI run against a disposable database does not prove production database 
 - ARIANA: **SOURCE_NOT_LOCATED** in the previous repository discovery; do not invent implementation status or rebuild from assumptions.
 
 The source snapshot is not a complete implementation audit. Refresh repository heads, workflows, tests, deployment and data-recovery evidence before release decisions.
+
+
+## مالکیت سلسله‌مراتبی و اصلاح معماری — الحاقیه الزام‌آور 2026-11-19
+
+این الحاقیه بر هر عبارت متعارض در نسخه قبلی همین سند اولویت دارد و تا انتشار رسمی، مبنای معماری است:
+
+- **VAYRO اپلیکیشن مادر و مالک اکوسیستم است.** هر پنج اپلیکیشن زیرمجموعه مستقیم VAYRO هستند؛ هیچ‌یک زیرمجموعه اپلیکیشن دیگری نیست.
+- پنج اپلیکیشن مستقل عبارت‌اند از: **DANA، ARIA، ARIANA، LEADORA و ARMIN MARKET**.
+- **DANA یک اپلیکیشن مستقل** و مرکز فرماندهی کل اکوسیستم است. DANA زیرمجموعه مستقیم VAYRO است؛ والد ARIA یا سایر اپ‌ها نیست و در ARIA ادغام نمی‌شود.
+- **ARIA نیز یک اپلیکیشن مستقل و زیرمجموعه مستقیم VAYRO** است. ARIA جدید از ARIA قبلی به‌علاوه قابلیت‌ها و ماژول‌های تمام اپلیکیشن‌های قدیمیِ باقی‌مانده تشکیل می‌شود؛ به‌جز DANA، ARIANA، LEADORA و ARMIN MARKET.
+- **ARIANA، LEADORA و ARMIN MARKET کاملاً مستقل** و زیرمجموعه مستقیم VAYRO باقی می‌مانند و در ARIA ادغام نمی‌شوند.
+- نام‌های شناخته‌شده برای ادغام در ARIA عبارت‌اند از ARVAND، CHARSU، GANJINEH، NEGAH، SEPEHR، NAMA و PAYAM. این فهرست باید با ممیزی منابع قدیمی تطبیق داده شود؛ تعداد تاریخی ۱۱ یا ۱۲ تا زمان ممیزی کامل قطعی فرض نمی‌شود.
+- ادغام در ARIA به معنی حفظ قابلیت‌ها، داده‌ها، طراحی‌های ارزشمند، گردش‌کارها و منطق تجاری پس از ممیزی است؛ حذف یا مهاجرت مخرب بدون نگاشت، آزمون، پشتیبان و تأیید مالک ممنوع است.
+- مرزهای داده، هویت، مجوز، امنیت و مسئولیت تخصصی پنج اپ مستقل حفظ می‌شود. به‌ویژه حسابداری و ERP فقط در ARIANA باقی می‌ماند.
+- این معماری تا زمان انتشار بدون تأیید صریح مالک تغییر نمی‌کند. این الحاقیه به‌تنهایی مجوز merge، deploy، تغییر production، مهاجرت داده یا انتشار نیست.
