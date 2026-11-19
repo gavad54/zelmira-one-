@@ -66,7 +66,7 @@ ARIA باید یک محیط کار هوشمند و modular monolith مستقل �
 - انتقال داده مستلزم mapping، backup مستقل، dry run، integrity check و rollback/forward-repair است.
 
 ## 6. شواهد فعلی و محدودیت‌ها
-در مخزن aria-android، کاتالوگ وب در main SHA 350a05a7e80189df4b24359d03ed1c0fc7e7f178 شامل ۶۵ رکورد است: ۲ foundation، ۵ prototype و ۵۸ planned. آرشیو Android نسخه 32.0.0 نیز در Library بازیابی شد؛ SHA-256 اصلی آن 9dcbb34ef98e4f11e661bd32bbd0573d4de7a3058743f45aa126322f44264f9f است و رجیستری ۶۳۹ رکورد دارد. در ممیزی مستقل، ناسازگاری versionCode و چند verifier قدیمی اصلاح شدند؛ candidate ایزوله با SHA-256 برابر e787e02991fbc7044a312cdb071e8484dfb0db6e341c9116be54c1f4978eafdb گیت‌های ایستا را PASS کرد. این candidate هنوز وارد مخزن canonical، build، sign، device UAT یا Production نشده است. از ۶۳۹ رکورد، ۵۶۹ مورد E2E تأیید نشده‌اند؛ بنابراین ۶۵ کاتالوگ وب و ۶۳۹ رجیستری Android شمارش‌های متفاوت‌اند و نباید جمع شوند.
+در مخزن aria-android، کاتالوگ وب در main SHA 350a05a7e80189df4b24359d03ed1c0fc7e7f178 شامل ۶۵ رکورد است: ۲ foundation، ۵ prototype و ۵۸ planned. آرشیو Android نسخه 32.0.0 نیز در Library بازیابی شد؛ SHA-256 اصلی آن 9dcbb34ef98e4f11e661bd32bbd0573d4de7a3058743f45aa126322f44264f9f است و رجیستری ۶۳۹ رکورد دارد. در ممیزی مستقل، ناسازگاری versionCode و چند verifier قدیمی اصلاح شدند؛ candidate ایزوله با SHA-256 برابر 0c45fb175fa6d44456ce33af5c975a2d74576096fae37aa4993a213759a5dbe8 گیت‌های ایستا را PASS کرد. این candidate هنوز وارد مخزن canonical، build، sign، device UAT یا Production نشده است. از ۶۳۹ رکورد، ۵۶۹ مورد E2E تأیید نشده‌اند؛ بنابراین ۶۵ کاتالوگ وب و ۶۳۹ رجیستری Android شمارش‌های متفاوت‌اند و نباید جمع شوند.
 
 ## 7. برنامه تحویل
 1. تکمیل inventory همه مخازن/فایل‌ها و reconcile عدد تاریخی اپ‌ها.
