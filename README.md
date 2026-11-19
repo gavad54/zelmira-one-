@@ -2,30 +2,30 @@
 
 **INTELLIGENCE. WITHOUT LIMITS.**
 
-VAYRO is a Persian-first, mobile-first platform for discovering and coordinating independent specialist digital products. The application name shown to users is **وایرو** only.
+VAYRO is the mother ecosystem and top-level ownership/governance layer. The public application name is **VAYRO / وایرو** only.
 
-## Product family
+## Command structure
 
-| Product | Domain |
-|---|---|
-| ARVAND | International trade, import and export |
-| CHARSU | Marketplace and commerce network |
-| GANJINEH | Digital stores and e-commerce |
-| NEGAH | Creative studio and content production |
-| SEPEHR | Cloud and digital infrastructure |
-| NAMA | Website and landing-page builder |
-| PAYAM | Marketing and customer growth |
-| DANA | AI intelligence and orchestration |
+- **VAYRO** — owns ecosystem governance, portfolio policy, security baseline, identity governance and release approval.
+- **DANA** — VAYRO's central command and orchestration center. It coordinates authorized operations and AI workflows; it is not a fifth customer-facing application and cannot bypass product permissions.
+- **Four independent flagship applications under DANA command:**
+  - **ARIA** — general-purpose AI, social, communications, services and listings. No accounting/ERP.
+  - **ARIANA** — accounting, finance and ERP; sole system of record for these domains.
+  - **LEADORA** — distribution, sales, inventory and commercial operations; not the accounting/ERP system of record.
+  - **ARMIN MARKET** — buyer requests, supplier quotations and sourcing.
+- **Other VAYRO portfolio initiatives:** ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM. Their deployment and product packaging remain subject to individual audits.
 
-Independent products retain their own identity and deployment boundaries: LEADORA (distribution and sales operations), ARIANA (accounting and ERP), ARIA (social, services and marketplace; no accounting/ERP), and ARMIN MARKET (request and supplier quotation marketplace).
+ARIA is **not** the parent or shared runtime of ARIANA, LEADORA or ARMIN MARKET. Each flagship application retains its own source, user experience, domain logic, data ownership, authorization, runtime, deployment and release cycle. Cross-app coordination uses versioned APIs/events and scoped service identities; applications must not directly access one another's private database tables.
+
+The binding decision and implementation rules are in [ADR-0002 — Four independent applications under DANA command](docs/architecture/ADR-0002-four-independent-apps-under-dana.md) and [Product boundaries](docs/PRODUCT-BOUNDARIES.md).
 
 ## Engineering status
 
-This repository contains an engineering foundation: public product directory, authentication routes and primitives, owner bootstrap, initial tenant authorization, PostgreSQL/Prisma schema, audit foundations, health/readiness checks and automated CI. These are not a production release or a security certification.
+This repository contains a VAYRO engineering foundation: public product directory, authentication routes and primitives, owner bootstrap, initial tenant authorization, PostgreSQL/Prisma schema, audit foundations, health/readiness checks and automated CI. These are not a production release or a security certification.
 
-A dedicated VAYRO-CORE PostgreSQL 17 project is provisioned on Supabase Free in eu-central-1, separate from ARIA. Its 11 initial tables have RLS enabled and client-role access revoked. The schema was provisioned directly and verified; the Prisma migration baseline is not yet registered, and migration forward/rollback testing remains open.
+A dedicated VAYRO-CORE PostgreSQL 17 project is provisioned on Supabase Free in eu-central-1, separate from ARIA. Its 11 initial tables have RLS enabled and client-role access revoked. The schema was provisioned directly; the Prisma migration baseline is not yet registered, and migration forward/rollback testing remains open. Read-only production inspection has found schema/RLS reconciliation blockers. Do not apply production migrations or grants until independent encrypted backup, successful isolated restore, reviewed reconciliation and explicit approval are complete.
 
-Production email, complete endpoint-level authorization coverage, full tenant-scoped product workflows, MFA, licensing/billing operations, independent backup/restore, dedicated application hosting, mobile acceptance, owner UAT and explicit release approval remain open gates. Customer onboarding, real payments and production data collection must remain disabled until those gates are evidenced.
+Production email, complete endpoint-level authorization coverage, privileged MFA, full tenant-scoped product workflows, licensing/billing, independent backup/restore, dedicated VAYRO hosting, mobile acceptance, owner UAT and explicit release approval remain open gates. Customer onboarding, real payments and production data collection must remain disabled until evidence supports release.
 
 ## Stack
 
@@ -33,7 +33,7 @@ Production email, complete endpoint-level authorization coverage, full tenant-sc
 - PostgreSQL 17 (dedicated Supabase Free project) and Prisma
 - Zod input validation
 - GitHub Actions CI and CodeQL
-- Application hosting remains unresolved; Railway free-plan resource limit prevented provisioning. No VAYRO deployment exists.
+- Independent VAYRO application hosting remains unresolved; do not repurpose ARIA or LEADORA infrastructure.
 
 ## Local development
 
