@@ -37,7 +37,7 @@ These are version-specific inventories, not additive module counts.
 - The original Library archive was recovered and ZIP integrity verified: 503 ZIP entries / 456 extracted files.
 - Independent static verification found Android/Backend registry version_code=310000 while Gradle and capability metadata used 320000.
 - Stale verification scripts referenced 24.0.0/329 modules, a 232-module matrix and migration 015 as latest; the actual 32.0.0 chain has 41 contiguous migrations through 041.
-- An isolated candidate corrected versionCode parity and stale gates. Candidate SHA-256: e787e02991fbc7044a312cdb071e8484dfb0db6e341c9116be54c1f4978eafdb.
+- An isolated candidate corrected versionCode parity and stale gates. Candidate SHA-256: 0c45fb175fa6d44456ce33af5c975a2d74576096fae37aa4993a213759a5dbe8.
 - Candidate gates PASS: aria32_release_readiness, verify_project, R9 final gate, 639 capability matrix and static schema verifier (201 tables).
 - The candidate is not yet imported into canonical GitHub, Android-built, signed, installed on a device or deployed.
 
