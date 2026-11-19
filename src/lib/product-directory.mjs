@@ -49,4 +49,9 @@ const VAYRO_CAPABILITIES = Object.freeze([
 export const VAYRO_PRODUCTS = PORTFOLIO_INITIATIVES;
 export const INDEPENDENT_PRODUCTS = FLAGSHIP_APPLICATIONS;
 export { FLAGSHIP_APPLICATIONS, PORTFOLIO_INITIATIVES, VAYRO_CAPABILITIES };
-export const ALL_PRODUCTS = Object.freeze([...PORTFOLIO_INITIATIVES, ...FLAGSHIP_APPLICATIONS]);
+// Preserve the historical aggregate order for consumers that rely on it.
+const LEGACY_INDEPENDENT_ORDER = Object.freeze(["LEADORA", "ARIANA", "ARIA", "ARMIN MARKET"]);
+const LEGACY_INDEPENDENT_PRODUCTS = Object.freeze(
+  LEGACY_INDEPENDENT_ORDER.map(name => FLAGSHIP_APPLICATIONS.find(product => product.name === name))
+);
+export const ALL_PRODUCTS = Object.freeze([...PORTFOLIO_INITIATIVES, ...LEGACY_INDEPENDENT_PRODUCTS]);
