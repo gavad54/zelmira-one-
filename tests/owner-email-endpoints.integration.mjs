@@ -19,7 +19,8 @@ before(async () => {
       PORT: String(port),
       HOSTNAME: "127.0.0.1",
       NEXT_PUBLIC_APP_URL: "https://vayro.invalid",
-      EMAIL_PROVIDER: ""
+      EMAIL_PROVIDER: "",
+      TRUSTED_PROXY_HOPS: "1"
     },
     cwd: join(process.cwd(), ".next/standalone"),
     stdio: ["ignore", "ignore", "pipe"]
@@ -275,6 +276,42 @@ test("owner email APIs enforce authorization, same-origin writes, audit, throttl
         createHash("sha256").update("owner-email-contact-delete:" + userId).digest("hex")
       ] } } });
     }
+    await db.$disconnect();
+  }
+});
+
+
+test("public owner email-contact confirmation endpoint throttles repeated invalid bearer attempts by trusted client IP", async () => {
+  const db = new PrismaClient();
+  await db.$connect();
+  const keyHash = createHash("sha256")
+    .update("owner-email-contact-confirm:ip:198.51.100.44")
+    .digest("hex");
+  await db.authRateLimit.deleteMany({ where: { keyHash } });
+  const headers = {
+    Origin: origin,
+    Host: `localhost:${port}`,
+    "Content-Type": "application/json",
+    "X-Forwarded-For": "198.51.100.44, 127.0.0.1"
+  };
+  try {
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const response = await fetch(`${origin}/api/owner/email-contacts/confirm`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ token: randomBytes(32).toString("hex") })
+      });
+      assert.equal(response.status, 400, "the first twenty malformed-token attempts reach token validation");
+    }
+    const blocked = await fetch(`${origin}/api/owner/email-contacts/confirm`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ token: randomBytes(32).toString("hex") })
+    });
+    assert.equal(blocked.status, 429, "the twenty-first attempt from the same trusted IP must be throttled");
+    assert.equal((await db.authRateLimit.findUnique({ where: { keyHash } }))?.count, 21);
+  } finally {
+    await db.authRateLimit.deleteMany({ where: { keyHash } });
     await db.$disconnect();
   }
 });
