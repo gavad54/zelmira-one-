@@ -151,3 +151,63 @@ test("session listing, single-session revocation, revoke-all and idle expiry are
     await db.user.deleteMany({ where: { id: { in: [user.id, otherUser.id] } } });
   }
 });
+
+
+test("stale MFA sessions cannot revoke one or all sessions without fresh authentication", async () => {
+  const suffix = randomBytes(6).toString("hex");
+  const user = await db.user.create({
+    data: {
+      email: `session-stale-mfa-${suffix}@example.invalid`,
+      passwordHash: "integration-only-hash",
+      displayName: "Stale MFA Session Test",
+      emailVerifiedAt: new Date()
+    }
+  });
+  const staleToken = randomBytes(32).toString("hex");
+  const targetToken = randomBytes(32).toString("hex");
+  const now = Date.now();
+  const stale = await db.session.create({
+    data: {
+      userId: user.id,
+      tokenHash: createHash("sha256").update(staleToken).digest("hex"),
+      expiresAt: new Date(now + 24 * 60 * 60 * 1000),
+      lastSeenAt: new Date(now),
+      assurance: "MFA",
+      mfaAuthenticatedAt: new Date(now - 13 * 60 * 60 * 1000)
+    }
+  });
+  const target = await db.session.create({
+    data: {
+      userId: user.id,
+      tokenHash: createHash("sha256").update(targetToken).digest("hex"),
+      expiresAt: new Date(now + 24 * 60 * 60 * 1000),
+      lastSeenAt: new Date(now),
+      assurance: "PASSWORD"
+    }
+  });
+  const headers = {
+    Cookie: `vayro_session=${staleToken}`,
+    Origin: `http://localhost:${port}`,
+    Host: `localhost:${port}`,
+    "Content-Type": "application/json"
+  };
+  try {
+    const revokeOne = await fetch(`${origin}/api/auth/sessions/revoke`, {
+      method: "POST", headers, body: JSON.stringify({ sessionId: target.id })
+    });
+    assert.equal(revokeOne.status, 403, "stale MFA must block single-session revocation");
+    assert.equal((await revokeOne.json()).error, "mfa_required");
+
+    const revokeAll = await fetch(`${origin}/api/auth/sessions/revoke-all`, {
+      method: "POST", headers, body: "{}"
+    });
+    assert.equal(revokeAll.status, 403, "stale MFA must block revoke-all");
+    assert.equal((await revokeAll.json()).error, "mfa_required");
+
+    assert.equal((await db.session.findUnique({ where: { id: stale.id } })).revokedAt, null);
+    assert.equal((await db.session.findUnique({ where: { id: target.id } })).revokedAt, null);
+  } finally {
+    await db.session.deleteMany({ where: { userId: user.id } });
+    await db.user.delete({ where: { id: user.id } });
+  }
+});
