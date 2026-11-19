@@ -88,6 +88,8 @@
 
 ## 4. Findings and required follow-up
 
+**Status interpretation:** The original findings below are preserved as audit history. Their current status is superseded by the engineering re-audit in section 8: tenant role matrix, DANA/NEGAH tenant controls and owner-confirmation throttling are resolved in the branch; session step-up is partially resolved; public readiness exposure and Production database reconciliation remain open.
+
 ### P0 — Production database authorization remains blocked
 The separate read-only database audit recorded 11 public tables with RLS enabled but no policies, FORCE RLS disabled, empty migration history, missing Prisma objects/columns, and missing dedicated runtime roles. The API code's intended authorization model is therefore **not proof of Production enforcement**. Keep all Production schema/role/policy changes blocked until the independent encrypted backup and restore rehearsal, schema reconciliation, and controlled migration plan are evidenced.
 
