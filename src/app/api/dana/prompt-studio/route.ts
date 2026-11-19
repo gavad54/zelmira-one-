@@ -37,18 +37,19 @@ export async function POST(request: NextRequest) {
       status: 429, headers: { "Cache-Control": "no-store", "Retry-After": "60" }
     });
 
+    const { tenantId, ...promptInput } = parsed.data;
     const sessionToken = (await cookies()).get("vayro_session")?.value;
     const access = await withTenantRequestTransaction({
       authDb: authPrisma,
       tenantDb: getTenantPrisma(),
       sessionToken,
-      tenantId: parsed.data.tenantId,
+      tenantId,
       action: "ai_generate",
       callback: (_tx, actor) => actor.userId
     });
     if (!access.authorized) return noStoreJson({ error: "tenant_access_denied" }, 403);
 
-    const prompt = buildBusinessPrompt(parsed.data);
+    const prompt = buildBusinessPrompt(promptInput);
     return noStoreJson({
       prompt,
       generatedBy: "VAYRO_PROMPT_TEMPLATE_ENGINE",
