@@ -29,7 +29,7 @@ const plans = [
     status: "ACTIVE",
     billingPeriod: "month",
     price: null,
-    limits: { requests: 100, ai_generations: 50 }
+    limits: { requests: 100, ai_generations: 50, exports: null }
   }
 ];
 
