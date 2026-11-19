@@ -273,10 +273,7 @@ test("database-backed authorization enforces the complete role/action matrix and
       const result = await authorizeTenantRequest({
         sessionToken: token, tenantId: "tenant-a", action: actions[index], db, now
       });
-      const expectedAllowed = decisions[index] && !(role === "OWNER" || role === "ADMIN")
-        ? false
-        : decisions[index];
-      assert.equal(result.authorized, expectedAllowed, `${role} / ${actions[index]} database decision mismatch`);
+      assert.equal(result.authorized, decisions[index], `${role} / ${actions[index]} database decision mismatch`);
     }
   }
 
