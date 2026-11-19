@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       }
     });
 
-    if (!verified) return NextResponse.json({ error: "invalid_or_expired_token" }, { status: 400 });
+    if (!verified) return NextResponse.json({ error: "invalid_or_expired_token" }, { status: 400, headers: { "Cache-Control": "no-store" } });
     return NextResponse.json({ verified: true }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "verification_failed" }, { status: 500, headers: { "Cache-Control": "no-store" } });
