@@ -2,6 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { calculateCommercialEconomics } from "../src/lib/commercial/economics.mjs";
 
+const zeroInput = Object.freeze({
+  currency: "USD",
+  grossRevenueMinor: 0, discountsMinor: 0, refundsMinor: 0, chargebacksMinor: 0, taxesMinor: 0,
+  paymentFeesMinor: 0, providerCostsMinor: 0, fulfillmentCostsMinor: 0, otherVariableCostsMinor: 0,
+  fixedCostsMinor: 0, transactionCount: 0, ownerPaidOutlaysMinor: 0, ownerReimbursementsMinor: 0,
+  sellerPaidPassThroughMinor: 0, userPaidPassThroughMinor: 0
+});
+
 const sample = Object.freeze({
   currency: "USD",
   grossRevenueMinor: 100000,
@@ -52,6 +60,7 @@ test("does not count seller/user pass-through amounts as owner revenue or operat
 
 test("returns null break-even when contribution is zero or negative", () => {
   const result = calculateCommercialEconomics({
+    ...zeroInput,
     currency: "IRR",
     grossRevenueMinor: 1000,
     paymentFeesMinor: 1200,
@@ -65,9 +74,9 @@ test("returns null break-even when contribution is zero or negative", () => {
 
 test("zero fixed costs have a zero break-even target", () => {
   const result = calculateCommercialEconomics({
+    ...zeroInput,
     currency: "EUR",
     grossRevenueMinor: 500,
-    fixedCostsMinor: 0,
     transactionCount: 5
   });
   assert.equal(result.breakEvenRevenueMinor, 0);
@@ -75,18 +84,18 @@ test("zero fixed costs have a zero break-even target", () => {
 });
 
 test("rejects malformed currency, fractional or negative money, and invalid transaction counts", () => {
-  assert.throws(() => calculateCommercialEconomics({ currency: "us", grossRevenueMinor: 10 }), TypeError);
-  assert.throws(() => calculateCommercialEconomics({ currency: "USD", grossRevenueMinor: 1.5 }), TypeError);
-  assert.throws(() => calculateCommercialEconomics({ currency: "USD", grossRevenueMinor: -1 }), RangeError);
-  assert.throws(() => calculateCommercialEconomics({ currency: "USD", grossRevenueMinor: 10, transactionCount: 1.2 }), TypeError);
+  assert.throws(() => calculateCommercialEconomics({ ...zeroInput, currency: "us" }), TypeError);
+  assert.throws(() => calculateCommercialEconomics({ ...zeroInput, grossRevenueMinor: 1.5 }), TypeError);
+  assert.throws(() => calculateCommercialEconomics({ ...zeroInput, grossRevenueMinor: -1 }), RangeError);
+  assert.throws(() => calculateCommercialEconomics({ ...zeroInput, transactionCount: 1.2 }), TypeError);
 });
 
 test("rejects deductions above gross revenue and unsafe integer totals", () => {
   assert.throws(() => calculateCommercialEconomics({
-    currency: "USD", grossRevenueMinor: 100, refundsMinor: 101
+    ...zeroInput, grossRevenueMinor: 100, refundsMinor: 101
   }), RangeError);
   assert.throws(() => calculateCommercialEconomics({
-    currency: "USD", grossRevenueMinor: Number.MAX_SAFE_INTEGER,
+    ...zeroInput, grossRevenueMinor: Number.MAX_SAFE_INTEGER,
     providerCostsMinor: Number.MAX_SAFE_INTEGER, fixedCostsMinor: 1
   }), RangeError);
 });
