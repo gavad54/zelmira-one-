@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import "./prompt-studio.css";
+
+type TenantOption = { id: string; name: string };
 
 type FormState = {
   business: string;
@@ -21,10 +23,27 @@ const initial: FormState = {
 
 export default function PromptStudioPage() {
   const [form, setForm] = useState<FormState>(initial);
+  const [tenants, setTenants] = useState<TenantOption[]>([]);
+  const [tenantId, setTenantId] = useState("");
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/tenants", { cache: "no-store" })
+      .then(async response => {
+        if (response.status === 401) { window.location.assign("/login"); return null; }
+        if (!response.ok) throw new Error("دریافت فهرست فضاهای کاری ناموفق بود.");
+        return response.json();
+      })
+      .then(data => {
+        const items = Array.isArray(data?.tenants) ? data.tenants : [];
+        setTenants(items);
+        if (items[0]?.id) setTenantId(items[0].id);
+      })
+      .catch(() => setError("برای استفاده از دانا، ابتدا یک فضای کاری معتبر ایجاد یا انتخاب کنید."));
+  }, []);
 
   function update(field: keyof FormState, value: string) {
     setForm(current => ({ ...current, [field]: value }));
@@ -37,11 +56,17 @@ export default function PromptStudioPage() {
       const response = await fetch("/api/dana/prompt-studio", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+        body: JSON.stringify({ ...form, tenantId })
       });
       const data = await response.json();
       if (response.status === 401) { window.location.assign("/login"); return; }
-      if (!response.ok) throw new Error(data.error === "invalid_input" ? "لطفاً همه فیلدهای ضروری را درست تکمیل کنید." : "ساخت پرامپت انجام نشد.");
+      if (!response.ok) {
+        const message = data.error === "invalid_input" ? "لطفاً همه فیلدهای ضروری را درست تکمیل کنید."
+          : data.error === "tenant_access_denied" ? "به این فضای کاری یا قابلیت تولید دسترسی ندارید."
+          : data.error === "rate_limited" ? "درخواست‌ها بیش از حد مجاز است؛ یک دقیقه دیگر تلاش کنید."
+          : "ساخت پرامپت انجام نشد.";
+        throw new Error(message);
+      }
       setPrompt(data.prompt);
     } catch (err) {
       setError(err instanceof Error ? err.message : "ارتباط با سرور برقرار نشد.");
@@ -67,6 +92,10 @@ export default function PromptStudioPage() {
       </section>
       <section className="prompt-layout">
         <form className="prompt-form" onSubmit={submit}>
+          <label>فضای کاری<select value={tenantId} onChange={e=>setTenantId(e.target.value)} required disabled={!tenants.length}>
+            {tenants.map(tenant => <option key={tenant.id} value={tenant.id}>{tenant.name}</option>)}
+          </select></label>
+          {!tenants.length && <p className="prompt-error">ابتدا <Link href="/workspaces">فضای کاری</Link> ایجاد کنید.</p>}
           <label>حوزه کسب‌وکار<input value={form.business} onChange={e=>update("business",e.target.value)} required minLength={2} maxLength={1200} placeholder="مثلاً فروشگاه آنلاین پوشاک" /></label>
           <label>هدف دقیق<input value={form.goal} onChange={e=>update("goal",e.target.value)} required minLength={2} maxLength={1200} placeholder="مثلاً افزایش نرخ تبدیل صفحه محصول" /></label>
           <label>مخاطب هدف<input value={form.audience} onChange={e=>update("audience",e.target.value)} required minLength={2} maxLength={1200} placeholder="مثلاً مشتریان ۲۰ تا ۴۰ سال" /></label>
@@ -74,7 +103,7 @@ export default function PromptStudioPage() {
           <label>زمینه و اطلاعات تکمیلی<textarea value={form.context} onChange={e=>update("context",e.target.value)} maxLength={3000} rows={3} placeholder="محصول، بازار، محدودیت‌ها و اطلاعات موجود..." /></label>
           <label>محدودیت‌ها و معیارها<textarea value={form.constraints} onChange={e=>update("constraints",e.target.value)} maxLength={3000} rows={3} placeholder="بودجه، قوانین، منابع مجاز و موارد ممنوع..." /></label>
           <label>قالب خروجی<input value={form.outputFormat} onChange={e=>update("outputFormat",e.target.value)} required minLength={2} maxLength={1200} /></label>
-          <button type="submit" disabled={busy}>{busy ? "در حال ساخت..." : "ساخت پرامپت تخصصی"}</button>
+          <button type="submit" disabled={busy || !tenantId}>{busy ? "در حال ساخت..." : "ساخت پرامپت تخصصی"}</button>
         </form>
         <aside className="prompt-result">
           <div className="prompt-result-heading"><h2>خروجی شما</h2>{prompt && <button type="button" onClick={copyPrompt}>{copied ? "کپی شد" : "کپی متن"}</button>}</div>
