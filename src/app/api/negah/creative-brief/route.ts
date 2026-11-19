@@ -39,12 +39,13 @@ export async function POST(request: NextRequest) {
       status: 429, headers: { "Cache-Control": "no-store", "Retry-After": "60" }
     });
 
+    const { tenantId, ...briefInput } = parsed.data;
     const sessionToken = (await cookies()).get("vayro_session")?.value;
     const access = await withTenantRequestTransaction({
       authDb: authPrisma,
       tenantDb: getTenantPrisma(),
       sessionToken,
-      tenantId: parsed.data.tenantId,
+      tenantId,
       action: "ai_generate",
       callback: async (tx, actor) => {
         const product = await tx.product.findUnique({
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
     if (!access.value.licensed) return noStoreJson({ error: "negah_license_required" }, 403);
 
     return noStoreJson({
-      brief: buildCreativeBrief(parsed.data),
+      brief: buildCreativeBrief(briefInput),
       generatedBy: "VAYRO_NEGAH_BRIEF_ENGINE",
       imageProviderUsed: false,
       assetRendered: false,
