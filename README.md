@@ -23,6 +23,7 @@ The currently known legacy initiatives to audit as ARIA modules are **ARVAND, CH
 - [ARIA functional redesign and delivery gates](https://github.com/gavad54/aria-android/blob/engineering/aria-functional-redesign-2026-11-19/docs/ARIA_FUNCTIONAL_REDESIGN_2026-11-19_FA.md)
 - [ARIA legacy source and capability inventory](https://github.com/gavad54/aria-android/blob/engineering/aria-functional-redesign-2026-11-19/docs/ARIA_LEGACY_CAPABILITY_INVENTORY_2026-11-19_FA.md)
 - [ARIA 32 source repair report](https://github.com/gavad54/aria-android/blob/engineering/aria-functional-redesign-2026-11-19/docs/ARIA_32_SOURCE_REPAIR_REPORT_FA.md)
+- [ARIA 32 runtime reality audit](https://github.com/gavad54/aria-android/blob/engineering/aria-functional-redesign-2026-11-19/docs/ARIA_32_RUNTIME_REALITY_AUDIT_FA.md)
 
 Every legacy capability must be mapped to a source, owner, target module, API/data contract, test and disposition. No capability or data may be silently deleted or migrated. Any data movement requires source-to-target mapping, independent backup, dry run, integrity checks and rollback/forward-repair plan.
 
