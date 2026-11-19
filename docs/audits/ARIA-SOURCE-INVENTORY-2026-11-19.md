@@ -4,7 +4,7 @@
 
 | Product/source | Evidence | State |
 |---|---|---|
-| gavad54/aria-android | Node.js web prototype; server.js, index.html, app.js, test/server.test.js; 60 current module records | SOURCE_FOUND |
+| gavad54/aria-android | Node.js web prototype; server.js, index.html, app.js, test/server.test.js; 65 current module records | SOURCE_FOUND |
 | gavad54/aria-app | Repository exists but README/package source could not be fetched from main | SOURCE_NOT_LOCATED |
 | gavad54/aria-app-1293 | GitHub reports repository empty | EMPTY_REPOSITORY |
 | ARIA 32 Android source | README references Library ZIP and multiple checksums; full archive not present in Git repo | BLOCKED_PROVENANCE |
@@ -15,10 +15,10 @@
 | VAYRO | zelmira-one- repository and architecture docs | SOURCE_FOUND |
 
 ## ARIA web catalogue snapshot
-At main SHA 350a05a7e80189df4b24359d03ed1c0fc7e7f178, server.js contains 60 records:
+At main SHA 350a05a7e80189df4b24359d03ed1c0fc7e7f178, server.js contains 65 records:
 - 2 available records, treated as code foundations only.
 - 5 prototype records.
-- 53 planned records.
+- 58 planned records.
 
 The count is specific to the current web catalogue. It must not be added to the reported 369 ARIA 25 records, 639 ARIA 32 records or 50 ideas. Those are different source/version inventories and require ID-level reconciliation.
 
