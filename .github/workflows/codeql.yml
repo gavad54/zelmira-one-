@@ -2,9 +2,9 @@ name: CodeQL Security Analysis
 
 on:
   push:
-    branches: [main, brand/vayro-name-only, security/mfa-session-endpoint-gates]
+    branches: [main, brand/vayro-name-only, security/mfa-session-endpoint-gates, architecture/vayro-dana-four-independent-apps-2026-11-19]
   pull_request:
-    branches: [main, brand/vayro-name-only]
+    branches: [main, brand/vayro-name-only, architecture/vayro-dana-four-independent-apps-2026-11-19]
   schedule:
     - cron: "23 4 * * 1"
 
