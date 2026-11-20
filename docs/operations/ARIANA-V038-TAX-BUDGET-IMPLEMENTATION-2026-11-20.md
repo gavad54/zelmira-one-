@@ -46,3 +46,14 @@
 SHA-256: `5e0b547b2510e554970c4d0ca9c04a01f45066eb39c3400750f7c8b9c7e31c48`
 
 این PR فقط گزارش مهندسی و شواهد را ثبت می‌کند؛ بسته candidate هنوز به مخزن مستقل ARIANA منتقل نشده و این تغییر به معنی deploy یا release نیست.
+
+
+## ممیزی مخازن و آماده‌سازی مخزن مستقل | تکمیل بررسی
+- جست‌وجوی GitHub با فیلتر `user:gavad54` انجام شد؛ مخازن قابل‌دسترسی شامل `aria-android`، `aria-app`، `aria-app-1293`، `zelmira`، `zelmira-one-`، `LEADORA` و مخازن Armin بودند.
+- جست‌وجوی دقیق `ariana`، `ariayana`، `ariana-app` و «آریانا» در مالکیت `gavad54` نتیجه‌ای نداشت.
+- `aria-android` صریحاً خود را ARIA بدون حسابداری/ERP معرفی می‌کند؛ بنابراین به‌عنوان مخزن ARIANA انتخاب یا دستکاری نشد. `aria-app-1293` و `zelmira` خالی بودند و `aria-app` README قابل‌خواندن نداشت.
+- در ابزار GitHub متصل، عملیات ساخت repository جدید در دسترس نیست؛ بنابراین ساخت مخزن آنلاین انجام‌شده اعلام نمی‌شود.
+- snapshot کامل سورس بازیابی‌شده به‌همراه candidate v0.38، README مستقل، gitignore و گزارش blocker در بسته `ARIANA_v0.38_STANDALONE_REPOSITORY_BOOTSTRAP.zip` آماده شد.
+- SHA-256 بسته bootstrap: `22398bed547844ab4860426678337ece5a7c2a231b871478c86ab7b9b7d51bca`.
+- بسته ZIP با `unzip -t` بررسی شد و خطای ساختاری نداشت. هیچ فایلی به مخزن ARIA منتقل نشد.
+- وضعیت نهایی: سورس مستقل آماده بارگذاری است؛ Repository آنلاین هنوز ایجاد نشده و به‌علت نبود عملیات create-repository در اتصال فعلی، push/CI نیز انجام نشده است.
