@@ -495,3 +495,55 @@ This update supersedes older CI/dependency statements where they conflict.
 **Open blockers:** full development dependency audit; missing protected backup/restore configuration and successful restore evidence; live schema/migration baseline and RLS policy reconciliation; dedicated least-privilege runtime roles; independent VAYRO hosting; email, billing, product integrations, Android and UAT.
 
 **Release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Authoritative ecosystem and infrastructure audit — 2026-11-20
+
+This addendum supersedes older product-count, DANA-classification, hosting and live-infrastructure statements in earlier dated sections. Historical notes remain for audit lineage only.
+
+### Approved hierarchy
+- VAYRO is the mother platform.
+- Exactly six direct independent applications: ARIA, ARIANA, LEADORA, ARMIN MARKET, DANA and ARVAND.
+- GANJINEH, NEGAH, SEPEHR and NAMA are internal ARIA domains, not additional products.
+- CHARSU is consolidated into ARMIN MARKET; PAYAM is consolidated into LEADORA.
+- ARIA excludes accounting, ledger and ERP; ARIANA is the sole accounting/ERP product.
+- Preserve all legacy source files and capability records. Consolidation does not authorize deletion.
+
+### Live VAYRO-CORE inspection (2026-11-20)
+- Supabase project VAYRO-CORE is ACTIVE_HEALTHY, PostgreSQL 17.11, eu-central-1.
+- The live public schema exposes 11 tables, each with RLS enabled, and zero rows in the inspected tables.
+- Supabase Security Advisor reports 11 RLS-enabled/no-policy findings. A direct read-only query returned zero policies and zero table grants to anon/authenticated/service_role. Dedicated application roles vayro_app, vayro_auth, vayro_platform and vayro_migration were not present in pg_roles.
+- Prisma declares 15 models; four are absent from the live catalog: UserMfa, MfaRecoveryCode, AuthChallenge and AiGeneration.
+- Live Session lacks revokedAt, lastSeenAt, assurance and mfaAuthenticatedAt. AuditEvent.tenantId lacks its declared Tenant foreign key.
+- Live migration history is empty. No production migration, role creation, grant or RLS policy mutation is authorized by this audit.
+- Performance Advisor reports 10 unused indexes. With zero rows/no real workload, these are observations only; do not drop them without workload evidence.
+
+### Live Railway inspection (2026-11-20)
+- Only two accessible projects were listed: ARIA Web and LEADORA. No dedicated VAYRO Railway project exists.
+- The VAYRO service in ARIA Web is offline; a second VAYRO service exists inside LEADORA and is also offline.
+- ARIA Web has a three-change staged patch and a staged-create service from branch brand/vayro-name-only with no deployment. Do not treat staged resources as live.
+- LEADORA's web service is offline and has one 500 MB persistent volume mounted at /data. The inspected environments have no Railway buckets.
+- The existence of a service name or a previous deployment record is not proof of a current running service.
+
+### Backup and restore
+- Scheduled encrypted backup workflow run [44715405983](https://github.com/gavad54/zelmira-one-/actions/runs/44715405983) failed at configuration validation because protected secret VAYRO_BACKUP_DATABASE_URL was absent in the vayro-backup environment. No dump, encryption or B2 upload was performed by that run.
+- No successful isolated restore drill is evidenced. Backup/restore remain hard blockers.
+- Never paste secret values into GitHub source, logs, chat or documentation. Configure required secret/variable names only in their protected GitHub Environments.
+
+### Dependency security and CI
+- PR #39 head: 89c60ab3c8b7bba6bc6cf6d7b10d1cac239dadb5.
+- VAYRO CI run [44716135634](https://github.com/gavad54/zelmira-one-/actions/runs/44716135634) failed at the enforced production dependency audit; CodeQL run [44716135732](https://github.com/gavad54/zelmira-one-/actions/runs/44716135732) passed.
+- The audit reports three High findings through effect <=3.22.0, pulled transitively by @prisma/config/Prisma, for GHSA-7589-6fvf-x4pw (CVE-2026-121707). The upstream patched version is effect 3.22.1. Do not use npm audit fix --force: the observed suggested resolution downgrades Prisma to 6.12.0 and is breaking. Update the transitive dependency with a compatible lockfile change and rerun all tests/audits.
+- CI must execute unit/integration tests, Prisma validation/migrations, lint, typecheck, production build and Docker build even when the final dependency audit fails; keep the security gate blocking and do not suppress advisories.
+
+### Current repositories and PR posture
+- VAYRO: gavad54/zelmira-one-; repo name is still historical. PR #39 is open; PR #45 contains the approved six-app architecture but is Draft and unmerged. PR #41's five-app structure and PR #42's earlier hierarchy are superseded.
+- ARIA: gavad54/aria-android; PR #3 is Draft and targets another engineering branch, not main. The latest verified run before this addendum passed 870 tests. Local domain logic does not equal external provider, payment or Production verification.
+- LEADORA: gavad54/LEADORA; PR #46 open, #47 draft based on #46, #51 draft, #52 draft. PR #52 CI and regression/security workflow passed on 052ac350dc15f8fa6a27f2f62c0c94205393e7d0. Railway service remains offline.
+- ARMIN MARKET: gavad54/Armin_market; PR #1 backend API and PR #2 market-intelligence integration are Draft. Backend CI passed on #1; Android APK build passed on #2. This is build evidence only, not signed release or device/UAT proof.
+- ARIANA, DANA and ARVAND have no canonical GitHub repository under gavad54 as of this inspection. ARIANA source archives exist in the Library and require source reconciliation; DANA/ARVAND still need canonical implementation repositories.
+
+### Release decision
+**ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+Do not merge, deploy, migrate production data, activate billing, publish a signed mobile release or enable production customer onboarding until the exact-head CI/security, database baseline/RLS, independent hosting, encrypted backup/restore, product-specific E2E, provider/billing, mobile and owner UAT gates have evidence.
