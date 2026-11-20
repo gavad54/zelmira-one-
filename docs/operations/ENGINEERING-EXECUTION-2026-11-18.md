@@ -124,3 +124,82 @@ This section supersedes the earlier "still in progress" and "full dependency aud
 The CI uses disposable isolated PostgreSQL and cannot certify the live VAYRO-CORE project. The last live read-only inventory still records 11 public tables with RLS enabled but no policies, empty migration history, four missing Prisma tables, four missing Session columns, absent dedicated runtime roles, and the missing AuditEvent tenant FK. The backup workflow has not completed with real protected credentials, no independent restore drill is evidenced, and no independently controlled VAYRO hosting deployment is verified.
 
 No production DDL, migration, role grant, RLS policy, data write, secret, paid resource, payment activation, merge, or deployment was performed. Release remains **BLOCKED** until independent backup/restore, reviewed production schema reconciliation, least-privilege runtime provisioning, hosting, mobile/UAT and owner release gates are evidenced.
+
+
+## Live revalidation — 2026-11-20 13:23 +03:30
+
+This is a read-only production and repository checkpoint. It supersedes older live-state statements below only where the exact current evidence differs. No production resource, product boundary, secret, database object, or deployment was changed.
+
+### GitHub evidence
+
+- Current `main` SHA: `f0d31804e695cd3d73b452c7507affdca9573740`.
+- Exact-main VAYRO CI [43048676444](https://github.com/gavad54/zelmira-one-/actions/runs/43048676444): PASS. The locked dependency audit, unit tests, Prisma generation/validation, isolated PostgreSQL migration and role/RLS tests, lint, typecheck, production build, Docker build, and PostgreSQL/HTTP integration tests all passed.
+- Exact-main CodeQL [43048671466](https://github.com/gavad54/zelmira-one-/actions/runs/43048671466): PASS. These are historical exact-SHA results; no newer VAYRO CI or CodeQL run was found for this main SHA.
+- PR #39 remains open/non-draft at head `0c5778452225657f769bd3c99b36e903f8e2507d`. Its CI [44508179447](https://github.com/gavad54/zelmira-one-/actions/runs/44508179447) and CodeQL [44508179281](https://github.com/gavad54/zelmira-one-/actions/runs/44508179281) both PASS on that exact head.
+- PR #41 remains open/Draft at `f20f6cde32ccb6225d2c40e11182472da5f12e33`; CI [44518220403](https://github.com/gavad54/zelmira-one-/actions/runs/44518220403) and CodeQL [44518220249](https://github.com/gavad54/zelmira-one-/actions/runs/44518220249) PASS.
+- PR #43 remains open/Draft at `6725df4f794a445083e4634500e053ff5b6c692f`; CI [44493731943](https://github.com/gavad54/zelmira-one-/actions/runs/44493731943) and CodeQL [44493731541](https://github.com/gavad54/zelmira-one-/actions/runs/44493731541) PASS. This is an entitlement/economics engine, not a live payment processor.
+- PR #44 remains open/Draft at `a654a34a63ad1fb85aacb4179521727a50f20ea3`; CI [44491011154](https://github.com/gavad54/zelmira-one-/actions/runs/44491011154) and CodeQL [44491010984](https://github.com/gavad54/zelmira-one-/actions/runs/44491010984) PASS.
+- PR #45 remains open/Draft at `d3829ec85248bc78f874a4d1d87060c4f32fec4b`; CI [44575985245](https://github.com/gavad54/zelmira-one-/actions/runs/44575985245) and CodeQL [44575985277](https://github.com/gavad54/zelmira-one-/actions/runs/44575985277) PASS. It proposes a six-product family and a documented-only ARVAND scaffold; it is not merged.
+- PR #42 is explicitly marked superseded and must not be merged. PR #5 remains Draft on a stale non-main base. PR #2 is merged.
+- GitHub Code Scanning alert inventory and Dependabot alert inventory were not accessible through the connected read interface in this run. Successful CodeQL execution does not establish zero open alert records.
+
+### Backup workflow
+
+- Main-SHA backup run [44504566616](https://github.com/gavad54/zelmira-one-/actions/runs/44504566616), 2026-11-19: FAIL.
+- The job failed at `Validate required protected configuration`; package installation, PostgreSQL dump, encryption, upload, and remote verification steps were skipped. No encrypted offsite backup was created or verified by this run.
+- Restore remains NOT RUN / UNVERIFIED. No backup or restore PASS is claimed.
+
+### Railway live state
+
+- Accessible projects include `ARIA Web` and `LEADORA`; there is no independent project named VAYRO.
+- The service named `VAYRO` is inside project `ARIA Web`, production environment `468fda02-2199-4520-8c7e-6b589d3ceb0a`, service `ea06b2d7-b28e-462e-9251-2613af769d8e`. No LEADORA resource was modified or further inspected.
+- The VAYRO service is configured from `gavad54/zelmira-one-` / `main`; its service domain is `vayro-production.up.railway.app`. No custom domain, runtime variable names, mounted volume, or bucket were present.
+- Environment status is OFFLINE with no active deployment/replica. The latest service deployment record is FAILED (2026-11-09). The failed build compiled, but its `/api/ready` health check returned HTTP 503 on all eight retries and the single replica never became healthy.
+- A separate staged-create service remains pending in the same ARIA Web production environment. It was not accepted or changed.
+- Railway HTTP metrics for the last 24 hours: 52 total requests, 0 2xx, 0 3xx, 52 4xx, 0 5xx. The returned request log entries were 404 probes; this is not evidence of a functioning application. Direct browser HTTP access to the service URL was unavailable in this audit.
+- Conclusion: independent VAYRO hosting, runtime DB connection, HTTP readiness, and production availability are BLOCKED / UNVERIFIED.
+
+### VAYRO-CORE read-only catalog
+
+Project `wdqhdnhpgxhmmfeyxwxr` is ACTIVE_HEALTHY on PostgreSQL 17.11. Migration history is empty. The current Prisma schema has 15 models, while the live public catalog has 11 tables.
+
+- Missing tables: `AiGeneration`, `AuthChallenge`, `MfaRecoveryCode`, `UserMfa`.
+- Live `Session` lacks `revokedAt`, `lastSeenAt`, `assurance`, and `mfaAuthenticatedAt`.
+- `AuditEvent.tenantId` has no matching foreign-key constraint in the live catalog.
+- All 11 live tables have RLS enabled, zero policies, and FORCE RLS disabled; all are owned by `postgres`.
+- No dedicated `vayro_*` runtime role was found. The only public-table grants returned were for `postgres`; `anon`, `authenticated`, and `service_role` had no table privileges in the inspected catalog. Supabase `service_role` has BYPASSRLS and must not be assumed to be a safe tenant runtime.
+- Security Advisor: 11 RLS-enabled/no-policy findings. Performance Advisor: 10 unused-index notices. Health Advisor: no findings.
+- These are metadata/catalog observations only. No customer rows, credentials, secrets, DDL, grants, policies, migrations, or data writes were read or changed.
+
+### Product-family reconciliation — no boundary changes
+
+The current sources do not agree on one product inventory. Main `docs/PRODUCT-BOUNDARIES.md` lists eleven products including ARMIN MARKET and treats DANA as a platform capability. PR #41 proposes five direct apps (DANA, ARIA, ARIANA, LEADORA, ARMIN MARKET) with seven historical domains consolidated into ARIA. PR #45 proposes six direct products (ARIA, ARIANA, LEADORA, ARMIN MARKET, DANA, ARVAND), places GANJINEH/NEGAH/SEPEHR/NAMA inside ARIA, and moves marketing/growth to LEADORA. The scope list supplied for this audit instead names DANA, ARIA, ARIANA, LEADORA, ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM, while classifying DANA as a platform capability and omitting ARMIN MARKET.
+
+This conflict is not resolved by CI. No product ownership, parent/child relationship, or public catalog entry is changed by this checkpoint. Do not merge PR #41 or #45 until the owner confirms one canonical inventory and the treatment of ARMIN MARKET, CHARSU, PAYAM, and DANA.
+
+Operational evidence remains insufficient to mark any of the eleven names in the supplied audit scope as independently released:
+- DANA: orchestration/API surfaces exist, but AI execution remains blocked on billing/usage-ledger readiness and independently authorized connectors.
+- ARIA: application/API foundation and catalog exist; catalog/adapter counts do not prove completed domain handlers or a live independent runtime.
+- ARIANA: canonical source repository remains SOURCE_NOT_LOCATED in the latest available source audit.
+- LEADORA: previous source audit records accounting/ledger code still inside LEADORA and no independently verified encrypted snapshot/restore; this was not revalidated against its infrastructure in this run.
+- ARVAND: `products/arvand` is a documented scaffold with 14 IDs, not a runnable independent app or repository.
+- CHARSU: ownership is unresolved across the current inventory proposals; no independent runtime evidence.
+- GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM: source/UI or design references exist, but no independent end-to-end production acceptance is evidenced; PR #45 reclassifies some of these domains, so do not silently adopt that draft.
+- ARMIN MARKET is present in main and draft architecture records but omitted from the scope list supplied for this audit; it is not silently deleted or reclassified.
+
+### Release-gate disposition
+
+| Gate | 2026-11-20 status |
+|---|---|
+| Independent VAYRO hosting | BLOCKED |
+| Runtime variables and secure DB connection | BLOCKED / UNVERIFIED |
+| Prisma baseline and live schema reconciliation | BLOCKED |
+| Least privilege, RLS policies and tenant isolation in live DB | BLOCKED |
+| MFA/session runtime against live schema | UNVERIFIED |
+| Endpoint authorization and trusted-proxy/CSP/header runtime validation | IN PROGRESS / UNVERIFIED |
+| Encrypted offsite backup and isolated PostgreSQL restore | BLOCKED |
+| Independent operation of the eleven supplied scope names | NOT VERIFIED |
+| Android release build, official signing and device UAT | NOT VERIFIED |
+| Email delivery, licensing/payment operations, legal review, UAT and owner release approval | NOT VERIFIED |
+
+**Decision: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.** Production remediation remains prohibited until the separately authorized backup/restore and reconciliation gates are satisfied. This addendum is evidence only; it does not authorize a production action.
