@@ -1,30 +1,26 @@
-export const PRODUCT_FAMILY_CATALOG = Object.freeze([
-  { key: "ARVAND", name: "ARVAND", description: "تجارت بین‌الملل، صادرات و واردات" },
-  { key: "CHARSU", name: "CHARSU", description: "بازارگاه و شبکه خریدوفروش" },
-  { key: "GANJINEH", name: "GANJINEH", description: "فروشگاه و تجارت الکترونیک" },
-  { key: "NEGAH", name: "NEGAH", description: "استودیو خلاقیت و تولید محتوا" },
-  { key: "SEPEHR", name: "SEPEHR", description: "زیرساخت ابری و خدمات فناوری" },
-  { key: "NAMA", name: "NAMA", description: "ساخت وب‌سایت و صفحات فرود" },
-  { key: "PAYAM", name: "PAYAM", description: "بازاریابی و توسعه مشتری" }
+const DIRECT_VAYRO_PRODUCTS = Object.freeze([
+  { key: "ARIA", name: "ARIA", description: "هوش مصنوعی عمومی، ارتباطات، خدمات و فضای کار دیجیتال؛ بدون حسابداری، دفترکل یا ERP" },
+  { key: "ARIANA", name: "ARIANA", description: "حسابداری، امور مالی، دفترکل و ERP؛ تنها مرجع این حوزه در خانواده VAYRO" },
+  { key: "LEADORA", name: "LEADORA", description: "توزیع، فروش، موجودی، عملیات تجاری، مشتری‌یابی و بازاریابی/رشد" },
+  { key: "ARMIN_MARKET", name: "ARMIN MARKET", description: "بازارگاه، درخواست خریدار، پیشنهاد تأمین‌کننده و هوشمندی بازار؛ بدون نگهداری وجوه طرفین" },
+  { key: "DANA", name: "DANA", description: "اپلیکیشن مستقل مرکز فرماندهی و هماهنگی مجاز اکوسیستم از طریق APIهای نسخه‌دار" },
+  { key: "ARVAND", name: "ARVAND", description: "تجارت بین‌الملل، واردات، صادرات، تأمین و عملیات بازرگانی" }
 ]);
 
-export const INDEPENDENT_PRODUCT_CATALOG = Object.freeze([
-  { key: "LEADORA", name: "LEADORA", description: "توزیع، فروش و عملیات تجاری؛ با پایگاه داده و استقرار مستقل" },
-  { key: "ARIANA", name: "ARIANA", description: "حسابداری، مالی و ERP؛ مستقل از ARIA" },
-  { key: "ARIA", name: "ARIA", description: "جامعه، خدمات و بازارگاه؛ بدون حسابداری و ERP" },
-  { key: "ARMIN_MARKET", name: "ARMIN MARKET", description: "درخواست خریدار، پیشنهاد تأمین‌کننده و استعلام؛ بدون نگهداری وجوه طرفین" }
+export const PRODUCT_FAMILY_CATALOG = DIRECT_VAYRO_PRODUCTS;
+// Compatibility alias only; do not concatenate it with PRODUCT_FAMILY_CATALOG.
+export const INDEPENDENT_PRODUCT_CATALOG = DIRECT_VAYRO_PRODUCTS;
+
+export const ARIA_INTERNAL_DOMAINS = Object.freeze([
+  { key: "GANJINEH", name: "GANJINEH", description: "فروشگاه دیجیتال و ابزارهای کاتالوگ و فروش درون ARIA" },
+  { key: "NEGAH", name: "NEGAH", description: "استودیوی خلاقیت و تولید محتوا درون ARIA" },
+  { key: "SEPEHR", name: "SEPEHR", description: "ابزارهای ابری و مدیریت منابع درون ARIA" },
+  { key: "NAMA", name: "NAMA", description: "وب‌سایت‌ساز و صفحه‌ساز درون ARIA" }
 ]);
 
-// DANA is an internal VAYRO AI/orchestration capability, not a product registry entry.
-export const VAYRO_CAPABILITIES = Object.freeze([
-  { key: "DANA", name: "DANA", description: "هوش مصنوعی مرکزی و هماهنگی کنترل‌شده در مرکز فرماندهی" }
-]);
-
-// Registry membership does not imply production readiness or shared product data ownership.
-export const PRODUCT_CATALOG = Object.freeze([
-  ...PRODUCT_FAMILY_CATALOG,
-  ...INDEPENDENT_PRODUCT_CATALOG
-]);
+// DANA is now a direct product, not a capability entry.
+export const VAYRO_CAPABILITIES = Object.freeze([]);
+export const PRODUCT_CATALOG = DIRECT_VAYRO_PRODUCTS;
 
 const PRODUCT_STATUSES = new Set(["PLANNED", "ACTIVE", "MAINTENANCE", "RETIRED"]);
 

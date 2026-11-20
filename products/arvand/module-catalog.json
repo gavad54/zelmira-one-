@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "1.0.0",
+  "product": "ARVAND",
+  "parentProduct": "VAYRO",
+  "independentProduct": true,
+  "sourceOverlay": "ARIA_111_MODULE_EXPANSION_REGISTRY",
+  "moduleCount": 14,
+  "implementationState": "DESIGNED_NOT_IMPLEMENTED",
+  "modules": [
+    {
+      "id": "ARIA-PROBLEM-MODULE-014",
+      "name": "جست‌وجوی قطعه و سازگاری",
+      "category": "sourcing",
+      "state": "DESIGNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "ARIA-PROBLEM-MODULE-042",
+      "name": "جست‌وجو و مقایسه اقامتگاه",
+      "category": "destination_support",
+      "state": "DESIGNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "ARIA-PROBLEM-MODULE-045",
+      "name": "مقایسه‌گر حمل‌ونقل",
+      "category": "logistics_and_mobility",
+      "state": "DESIGNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "ARIA-PROBLEM-MODULE-047",
+      "name": "چک‌لیست مدارک سفر",
+      "category": "destination_support",
+      "state": "DESIGNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "ARIA-PROBLEM-MODULE-049",
+      "name": "راهنمای آداب و قوانین مقصد",
+      "category": "destination_compliance",
+      "state": "DESIGNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "ARIA-IDEA-MODULE-001",
+      "name": "تأیید صلاحیت تأمین‌کننده",
+      "category": "supplier_management",
+      "state": "DESIGNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "ARIA-IDEA-MODULE-002",
+      "name": "مدیریت مناقصه و پیشنهاد رقابتی",
+      "category": "procurement",
+      "state": "DESIGNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "ARIA-IDEA-MODULE-005",
+      "name": "امتیاز عملکرد فروشنده B2B",
+      "category": "supplier_performance",
+      "state": "DESIGNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "ARIA-IDEA-MODULE-007",
+      "name": "پرونده انطباق تجارت بین‌الملل",
+      "category": "trade_compliance",
+      "state": "DESIGNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "ARIA-IDEA-MODULE-008",
+      "name": "مدیریت استثنای لجستیک",
+      "category": "logistics",
+      "state": "DESIGNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "ARIA-IDEA-MODULE-009",
+      "name": "پرونده وضعیت گمرکی",
+      "category": "customs",
+      "state": "DESIGNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "ARIA-IDEA-MODULE-014",
+      "name": "اعزام و هماهنگی تکنسین میدانی",
+      "category": "field_service",
+      "state": "DESIGNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "ARIA-IDEA-MODULE-021",
+      "name": "ورود و ارزیابی شریک تجاری",
+      "category": "partner_management",
+      "state": "DESIGNED_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "ARIA-IDEA-MODULE-050",
+      "name": "بازبینی امنیت و حریم خصوصی فروشنده",
+      "category": "supplier_risk",
+      "state": "DESIGNED_NOT_IMPLEMENTED"
+    }
+  ],
+  "runtimeIntegrations": [],
+  "livePaymentsEnabled": false,
+  "externalExecutionEnabled": false
+}

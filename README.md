@@ -2,22 +2,24 @@
 
 **INTELLIGENCE. WITHOUT LIMITS.**
 
-VAYRO is a Persian-first, mobile-first platform for discovering and coordinating independent specialist digital products. The application name shown to users is **وایرو** only.
+VAYRO is a Persian-first, mobile-first mother platform for a family of independently governed digital products. The application name shown to users is **وایرو** only.
 
-## Product family
+## Direct product family
+
+VAYRO has six independent direct products:
 
 | Product | Domain |
 |---|---|
-| ARVAND | International trade, import and export |
-| CHARSU | Marketplace and commerce network |
-| GANJINEH | Digital stores and e-commerce |
-| NEGAH | Creative studio and content production |
-| SEPEHR | Cloud and digital infrastructure |
-| NAMA | Website and landing-page builder |
-| PAYAM | Marketing and customer growth |
-| DANA | AI intelligence and orchestration |
+| ARIA | General AI assistant, digital workspace, communications and services |
+| ARIANA | Accounting, finance and ERP |
+| LEADORA | Business operations, distribution, sales, lead management and marketing/growth |
+| ARMIN MARKET | Marketplace, storefront, buyer requests, supplier quotations and market intelligence |
+| DANA | Independent AI intelligence product |
+| ARVAND | International trade, import/export and trade operations |
 
-Independent products retain their own identity and deployment boundaries: LEADORA (distribution and sales operations), ARIANA (accounting and ERP), ARIA (social, services and marketplace; no accounting/ERP), and ARMIN MARKET (request and supplier quotation marketplace).
+The following four areas remain internal domains of ARIA, not separately counted VAYRO products: **GANJINEH** (store/catalog), **NEGAH** (creative studio), **SEPEHR** (cloud, storage and infrastructure), and **NAMA** (website/page builder).
+
+Product ownership is explicit: ARIA does not contain accounting, ledger or ERP; those belong only to ARIANA. Market intelligence belongs to ARMIN MARKET. Marketing and growth operations belong to LEADORA. International trade belongs to ARVAND. Historical identifiers remain traceable in private migration records; historical names are not public product names.
 
 ## Engineering status
 

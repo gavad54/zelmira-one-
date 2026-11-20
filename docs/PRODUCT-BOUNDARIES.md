@@ -1,35 +1,47 @@
-# Product boundaries — approved VAYRO baseline v1.0
+# مرزبندی محصولات — خط مبنای مصوب VAYRO (2026-11-19)
 
-VAYRO is the mother application and platform governance surface. The family contains exactly eleven independently governed products. DANA is a central AI/orchestration capability, not a twelfth product.
+## ساختار خانواده
 
-| Product | Domain | Explicit exclusions / ownership boundary |
+VAYRO اپلیکیشن مادر و سکوی مشترک هویت، دسترسی، tenant، حاکمیت، مجوز، اشتراک و کنترل انتشار است. شش محصول مستقل و مستقیم زیر VAYRO قرار دارند:
+
+| محصول | دامنه مالکیت | مرز و استثنا |
 |---|---|---|
-| VAYRO | Mother app, identity, tenant access, governance, licensing, shared platform services and Command Center | Does not absorb product-private databases or business rules |
-| ARVAND | International trade, import and export | Owns trade workflows; not other products' data |
-| CHARSU | General marketplace and commerce network | Does not own other products' data |
-| GANJINEH | Digital stores and e-commerce | Independent storefront and commerce domain |
-| NEGAH | Creative studio and digital production | Independent creative production domain |
-| SEPEHR | Cloud and digital infrastructure | Privileged infrastructure controls remain isolated |
-| NAMA | Website, landing-page and page builder | Independent publishing/site domain |
-| PAYAM | Marketing and customer growth | Consent-aware campaigns; referral rewards require verified real sales |
-| LEADORA | Distribution, sales, inventory and commercial operations | Not the accounting/ERP system of record |
-| ARIANA | Accounting, finance and ERP | Sole product boundary for accounting and ERP; remains separate from ARIA |
-| ARIA | Social, communications, services and listings | No accounting, finance-ledger or ERP modules |
-| ARMIN MARKET | Buyer requests, supplier quotations and sourcing | Does not assume custody of buyer/supplier payments |
+| ARIA | دستیار هوشمند عمومی، محیط کار دیجیتال، خدمات و ارتباطات | فاقد حسابداری، دفترکل و ERP؛ مالک عملیات خصوصی محصولات خواهر نیست |
+| ARIANA | حسابداری، مالی و ERP | تنها مرجع مالک دفترکل و قابلیت‌های حسابداری/ERP خانواده |
+| LEADORA | عملیات کسب‌وکار، توزیع، فروش، موجودی، مشتری‌یابی، سرنخ و بازاریابی/رشد | سامانه حسابداری/ERP نیست؛ پیام‌رسانی و انتشار بیرونی نیازمند provider رسمی، رضایت و تأیید است |
+| ARMIN MARKET | بازار، فروشگاه، درخواست خریدار، پیشنهاد تأمین‌کننده و هوشمندی بازار | وجه خریدار/فروشنده را نگهداری نمی‌کند؛ داده شخصی فقط با مجوز و رضایت |
+| DANA | محصول مستقل هوش مصنوعی و قابلیت‌های هوشمندی/هماهنگ‌سازی در مرز محصول مصوب خود | دسترسی به محصولات دیگر فقط با هویت سرویس scoped، مجوز عادی، تأیید اقدام حساس و audit |
+| ARVAND | تجارت بین‌الملل، واردات، صادرات، تأمین‌کننده، مناقصه، انطباق، لجستیک و گمرک | مالک گردش‌کار تجارت بین‌الملل؛ طرف معامله یا نگهدارنده وجه نیست مگر با قرارداد و مجوز مستقل |
 
-## DANA classification
+چهار حوزه GANJINEH، NEGAH، SEPEHR و NAMA در حال حاضر حوزه‌های داخلی ARIA هستند و در شمارش شش محصول مستقل قرار نمی‌گیرند. هیچ‌یک از این حوزه‌ها بدون ممیزی و تصمیم مالک به محصول مستقل یا محصول دیگری منتقل نمی‌شود.
 
-DANA is VAYRO's internal AI intelligence, analysis and orchestration capability, surfaced through the Command Center. It is not an independently counted product. All DANA access to product data/actions must use scoped identities, normal authorization, explicit approval for consequential actions and audit records.
+## حاکمیت و مالکیت
 
-## Command Center and Future Development Lab
+- VAYRO مالک هویت و خدمات مشترک پلتفرم است؛ مالک داده خصوصی یا منطق دامنه محصولات نیست.
+- هر یک از شش محصول، مالک داده، قواعد دامنه، مجوزها، چرخه انتشار و شواهد بازیابی خودش است.
+- ARIA و ARIANA مستقل و خواهر مستقیم VAYRO هستند؛ ARIA زیرمجموعه ARIANA یا DANA نیست.
+- حسابداری، دفترکل و ERP فقط در ARIANA قرار می‌گیرند.
+- DANA محصول مستقل است؛ نقش هماهنگ‌سازی یا هوش مصنوعی آن به‌تنهایی مجوز دسترسی فراگیر به محصولات دیگر ایجاد نمی‌کند.
+- قابلیت‌های بازار در ARMIN MARKET و بازاریابی/رشد در LEADORA مالک مشخص دارند؛ در ARIA فقط ارجاع و اتصال مجاز باقی می‌ماند.
+- نام‌ها و شناسه‌های تاریخی برای ممیزی و crosswalk خصوصی حفظ می‌شوند؛ حفظ lineage به معنی نمایش نام قدیمی در UI یا API عمومی نیست.
 
-The Command Center governs the portfolio, access, commercial operations, integrations, security/audit, backup/recovery and release evidence. The Future Development Lab handles idea intake, duplication/scope checks, impact analysis, design proposals, isolated prototypes, automated tests, security review, owner decision, staged rollout and rollback. It must not write directly to production or bypass product release gates.
+## قراردادهای بین‌محصولی
 
-## Integration rules
-- Each of the eleven products retains independently governed domain logic, data ownership, authorization and release evidence.
-- Each product remains independently deployable where its deployment model supports it.
-- Shared login or navigation does not imply shared database ownership.
-- Cross-product communication uses reviewed, versioned APIs/events, scoped service identities, idempotency, correlation IDs and audit logging.
-- Shared platform services do not directly query or mutate another product's private tables.
-- No production data migration without an independently verified backup, mapping, dry run, reviewed plan and rollback/forward-repair strategy.
-- No product capability may be removed, merged or silently reclassified without an audit and explicit owner approval where scope, data ownership or irreversible behavior changes.
+- ارتباط بین محصولات فقط از API/event versioned، هویت سرویس اختصاصی، audience و scope حداقلی، idempotency، correlation ID و audit log انجام می‌شود.
+- اشتراک ورود یا ناوبری به معنی اشتراک پایگاه داده یا مجوز دسترسی نیست.
+- هیچ سرویس مشترکی مستقیماً جداول خصوصی محصول دیگر را نمی‌خواند یا تغییر نمی‌دهد.
+- داده بین tenantها ایزوله است؛ دسترسی cross-tenant ممنوع مگر با سازوکار مجاز، ثبت‌شده و آزموده.
+- اقدام بیرونی، انتشار، ارسال پیام، پرداخت، حذف یا تغییر مجوز نیازمند preview و تأیید صریح نقش مجاز است.
+- داده بازار/ارائه‌دهنده باید منبع، زمان، مجوز، دامنه پوشش و محدودیت را نمایش دهد؛ داده نمونه نباید به‌عنوان داده زنده معرفی شود.
+
+## انتشار، مهاجرت و بازیابی
+
+- هر محصول باید CI، آزمون واحد/API/E2E، بررسی امنیت، migration کنترل‌شده، backup و restore آزموده و شواهد انتشار مستقل داشته باشد.
+- هیچ مهاجرت Production بدون backup مستقل و restore verification، mapping شناسه‌ها، dry run، برنامه rollback/forward-repair و تأیید مالک اجرا نمی‌شود.
+- هیچ قابلیت قدیمی بدون ممیزی مالکیت، داده، API، مجوز، مصرف‌کننده و مسیر بازگشت حذف یا دوباره‌مالک‌گذاری نمی‌شود.
+- وضعیت هر قابلیت باید جداگانه و با مدرک ثبت شود: طراحی‌شده، پیاده‌سازی‌شده، آزموده‌شده، متصل به سرویس واقعی، فعال در Production.
+- Draft PR، build آزمایشی یا CI سبز به‌تنهایی اثبات انتشار Production یا اتصال سرویس زنده نیست.
+
+## وضعیت سند
+
+این سند خط مبنای مرزبندی شش محصول مستقل VAYRO است. وضعیت اجرای هر محصول باید از مخزن، commit، CI، محیط استقرار و آزمون‌های همان محصول به‌صورت جداگانه تأیید شود.

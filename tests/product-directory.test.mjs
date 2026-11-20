@@ -1,30 +1,30 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ALL_PRODUCTS, VAYRO_PRODUCTS, INDEPENDENT_PRODUCTS, VAYRO_CAPABILITIES } from "../src/lib/product-directory.mjs";
+import { ALL_PRODUCTS, VAYRO_PRODUCTS, INDEPENDENT_PRODUCTS, ARIA_DOMAINS, VAYRO_CAPABILITIES } from "../src/lib/product-directory.mjs";
 
-test("the home directory exposes exactly seven platform-family products and four independent products", () => {
-  assert.equal(VAYRO_PRODUCTS.length, 7);
-  assert.equal(INDEPENDENT_PRODUCTS.length, 4);
-  assert.equal(ALL_PRODUCTS.length, 11);
-  assert.deepEqual(ALL_PRODUCTS.map(item => item.name), [
-    "ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM",
-    "LEADORA", "ARIANA", "ARIA", "ARMIN MARKET"
-  ]);
-  assert.equal(new Set(ALL_PRODUCTS.map(item => item.name)).size, 11);
-  assert.deepEqual(VAYRO_CAPABILITIES.map(item => item.name), ["DANA"]);
+test("the public directory exposes exactly six independent direct VAYRO applications", () => {
+  const expected = ["ARIA", "ARIANA", "LEADORA", "ARMIN MARKET", "DANA", "ARVAND"];
+  assert.equal(VAYRO_PRODUCTS.length, 6);
+  assert.equal(INDEPENDENT_PRODUCTS.length, 6);
+  assert.equal(ALL_PRODUCTS.length, 6);
+  assert.deepEqual(ALL_PRODUCTS.map(item => item.name), expected);
+  assert.deepEqual(INDEPENDENT_PRODUCTS.map(item => item.name), expected);
+  assert.equal(new Set(ALL_PRODUCTS.map(item => item.name)).size, 6);
+  assert.deepEqual(VAYRO_CAPABILITIES, []);
 });
 
-test("the directory never presents a child product as production-active", () => {
-  assert.ok(ALL_PRODUCTS.every(item => item.status && item.statusClass));
-  assert.ok(ALL_PRODUCTS.every(item => item.statusClass !== "active"));
-  assert.equal(VAYRO_PRODUCTS.find(item => item.name === "NEGAH")?.statusClass, "prototype");
-  assert.ok(VAYRO_PRODUCTS.filter(item => item.name !== "NEGAH").every(item => item.statusClass === "planned"));
-  assert.ok(INDEPENDENT_PRODUCTS.every(item => item.statusClass === "blocked"));
-  assert.match(VAYRO_CAPABILITIES[0].status, /نه محصول مستقل/);
+test("the four named ARIA areas are internal domains, not additional VAYRO applications", () => {
+  assert.deepEqual(ARIA_DOMAINS.map(item => item.name), ["GANJINEH", "NEGAH", "SEPEHR", "NAMA"]);
+  assert.equal(ARIA_DOMAINS.length, 4);
+  assert.ok(ARIA_DOMAINS.every(item => item.status && item.statusClass));
+  assert.ok(!ALL_PRODUCTS.some(item => ["GANJINEH", "NEGAH", "SEPEHR", "NAMA", "CHARSU", "PAYAM"].includes(item.name)));
 });
 
-test("only product routes with implemented UI surfaces are linked", () => {
-  assert.deepEqual(VAYRO_PRODUCTS.filter(item => item.href).map(item => item.name), ["NEGAH"]);
-  assert.deepEqual(VAYRO_CAPABILITIES.map(item => item.href), ["/dana/ai-workspace"]);
-  assert.ok(VAYRO_PRODUCTS.filter(item => item.href).every(item => item.href.startsWith("/")));
+test("all six direct products are explicitly non-production until release evidence exists", () => {
+  assert.ok(ALL_PRODUCTS.every(item => item.status && item.statusClass === "blocked"));
+});
+
+test("only an implemented ARIA-domain UI surface is linked from the domain directory", () => {
+  assert.deepEqual(ARIA_DOMAINS.filter(item => item.href).map(item => item.name), ["NEGAH"]);
+  assert.ok(ARIA_DOMAINS.filter(item => item.href).every(item => item.href.startsWith("/")));
 });
