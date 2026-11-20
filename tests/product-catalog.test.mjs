@@ -4,28 +4,25 @@ import {
   PRODUCT_CATALOG,
   PRODUCT_FAMILY_CATALOG,
   INDEPENDENT_PRODUCT_CATALOG,
+  ARIA_INTERNAL_DOMAINS,
   VAYRO_CAPABILITIES,
   validateProductConfiguration
 } from "../src/lib/product-catalog.mjs";
 
-test("the mother-platform registry contains seven platform-family and four independent products", () => {
-  assert.deepEqual(PRODUCT_FAMILY_CATALOG.map(product => product.key), [
-    "ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM"
-  ]);
-  assert.deepEqual(INDEPENDENT_PRODUCT_CATALOG.map(product => product.key), [
-    "LEADORA", "ARIANA", "ARIA", "ARMIN_MARKET"
-  ]);
-  assert.equal(PRODUCT_CATALOG.length, 11);
-  assert.deepEqual(PRODUCT_CATALOG.map(product => product.key), [
-    "ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM",
-    "LEADORA", "ARIANA", "ARIA", "ARMIN_MARKET"
-  ]);
-  assert.equal(new Set(PRODUCT_CATALOG.map(product => product.key)).size, 11);
+test("the owner registry contains exactly six independent direct VAYRO products", () => {
+  const expected = ["ARIA", "ARIANA", "LEADORA", "ARMIN_MARKET", "DANA", "ARVAND"];
+  assert.deepEqual(PRODUCT_FAMILY_CATALOG.map(product => product.key), expected);
+  assert.deepEqual(INDEPENDENT_PRODUCT_CATALOG.map(product => product.key), expected);
+  assert.deepEqual(PRODUCT_CATALOG.map(product => product.key), expected);
+  assert.equal(PRODUCT_CATALOG.length, 6);
+  assert.equal(new Set(PRODUCT_CATALOG.map(product => product.key)).size, 6);
   assert.ok(PRODUCT_CATALOG.every(product => product.name && product.description));
-  assert.equal(VAYRO_CAPABILITIES.length, 1);
-  assert.equal(VAYRO_CAPABILITIES[0].key, "DANA");
-  assert.match(PRODUCT_CATALOG.find(product => product.key === "ARIA").description, /بدون حسابداری و ERP/);
-  assert.match(PRODUCT_CATALOG.find(product => product.key === "ARIANA").description, /مستقل از ARIA/);
+  assert.deepEqual(VAYRO_CAPABILITIES, []);
+  assert.deepEqual(ARIA_INTERNAL_DOMAINS.map(domain => domain.key), ["GANJINEH", "NEGAH", "SEPEHR", "NAMA"]);
+  assert.ok(!PRODUCT_CATALOG.some(product => ["CHARSU", "PAYAM", "GANJINEH", "NEGAH", "SEPEHR", "NAMA"].includes(product.key)));
+  assert.match(PRODUCT_CATALOG.find(product => product.key === "ARIA").description, /بدون حسابداری، دفترکل یا ERP/);
+  assert.match(PRODUCT_CATALOG.find(product => product.key === "ARIANA").description, /تنها مرجع/);
+  assert.match(PRODUCT_CATALOG.find(product => product.key === "DANA").description, /اپلیکیشن مستقل/);
 });
 
 test("a product cannot be marked active without a secure HTTPS destination", () => {
