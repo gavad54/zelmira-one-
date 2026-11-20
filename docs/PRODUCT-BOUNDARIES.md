@@ -1,35 +1,68 @@
-# Product boundaries — approved VAYRO baseline v1.0
+# VAYRO Product Boundaries — governing baseline
 
-VAYRO is the mother application and platform governance surface. The family contains exactly eleven independently governed products. DANA is a central AI/orchestration capability, not a twelfth product.
+**Decision date:** 2026-11-19  
+**Authoritative architecture:** [ADR-0002 — VAYRO parent with five independent applications](architecture/ADR-0002-four-independent-apps-under-dana.md)
 
-| Product | Domain | Explicit exclusions / ownership boundary |
+## Product hierarchy
+
+VAYRO is the mother application and owner/governance layer. The following five applications are independent and are **direct sub-products of VAYRO**:
+
+| Direct VAYRO sub-product | Role | Independence |
 |---|---|---|
-| VAYRO | Mother app, identity, tenant access, governance, licensing, shared platform services and Command Center | Does not absorb product-private databases or business rules |
-| ARVAND | International trade, import and export | Owns trade workflows; not other products' data |
-| CHARSU | General marketplace and commerce network | Does not own other products' data |
-| GANJINEH | Digital stores and e-commerce | Independent storefront and commerce domain |
-| NEGAH | Creative studio and digital production | Independent creative production domain |
-| SEPEHR | Cloud and digital infrastructure | Privileged infrastructure controls remain isolated |
-| NAMA | Website, landing-page and page builder | Independent publishing/site domain |
-| PAYAM | Marketing and customer growth | Consent-aware campaigns; referral rewards require verified real sales |
-| LEADORA | Distribution, sales, inventory and commercial operations | Not the accounting/ERP system of record |
-| ARIANA | Accounting, finance and ERP | Sole product boundary for accounting and ERP; remains separate from ARIA |
-| ARIA | Social, communications, services and listings | No accounting, finance-ledger or ERP modules |
-| ARMIN MARKET | Buyer requests, supplier quotations and sourcing | Does not assume custody of buyer/supplier payments |
+| **DANA** | Ecosystem command center and authorized orchestration | Independent application, source/runtime/data/auth/release boundary |
+| **ARIA** | Consolidated application formed from former ARIA plus remaining legacy app capabilities | Independent application and direct VAYRO sub-product |
+| **ARIANA** | Accounting, finance and ERP | Independent application; sole accounting/ERP system of record |
+| **LEADORA** | Distribution, sales, inventory and commercial operations | Independent application; not the accounting/ERP system of record |
+| **ARMIN MARKET** | Buyer requests, supplier quotations, sourcing and marketplace workflows | Independent application |
 
-## DANA classification
+DANA is not the parent of the other applications. ARIA is not the parent of ARIANA, LEADORA or ARMIN MARKET. DANA, ARIANA, LEADORA and ARMIN MARKET are excluded from ARIA consolidation.
 
-DANA is VAYRO's internal AI intelligence, analysis and orchestration capability, surfaced through the Command Center. It is not an independently counted product. All DANA access to product data/actions must use scoped identities, normal authorization, explicit approval for consequential actions and audit records.
+## ARIA consolidation portfolio
 
-## Command Center and Future Development Lab
+The former ARIA remains the base product. The known remaining legacy initiatives to audit and consolidate as ARIA modules are:
 
-The Command Center governs the portfolio, access, commercial operations, integrations, security/audit, backup/recovery and release evidence. The Future Development Lab handles idea intake, duplication/scope checks, impact analysis, design proposals, isolated prototypes, automated tests, security review, owner decision, staged rollout and rollback. It must not write directly to production or bypass product release gates.
+| Legacy initiative | Intended ARIA domain |
+|---|---|
+| ARVAND | International trade and commerce workflows |
+| CHARSU | Marketplace and commerce network capabilities |
+| GANJINEH | Digital stores and e-commerce capabilities |
+| NEGAH | Creative studio and content production |
+| SEPEHR | Cloud and digital infrastructure capabilities |
+| NAMA | Website and landing-page builder |
+| PAYAM | Marketing and customer growth capabilities |
 
-## Integration rules
-- Each of the eleven products retains independently governed domain logic, data ownership, authorization and release evidence.
-- Each product remains independently deployable where its deployment model supports it.
-- Shared login or navigation does not imply shared database ownership.
-- Cross-product communication uses reviewed, versioned APIs/events, scoped service identities, idempotency, correlation IDs and audit logging.
-- Shared platform services do not directly query or mutate another product's private tables.
-- No production data migration without an independently verified backup, mapping, dry run, reviewed plan and rollback/forward-repair strategy.
-- No product capability may be removed, merged or silently reclassified without an audit and explicit owner approval where scope, data ownership or irreversible behavior changes.
+This is a discovery baseline, not a verified complete inventory. The historical count of eleven or twelve apps must be reconciled from source repositories, branches, docs, deployments and data stores before claiming completeness.
+
+## DANA command model
+
+- VAYRO owns portfolio governance, identity policy, security baseline, shared standards and release authorization.
+- DANA is a standalone application and the ecosystem-wide command center.
+- DANA coordinates only authorized operations through versioned APIs/events and least-privilege service identities.
+- DANA cannot bypass any application's authorization, approval, audit or release controls.
+- A DANA outage must not stop core workflows in ARIA, ARIANA, LEADORA or ARMIN MARKET.
+
+## Non-negotiable product and data boundaries
+
+1. All five applications are direct sub-products of VAYRO with independent source/runtime/data/auth/release boundaries.
+2. ARIA may consolidate only the former ARIA and remaining legacy capabilities; it must not absorb DANA, ARIANA, LEADORA or ARMIN MARKET.
+3. ARIANA remains the sole accounting/ERP system of record. ARIA must not implement a competing ledger or own ARIANA's private data.
+4. LEADORA owns distribution and commercial operations, not accounting/ERP.
+5. ARMIN MARKET owns marketplace workflow records; payment custody requires separate approval.
+6. No application or DANA may directly query or mutate another application's private tables.
+7. Shared identity or navigation does not imply shared permissions or shared database ownership.
+8. Cross-app APIs/events require versioned contracts, service authentication, least privilege, schema validation, idempotency, correlation IDs, audit and explicit retry/failure behavior.
+
+## Preservation and migration
+
+- Preserve existing design, brand identity, capabilities, workflows, data and business rules until they are inventoried and assessed.
+- No wholesale rewrite, silent product reclassification, destructive migration or feature deletion.
+- Every legacy capability must have a source, owner, target module, dependency map, test and disposition.
+- Any data movement requires source-to-target mapping, compatibility analysis, independent backup, dry run, integrity checks and rollback/forward-repair plan.
+- Product-specific UI identity may be retained within ARIA modules where useful and verified.
+- Persian RTL, English support, mobile-first behavior and accessible flows remain constraints where applicable.
+
+## Release requirements
+
+Each of the five applications must independently pass its CI, security and authorization tests, cross-app denial tests, production configuration checks, migration/rollback rehearsal, encrypted offsite backup and isolated restore, UAT and explicit owner release approval.
+
+A green CI run or a healthy hosting process does not prove production database safety, backup recoverability, tenant isolation or commercial readiness. No production DDL, grants, migrations, deployment, payment activation or public release is authorized by this document.
