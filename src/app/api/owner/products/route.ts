@@ -42,8 +42,8 @@ export async function GET() {
       callback: async tx => {
         const [products, tenantRows, activeRows, allRows, licenseCounts] = await Promise.all([
           tx.product.findMany({
-            // DANA may remain as a legacy registry record for preservation, but it is
-            // an internal capability and must not appear in the eleven-product portfolio.
+            // The catalog contains exactly six independent direct VAYRO applications.
+            // Historical CHARSU/PAYAM identifiers remain in private lineage records only.
             where: { key: { in: PRODUCT_CATALOG.map(product => product.key) } },
             orderBy: { key: "asc" },
             select: { id: true, key: true, name: true, description: true, status: true, baseUrl: true, updatedAt: true }
