@@ -547,3 +547,16 @@ This addendum supersedes older product-count, DANA-classification, hosting and l
 **ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
 
 Do not merge, deploy, migrate production data, activate billing, publish a signed mobile release or enable production customer onboarding until the exact-head CI/security, database baseline/RLS, independent hosting, encrypted backup/restore, product-specific E2E, provider/billing, mobile and owner UAT gates have evidence.
+
+
+## Exact-head verification addendum — 2026-11-20 (latest audit)
+
+- The six-product UI/catalog branch PR #45, head `f39ffebdb9f46dcbc6c27c2631a0fef6f911e67a`, passed 91 unit tests and 30 PostgreSQL/HTTP integration tests; Prisma generation/validation, isolated migration, auth/platform/tenant role checks, tenant RLS isolation, lint, typecheck, production build and Docker build passed.
+- PR #45 VAYRO CI [44743453473](https://github.com/gavad54/zelmira-one-/actions/runs/44743453473) remains **failed** solely at the enforced production dependency audit. CodeQL [44743453471](https://github.com/gavad54/zelmira-one-/actions/runs/44743453471) passed.
+- The blocker is effect <=3.22.0 (GHSA-7589-6fvf-x4pw / CVE-2026-121707), transitively present through @prisma/config/Prisma. Upstream fixed version is effect 3.22.1. Do not use npm audit fix --force or accept a Prisma downgrade to 6.12.0. Update the transitive dependency and lockfile compatibly, then rerun full CI and audit.
+- PR #39 hardening branch current head `9c2bc924a0de7557760627bcf04887a155058bde`: CodeQL [44743973406](https://github.com/gavad54/zelmira-one-/actions/runs/44743973406) passed; VAYRO CI [44743973402](https://github.com/gavad54/zelmira-one-/actions/runs/44743973402) was cancelled, so no fresh full CI pass exists for that head.
+- ARIA PR #3 head `f3b0aa780aad5aa8e0228412398e1ff754365be4`: CI success, 870 tests passed, 0 failed.
+- LEADORA PR #52 head `052ac350dc15f8fa6a27f2f62c0c94205393e7d0`: CI and regression/security checks passed; Python suite 97 passed, 2 warnings.
+- ARMIN MARKET PR #2: Android Debug APK build passed. This is not release signing, real-device verification or store acceptance.
+
+The architecture remains six independent products under VAYRO; the current product directory now reflects this on PR #45. The overall release posture remains **DEPLOYMENT BLOCKED — NOT RELEASED**.
