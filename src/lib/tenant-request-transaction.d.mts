@@ -39,6 +39,16 @@ export function withTenantRequestTransaction<T = unknown>(input: {
   now?: Date;
 }): Promise<TenantTransactionResult<T>>;
 
+export function createTenantForAuthenticatedUser<T = unknown>(input: {
+  authDb: unknown;
+  tenantDb: unknown;
+  sessionToken?: string | null;
+  tenantId: string;
+  name: string;
+  slug: string;
+  now?: Date;
+}): Promise<AuthenticatedTransactionResult<T>>;
+
 export function withAuthenticatedUserTransaction<T = unknown>(input: {
   authDb: unknown;
   tenantDb: unknown;

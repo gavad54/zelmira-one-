@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { authorizeTenantAction } from "./authorization.mjs";
 import { authorizeTenantRequest } from "./tenant-request-authorization.mjs";
+import { createTenantInTransaction } from "./tenant-service.mjs";
 
 const IDLE_TTL_MS = 30 * 60 * 1000;
 const MFA_FRESHNESS_MS = 12 * 60 * 60 * 1000;
@@ -165,9 +166,98 @@ export async function withTenantRequestTransaction({
 }
 
 /**
- * User-scoped transaction for self-service tenant listing/creation.
- * The caller must not use this to read tenant business data without a
- * membership-scoped withTenantRequestTransaction boundary.
+ * Provision exactly one new tenant for the authenticated user.
+ * Unlike the generic user-scoped transaction, this boundary never exposes
+ * an arbitrary callback with a caller-selected tenant RLS context.
+ */
+export async function createTenantForAuthenticatedUser({
+  authDb,
+  tenantDb,
+  sessionToken,
+  tenantId,
+  name,
+  slug,
+  now = new Date()
+}) {
+  if (
+    typeof sessionToken !== "string" ||
+    !/^[a-f0-9]{64}$/.test(sessionToken) ||
+    typeof tenantId !== "string" ||
+    !/^[a-f0-9-]{36}$/i.test(tenantId) ||
+    typeof name !== "string" ||
+    name.trim().length < 2 ||
+    name.trim().length > 100 ||
+    typeof slug !== "string" ||
+    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ||
+    !(now instanceof Date) ||
+    Number.isNaN(now.getTime()) ||
+    !authDb?.session?.findUnique ||
+    !tenantDb?.$transaction
+  ) return { authorized: false };
+
+  const tokenHash = createHash("sha256").update(sessionToken, "utf8").digest("hex");
+  const initial = await authDb.session.findUnique({
+    where: { tokenHash },
+    include: { user: { select: { id: true, emailVerifiedAt: true, disabledAt: true } } }
+  });
+  if (
+    !initial || initial.revokedAt || initial.expiresAt.getTime() <= now.getTime() ||
+    !initial.user?.id || !initial.user.emailVerifiedAt || initial.user.disabledAt
+  ) return { authorized: false };
+
+  const lastActivity = initial.lastSeenAt ?? initial.createdAt;
+  if (now.getTime() - lastActivity.getTime() > IDLE_TTL_MS) {
+    return { authorized: false };
+  }
+
+  return tenantDb.$transaction(async tx => {
+    await assertTenantRuntimeRole(tx);
+    await tx.$queryRaw`SELECT
+      set_config('app.user_id', ${initial.user.id}, true),
+      set_config('app.tenant_id', ${tenantId}, true),
+      set_config('app.session_token_hash', ${tokenHash}, true),
+      set_config('app.user_role', '', true)
+    `;
+
+    const [session, user] = await Promise.all([
+      tx.session.findUnique({
+        where: { tokenHash },
+        select: {
+          id: true, tokenHash: true, userId: true, expiresAt: true,
+          createdAt: true, revokedAt: true, lastSeenAt: true
+        }
+      }),
+      tx.user.findUnique({
+        where: { id: initial.user.id },
+        select: { id: true, emailVerifiedAt: true, disabledAt: true }
+      })
+    ]);
+    if (
+      !session || session.userId !== initial.user.id || session.revokedAt ||
+      session.expiresAt.getTime() <= now.getTime() ||
+      !user || user.id !== initial.user.id || !user.emailVerifiedAt || user.disabledAt
+    ) return { authorized: false };
+
+    const activity = session.lastSeenAt ?? session.createdAt;
+    if (now.getTime() - activity.getTime() > IDLE_TTL_MS) {
+      return { authorized: false };
+    }
+
+    const value = await createTenantInTransaction({
+      tx,
+      userId: user.id,
+      tenantId,
+      name: name.trim(),
+      slug
+    });
+    return { authorized: true, userId: user.id, value };
+  }, { timeout: 10000 });
+}
+
+/**
+ * User-scoped transaction for self-service tenant listing only.
+ * Tenant creation uses createTenantForAuthenticatedUser; tenant business data
+ * must use the membership-scoped withTenantRequestTransaction boundary.
  */
 export async function withAuthenticatedUserTransaction({
   authDb,
@@ -180,7 +270,7 @@ export async function withAuthenticatedUserTransaction({
   if (
     typeof sessionToken !== "string" ||
     !/^[a-f0-9]{64}$/.test(sessionToken) ||
-    typeof tenantId !== "string" ||
+    tenantId !== "" ||
     typeof callback !== "function" ||
     !(now instanceof Date) ||
     Number.isNaN(now.getTime()) ||
@@ -236,7 +326,7 @@ export async function withAuthenticatedUserTransaction({
       return { authorized: false };
     }
 
-    const value = await callback(tx, { userId: user.id, tenantId });
+    const value = await callback(tx, { userId: user.id, tenantId: "" });
     return { authorized: true, userId: user.id, value };
   }, { timeout: 10000 });
 }

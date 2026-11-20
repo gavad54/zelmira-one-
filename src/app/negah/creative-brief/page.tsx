@@ -1,22 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import "./creative-brief.css";
 
 const formats = [
   ["instagram-post","پست اینستاگرام"],["instagram-story","استوری"],["youtube-thumbnail","تامبنیل یوتیوب"],
   ["product-photo","عکس محصول"],["ad-banner","بنر تبلیغاتی"],["logo-concept","مفهوم لوگو"],["brand-kit","کیت هویت بصری"]
 ] as const;
+type TenantOption = {id:string;name:string};
 type State = {project:string;format:string;audience:string;message:string;style:string;brandColors:string;requiredElements:string;avoid:string};
 const initial:State={project:"",format:"instagram-post",audience:"",message:"",style:"مدرن، حرفه‌ای و مینیمال",brandColors:"",requiredElements:"",avoid:""};
 
 export default function NegahCreativeBriefPage(){
  const [form,setForm]=useState<State>(initial),[brief,setBrief]=useState(""),[busy,setBusy]=useState(false),[error,setError]=useState(""),[copied,setCopied]=useState(false);
+ const [tenants,setTenants]=useState<TenantOption[]>([]),[tenantId,setTenantId]=useState("");
+ useEffect(()=>{fetch("/api/tenants",{cache:"no-store"}).then(async r=>{if(r.status===401){window.location.assign("/login");return null;}if(!r.ok)throw new Error();return r.json();}).then(data=>{const items=Array.isArray(data?.tenants)?data.tenants:[];setTenants(items);if(items[0]?.id)setTenantId(items[0].id);}).catch(()=>setError("برای استفاده از نگاه، ابتدا یک فضای کاری معتبر ایجاد یا انتخاب کنید."));},[]);
  const update=(key:keyof State,value:string)=>setForm(old=>({...old,[key]:value}));
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setError("");setBrief("");setCopied(false);try{
-  const response=await fetch("/api/negah/creative-brief",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});
-  const data=await response.json();if(response.status===401){window.location.assign("/login");return;}if(!response.ok)throw new Error("اطلاعات ورودی را بررسی کنید.");
+  const response=await fetch("/api/negah/creative-brief",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...form,tenantId})});
+  const data=await response.json();if(response.status===401){window.location.assign("/login");return;}if(!response.ok)throw new Error(data.error==="negah_license_required"?"برای این سازمان مجوز فعال NEGAH وجود ندارد. ابتدا وضعیت مجوز را در محصولات فضای کاری بررسی کنید.":data.error==="tenant_access_denied"?"به این فضای کاری یا قابلیت تولید دسترسی ندارید.":data.error==="rate_limited"?"درخواست‌ها بیش از حد مجاز است؛ یک دقیقه دیگر تلاش کنید.":"اطلاعات ورودی را بررسی کنید.");
   setBrief(data.brief);
  }catch(err){setError(err instanceof Error?err.message:"ساخت بریف انجام نشد.");}finally{setBusy(false);}}
  async function copy(){try{await navigator.clipboard.writeText(brief);setCopied(true);}catch{setError("کپی خودکار در دسترس نیست؛ متن را انتخاب و کپی کنید.");}}
@@ -24,6 +27,8 @@ export default function NegahCreativeBriefPage(){
   <header className="topbar"><Link className="brand" href="/"><span className="brand-mark">V</span><span><strong>وایرو</strong><small>VAYRO · NEGAH</small></span></Link><Link className="secondary-action" href="/ai-business-suite">فهرست قابلیت‌ها</Link></header>
   <section className="negah-hero"><span className="eyebrow">NEGAH · CREATIVE BRIEF WORKSPACE</span><h1>بریف حرفه‌ای تولید محتوای بصری</h1><p>نیاز پروژه را تعریف کنید تا مشخصات اجرایی، جهت هنری، حقوق دارایی‌ها و معیارهای کنترل کیفیت آماده شود.</p><div className="negah-notice">این ابزار بریف تولید می‌کند؛ در این نسخه تصویر یا فایل گرافیکی رندر نمی‌شود و اتصال سرویس تصویر هنوز فعال نیست.</div></section>
   <section className="negah-layout"><form className="negah-form" onSubmit={submit}>
+   <label>فضای کاری<select value={tenantId} onChange={e=>setTenantId(e.target.value)} required disabled={!tenants.length}>{tenants.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
+   {!tenants.length&&<p role="status">ابتدا <Link href="/workspaces">فضای کاری</Link> ایجاد کنید.</p>}
    <label>نام و شرح پروژه<input required minLength={2} maxLength={1000} value={form.project} onChange={e=>update("project",e.target.value)} placeholder="مثلاً کمپین معرفی محصول جدید"/></label>
    <label>نوع خروجی<select value={form.format} onChange={e=>update("format",e.target.value)}>{formats.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
    <label>مخاطب هدف<input required minLength={2} maxLength={1000} value={form.audience} onChange={e=>update("audience",e.target.value)} placeholder="مخاطبان و ویژگی نیاز آن‌ها"/></label>
@@ -32,7 +37,7 @@ export default function NegahCreativeBriefPage(){
    <label>رنگ‌های برند<input maxLength={1200} value={form.brandColors} onChange={e=>update("brandColors",e.target.value)} placeholder="مثلاً سرمه‌ای، طلایی و آبی یخی"/></label>
    <label>عناصر ضروری<textarea rows={2} maxLength={1200} value={form.requiredElements} onChange={e=>update("requiredElements",e.target.value)}/></label>
    <label>مواردی که نباید استفاده شوند<textarea rows={2} maxLength={1200} value={form.avoid} onChange={e=>update("avoid",e.target.value)}/></label>
-   <button type="submit" disabled={busy}>{busy?"در حال آماده‌سازی...":"تولید بریف خلاقیت"}</button>
+   <button type="submit" disabled={busy||!tenantId}>{busy?"در حال آماده‌سازی...":"تولید بریف خلاقیت"}</button>
   </form><aside className="negah-output"><div><h2>بریف اجرایی پروژه</h2>{brief&&<button type="button" onClick={copy}>{copied?"کپی شد":"کپی بریف"}</button>}</div>{brief?<pre>{brief}</pre>:<p>پس از تکمیل فرم، بریف ساختاریافته در این بخش قرار می‌گیرد.</p>}{error&&<p role="alert">{error}</p>}</aside></section>
   <footer className="footer"><span>© {new Date().getFullYear()} VAYRO</span><span>NEGAH CREATIVE STUDIO</span></footer>
  </main>;

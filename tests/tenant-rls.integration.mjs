@@ -2,8 +2,8 @@ import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
-import { withAuthenticatedUserTransaction, withTenantRequestTransaction } from "../src/lib/tenant-request-transaction.mjs";
-import { createTenantInTransaction, listActiveTenants, listTenantMembers } from "../src/lib/tenant-service.mjs";
+import { createTenantForAuthenticatedUser, withAuthenticatedUserTransaction, withTenantRequestTransaction } from "../src/lib/tenant-request-transaction.mjs";
+import { listActiveTenants, listTenantMembers } from "../src/lib/tenant-service.mjs";
 
 const authDb = new PrismaClient();
 const tenantDb = new PrismaClient({
@@ -129,16 +129,17 @@ test("user-scoped RLS transaction lists memberships and provisions a new tenant 
   assert.equal(listed.value.length, 1);
   assert.equal(listed.value[0].id, tenantA.id);
 
+  const arbitraryTenantContext = await withAuthenticatedUserTransaction({
+    authDb, tenantDb, sessionToken: tokenA, tenantId: tenantB.id,
+    callback: tx => tx.tenant.findUnique({ where: { id: tenantB.id } })
+  });
+  assert.equal(arbitraryTenantContext.authorized, false);
+
   const newTenantId = randomUUID();
-  const created = await withAuthenticatedUserTransaction({
+  const created = await createTenantForAuthenticatedUser({
     authDb, tenantDb, sessionToken: tokenA, tenantId: newTenantId,
-    callback: (tx, actor) => createTenantInTransaction({
-      tx,
-      userId: actor.userId,
-      tenantId: newTenantId,
-      name: "Provisioned by RLS",
-      slug: `rls-created-${suffix}`
-    })
+    name: "Provisioned by RLS",
+    slug: `rls-created-${suffix}`
   });
   assert.equal(created.authorized, true);
   assert.equal(created.value.id, newTenantId);

@@ -42,9 +42,11 @@ export default function DanaWorkspacePage() {
       const data = await response.json();
       if (response.status === 401) { window.location.assign("/login"); return; }
       if (!response.ok) {
-        setError(data.error === "provider_not_configured"
-          ? "اتصال موتور هوش مصنوعی هنوز پیکربندی نشده است."
-          : "پاسخی دریافت نشد؛ ورودی یا سرویس را بررسی کنید.");
+        setError(data.error === "billing_not_configured"
+          ? "اجرای مدل واقعی تا تکمیل دفترکل اعتبار و صورتحساب متوقف است؛ در این وضعیت هزینه API ایجاد نمی‌شود."
+          : data.error === "provider_not_configured"
+            ? "اتصال موتور هوش مصنوعی هنوز پیکربندی نشده است."
+            : "پاسخی دریافت نشد؛ ورودی یا سرویس را بررسی کنید.");
         return;
       }
       setResult(data.result.text);

@@ -4,8 +4,7 @@ The application must not be described as production-ready until every applicable
 
 ## Repository verification
 
-- PR #2 targets `main`, remains open and draft, and is not merged.
-- Current branch and PR head: `c811b2b620dbca68c714ab038291ada42a099fd3`.
+- PR #2 is merged into `main` (merge commit `4e98a25503f94c2dc5d4ebc11a804f64d6568d5c`). The following 2026-11-06 PR #2 status notes are historical and superseded by this correction.
 - This exact head passed VAYRO CI (PR run 42194051921) and CodeQL (PR run 42194051963), both completed successfully on 2026-11-06.
 - The CI job on this exact head passed locked dependency installation, unit tests, Prisma client generation/schema validation, least-privilege role setup in isolated PostgreSQL, real Prisma migration history in isolated PostgreSQL, lint, typecheck, production build, and PostgreSQL/production HTTP integration tests.
 - The dependency-audit step itself reported 6 moderate findings and is explicitly configured with `continue-on-error: true`; its green step/job status is not a passed dependency-security gate.
@@ -475,3 +474,89 @@ This addendum supersedes earlier product-count and product-catalogue wording abo
 - [ ] Verify deployed commit parity and obtain explicit release approval.
 
 **Decision: EXACT-MAIN CI PASS + CODEQL EXECUTION PASS — LIVE DATABASE SECURITY/BASELINE AND HOSTING CONFIGURATION OPEN — DEPLOYMENT/COMMERCIAL RELEASE BLOCKED.**
+
+
+## Current engineering checkpoint — 2026-11-18
+
+See [the dated execution checkpoint](operations/ENGINEERING-EXECUTION-2026-11-18.md) for the exact inspected main SHA, current CI/CodeQL evidence, live VAYRO-CORE/RLS findings, Railway independence status, backup blockers and next acceptance gates. This dated checkpoint supersedes conflicting older status notes above. No production database migration or public release is authorized by a green repository CI run.
+
+
+## Verification update — 2026-11-18 (PR #39 current evidence)
+
+This update supersedes older CI/dependency statements where they conflict.
+
+- CI run [44319284985](https://github.com/gavad54/zelmira-one-/actions/runs/44319284985) on head `e4f7786ebb0b10ce48cec3599d382b7a6954cf96` completed all unit tests, Prisma generation/validation, isolated PostgreSQL migration and role/RLS tests, lint, typecheck, production build, Docker build and PostgreSQL/HTTP integration tests successfully.
+- The only failed CI step was the final full dependency audit: 13 High findings in the development dependency chain involving picomatch/tinyglobby. The lockfile marks the affected paths as development dependencies. The advisory GHSA-fc5q-39xc-vjpf identifies versions through 4.0.7 and lists no patched version.
+- CodeQL run [44319285028](https://github.com/gavad54/zelmira-one-/actions/runs/44319285028) completed successfully.
+- The CI workflow has been updated to run a separate production dependency audit (`npm audit --omit=dev --audit-level=moderate`) before the still-blocking full audit. No audit threshold was lowered, no advisory was suppressed, and no force-upgrade was performed. A fresh result on the new head is required.
+- Fresh VAYRO-CORE Supabase inventory: ACTIVE_HEALTHY PostgreSQL 17.11; 11 public tables, all RLS-enabled, zero rows reported; 11 Security Advisor findings for RLS enabled without policies; empty migration history; 10 unused-index observations; no Health Advisor findings. No production changes were made.
+- [Production reconciliation and recovery plan](operations/PRODUCTION-RECONCILIATION-AND-RECOVERY-PLAN.md) records the exact live-schema drift, role boundaries, staged baseline strategy, required table policy matrix, and precise GitHub Environment secret/variable names for offsite backup and isolated restore. No secrets are stored in the repository.
+
+**Open blockers:** full development dependency audit; missing protected backup/restore configuration and successful restore evidence; live schema/migration baseline and RLS policy reconciliation; dedicated least-privilege runtime roles; independent VAYRO hosting; email, billing, product integrations, Android and UAT.
+
+**Release posture: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## Authoritative ecosystem and infrastructure audit — 2026-11-20
+
+This addendum supersedes older product-count, DANA-classification, hosting and live-infrastructure statements in earlier dated sections. Historical notes remain for audit lineage only.
+
+### Approved hierarchy
+- VAYRO is the mother platform.
+- Exactly six direct independent applications: ARIA, ARIANA, LEADORA, ARMIN MARKET, DANA and ARVAND.
+- GANJINEH, NEGAH, SEPEHR and NAMA are internal ARIA domains, not additional products.
+- CHARSU is consolidated into ARMIN MARKET; PAYAM is consolidated into LEADORA.
+- ARIA excludes accounting, ledger and ERP; ARIANA is the sole accounting/ERP product.
+- Preserve all legacy source files and capability records. Consolidation does not authorize deletion.
+
+### Live VAYRO-CORE inspection (2026-11-20)
+- Supabase project VAYRO-CORE is ACTIVE_HEALTHY, PostgreSQL 17.11, eu-central-1.
+- The live public schema exposes 11 tables, each with RLS enabled, and zero rows in the inspected tables.
+- Supabase Security Advisor reports 11 RLS-enabled/no-policy findings. A direct read-only query returned zero policies and zero table grants to anon/authenticated/service_role. Dedicated application roles vayro_app, vayro_auth, vayro_platform and vayro_migration were not present in pg_roles.
+- Prisma declares 15 models; four are absent from the live catalog: UserMfa, MfaRecoveryCode, AuthChallenge and AiGeneration.
+- Live Session lacks revokedAt, lastSeenAt, assurance and mfaAuthenticatedAt. AuditEvent.tenantId lacks its declared Tenant foreign key.
+- Live migration history is empty. No production migration, role creation, grant or RLS policy mutation is authorized by this audit.
+- Performance Advisor reports 10 unused indexes. With zero rows/no real workload, these are observations only; do not drop them without workload evidence.
+
+### Live Railway inspection (2026-11-20)
+- Only two accessible projects were listed: ARIA Web and LEADORA. No dedicated VAYRO Railway project exists.
+- The VAYRO service in ARIA Web is offline; a second VAYRO service exists inside LEADORA and is also offline.
+- ARIA Web has a three-change staged patch and a staged-create service from branch brand/vayro-name-only with no deployment. Do not treat staged resources as live.
+- LEADORA's web service is offline and has one 500 MB persistent volume mounted at /data. The inspected environments have no Railway buckets.
+- The existence of a service name or a previous deployment record is not proof of a current running service.
+
+### Backup and restore
+- Scheduled encrypted backup workflow run [44715405983](https://github.com/gavad54/zelmira-one-/actions/runs/44715405983) failed at configuration validation because protected secret VAYRO_BACKUP_DATABASE_URL was absent in the vayro-backup environment. No dump, encryption or B2 upload was performed by that run.
+- No successful isolated restore drill is evidenced. Backup/restore remain hard blockers.
+- Never paste secret values into GitHub source, logs, chat or documentation. Configure required secret/variable names only in their protected GitHub Environments.
+
+### Dependency security and CI
+- PR #39 head: 89c60ab3c8b7bba6bc6cf6d7b10d1cac239dadb5.
+- VAYRO CI run [44716135634](https://github.com/gavad54/zelmira-one-/actions/runs/44716135634) failed at the enforced production dependency audit; CodeQL run [44716135732](https://github.com/gavad54/zelmira-one-/actions/runs/44716135732) passed.
+- The audit reports three High findings through effect <=3.22.0, pulled transitively by @prisma/config/Prisma, for GHSA-7589-6fvf-x4pw (CVE-2026-121707). The upstream patched version is effect 3.22.1. Do not use npm audit fix --force: the observed suggested resolution downgrades Prisma to 6.12.0 and is breaking. Update the transitive dependency with a compatible lockfile change and rerun all tests/audits.
+- CI must execute unit/integration tests, Prisma validation/migrations, lint, typecheck, production build and Docker build even when the final dependency audit fails; keep the security gate blocking and do not suppress advisories.
+
+### Current repositories and PR posture
+- VAYRO: gavad54/zelmira-one-; repo name is still historical. PR #39 is open; PR #45 contains the approved six-app architecture but is Draft and unmerged. PR #41's five-app structure and PR #42's earlier hierarchy are superseded.
+- ARIA: gavad54/aria-android; PR #3 is Draft and targets another engineering branch, not main. The latest verified run before this addendum passed 870 tests. Local domain logic does not equal external provider, payment or Production verification.
+- LEADORA: gavad54/LEADORA; PR #46 open, #47 draft based on #46, #51 draft, #52 draft. PR #52 CI and regression/security workflow passed on 052ac350dc15f8fa6a27f2f62c0c94205393e7d0. Railway service remains offline.
+- ARMIN MARKET: gavad54/Armin_market; PR #1 backend API and PR #2 market-intelligence integration are Draft. Backend CI passed on #1; Android APK build passed on #2. This is build evidence only, not signed release or device/UAT proof.
+- ARIANA, DANA and ARVAND have no canonical GitHub repository under gavad54 as of this inspection. ARIANA source archives exist in the Library and require source reconciliation; DANA/ARVAND still need canonical implementation repositories.
+
+### Release decision
+**ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+Do not merge, deploy, migrate production data, activate billing, publish a signed mobile release or enable production customer onboarding until the exact-head CI/security, database baseline/RLS, independent hosting, encrypted backup/restore, product-specific E2E, provider/billing, mobile and owner UAT gates have evidence.
+
+
+## Exact-head verification addendum — 2026-11-20 (latest audit)
+
+- The six-product UI/catalog branch PR #45, head `f39ffebdb9f46dcbc6c27c2631a0fef6f911e67a`, passed 91 unit tests and 30 PostgreSQL/HTTP integration tests; Prisma generation/validation, isolated migration, auth/platform/tenant role checks, tenant RLS isolation, lint, typecheck, production build and Docker build passed.
+- PR #45 VAYRO CI [44743453473](https://github.com/gavad54/zelmira-one-/actions/runs/44743453473) remains **failed** solely at the enforced production dependency audit. CodeQL [44743453471](https://github.com/gavad54/zelmira-one-/actions/runs/44743453471) passed.
+- The blocker is effect <=3.22.0 (GHSA-7589-6fvf-x4pw / CVE-2026-121707), transitively present through @prisma/config/Prisma. Upstream fixed version is effect 3.22.1. Do not use npm audit fix --force or accept a Prisma downgrade to 6.12.0. Update the transitive dependency and lockfile compatibly, then rerun full CI and audit.
+- PR #39 hardening branch current head `9c2bc924a0de7557760627bcf04887a155058bde`: CodeQL [44743973406](https://github.com/gavad54/zelmira-one-/actions/runs/44743973406) passed; VAYRO CI [44743973402](https://github.com/gavad54/zelmira-one-/actions/runs/44743973402) was cancelled, so no fresh full CI pass exists for that head.
+- ARIA PR #3 head `f3b0aa780aad5aa8e0228412398e1ff754365be4`: CI success, 870 tests passed, 0 failed.
+- LEADORA PR #52 head `052ac350dc15f8fa6a27f2f62c0c94205393e7d0`: CI and regression/security checks passed; Python suite 97 passed, 2 warnings.
+- ARMIN MARKET PR #2: Android Debug APK build passed. This is not release signing, real-device verification or store acceptance.
+
+The architecture remains six independent products under VAYRO; the current product directory now reflects this on PR #45. The overall release posture remains **DEPLOYMENT BLOCKED — NOT RELEASED**.

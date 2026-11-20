@@ -1,6 +1,7 @@
 import { isSameOriginRequest } from "@/lib/auth-core.mjs";
 import { clearSessionCookie, currentSession, noStoreJson } from "@/lib/auth-service";
 import { authPrisma, assertAuthRuntimeRole } from "@/lib/auth-prisma";
+import { isRecentMfa } from "@/lib/mfa-service";
 
 export const runtime = "nodejs";
 
@@ -9,6 +10,11 @@ export async function POST(request: Request) {
   if (!isSameOriginRequest(request)) return noStoreJson({ error: "invalid_origin" }, 403);
   const session = await currentSession();
   if (!session) return noStoreJson({ error: "unauthenticated" }, 401);
+  const privileged = session.user.platformRole === "OWNER" || session.user.platformRole === "PLATFORM_ADMIN";
+  if ((privileged || session.assurance === "MFA") &&
+      !isRecentMfa(session.assurance, session.mfaAuthenticatedAt)) {
+    return noStoreJson({ error: "mfa_required" }, 403);
+  }
 
   const now = new Date();
   const result = await authPrisma.session.updateMany({

@@ -4,7 +4,7 @@ import { AI_ENGINE_KEYS, listAiBusinessCapabilities } from "@/lib/ai-business-su
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PRODUCTS = new Set(["ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM", "DANA"]);
+const PRODUCTS = new Set(["ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM"]);
 
 export async function GET(request: NextRequest) {
   const product = request.nextUrl.searchParams.get("product") ?? undefined;

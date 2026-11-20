@@ -99,3 +99,28 @@ test("owner session revokes idle sessions and rejects them", async () => {
     { authorized: false }
   );
 });
+
+
+test("owner session rejects PLATFORM_ADMIN and future-dated MFA assurance", async () => {
+  const base = {
+    expiresAt: new Date(Date.now() + 60_000),
+    assurance: "MFA",
+    mfaAuthenticatedAt: new Date(),
+    user: { id: "owner-1", platformRole: "PLATFORM_ADMIN", emailVerifiedAt: new Date(), disabledAt: null }
+  };
+  assert.deepEqual(
+    await authorizeOwnerSession({ sessionToken: "a".repeat(64), db: makeDb(base) }),
+    { authorized: false },
+    "PLATFORM_ADMIN is not interchangeable with platform OWNER"
+  );
+  const future = {
+    ...base,
+    user: { ...base.user, platformRole: "OWNER" },
+    mfaAuthenticatedAt: new Date(Date.now() + 60_000)
+  };
+  assert.deepEqual(
+    await authorizeOwnerSession({ sessionToken: "a".repeat(64), db: makeDb(future) }),
+    { authorized: false },
+    "future-dated MFA must fail closed"
+  );
+});

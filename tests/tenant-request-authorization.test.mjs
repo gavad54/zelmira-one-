@@ -225,3 +225,79 @@ test("AI generation and history permissions are limited to active tenant members
   assert.equal(authorizeTenantAction({ ...base, tenantStatus: "SUSPENDED", action: "ai_generate" }), false);
   assert.equal(authorizeTenantAction({ ...base, requestedTenantId: "tenant-b", action: "ai_read" }), false);
 });
+
+
+test("complete tenant role/action matrix allows only the documented capabilities", async () => {
+  const actions = [
+    "tenant_read", "tenant_manage", "members_manage",
+    "billing_manage", "tenant_delete", "ai_generate", "ai_read"
+  ];
+  const expected = {
+    OWNER:   [true, true, true, true, true, true, true],
+    ADMIN:   [true, true, true, false, false, true, true],
+    MANAGER: [true, false, false, false, false, true, true],
+    MEMBER:  [true, false, false, false, false, true, true],
+    VIEWER:  [true, false, false, false, false, false, false]
+  };
+  for (const [role, decisions] of Object.entries(expected)) {
+    for (let index = 0; index < actions.length; index += 1) {
+      assert.equal(authorizeTenantAction({
+        authenticatedUserId: "user-a",
+        requestedTenantId: "tenant-a",
+        membership: { userId: "user-a", tenantId: "tenant-a", role },
+        tenantStatus: "ACTIVE",
+        action: actions[index]
+      }), decisions[index], `${role} / ${actions[index]} permission mismatch`);
+    }
+  }
+});
+
+test("database-backed authorization enforces the complete role/action matrix and MFA boundary", async () => {
+  const actions = [
+    "tenant_read", "tenant_manage", "members_manage",
+    "billing_manage", "tenant_delete", "ai_generate", "ai_read"
+  ];
+  const expected = {
+    OWNER:   [true, true, true, true, true, true, true],
+    ADMIN:   [true, true, true, false, false, true, true],
+    MANAGER: [true, false, false, false, false, true, true],
+    MEMBER:  [true, false, false, false, false, true, true],
+    VIEWER:  [true, false, false, false, false, false, false]
+  };
+  for (const [role, decisions] of Object.entries(expected)) {
+    for (let index = 0; index < actions.length; index += 1) {
+      const db = database({
+        session: activeSession,
+        membership: { ...activeMembership, role }
+      });
+      const result = await authorizeTenantRequest({
+        sessionToken: token, tenantId: "tenant-a", action: actions[index], db, now
+      });
+      assert.equal(result.authorized, decisions[index], `${role} / ${actions[index]} database decision mismatch`);
+    }
+  }
+
+  for (const role of ["OWNER", "ADMIN"]) {
+    for (const action of actions) {
+      const db = database({
+        session: { ...activeSession, assurance: "PASSWORD", mfaAuthenticatedAt: null },
+        membership: { ...activeMembership, role }
+      });
+      const result = await authorizeTenantRequest({
+        sessionToken: token, tenantId: "tenant-a", action, db, now
+      });
+      assert.equal(result.authorized, false, `${role} without fresh MFA must be denied for ${action}`);
+    }
+  }
+
+  for (const role of ["MANAGER", "MEMBER", "VIEWER"]) {
+    const db = database({
+      session: { ...activeSession, assurance: "PASSWORD", mfaAuthenticatedAt: null },
+      membership: { ...activeMembership, role }
+    });
+    const result = await authorizeTenantRequest({
+      sessionToken: token, tenantId: "tenant-a", action: "tenant_read", db, now
+    });
+    assert.equal(result.authorized, true, `${role} tenant_read must not require privileged MFA step-up`);
+  }
+});

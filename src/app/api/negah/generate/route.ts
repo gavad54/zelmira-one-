@@ -7,9 +7,14 @@ import { generateImage } from "@/lib/ai-provider.mjs";
 import { authPrisma, assertAuthRuntimeRole } from "@/lib/auth-prisma";
 import { getTenantPrisma } from "@/lib/tenant-prisma";
 import { withTenantRequestTransaction } from "@/lib/tenant-request-transaction.mjs";
+import { resolveProductAccess } from "@/lib/product-access.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// Paid AI execution stays disabled until an idempotent credit ledger, provider
+// usage reconciliation and tenant billing controls are implemented and tested.
+const BILLING_LEDGER_READY = false;
 
 const schema = z.object({
   tenantId: z.string().min(1).max(128),
@@ -43,9 +48,25 @@ export async function POST(request: NextRequest) {
       sessionToken,
       tenantId: parsed.data.tenantId,
       action: "ai_generate",
-      callback: async (_tx, actor) => actor.userId
+      callback: async (tx, actor) => {
+        const product = await tx.product.findUnique({
+          where: { key: "NEGAH" },
+          select: { id: true, status: true }
+        });
+        if (!product) return { licensed: false };
+        const license = await tx.license.findUnique({
+          where: { tenantId_productId: { tenantId: actor.tenantId, productId: product.id } },
+          select: { active: true, startsAt: true, endsAt: true }
+        });
+        const entitlement = resolveProductAccess(
+          license ? { ...license, productStatus: product.status } : null
+        );
+        return { licensed: entitlement.allowed };
+      }
     });
     if (!access.authorized) return noStoreJson({ error: "tenant_access_denied" }, 403);
+    if (!access.value.licensed) return noStoreJson({ error: "negah_license_required" }, 403);
+    if (!BILLING_LEDGER_READY) return noStoreJson({ error: "billing_not_configured" }, 503);
     const generated = await generateImage(parsed.data);
     // Build a plain JSON object so Prisma's InputJsonValue accepts the provider DTO.
     const output = {

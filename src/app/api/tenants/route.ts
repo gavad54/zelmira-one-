@@ -3,8 +3,8 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { isSameOriginRequest } from "@/lib/auth-core.mjs";
 import { allowAttempt, currentSession, noStoreJson, requestFingerprint } from "@/lib/auth-service";
-import { createTenantInTransaction, listActiveTenants } from "@/lib/tenant-service.mjs";
-import { withAuthenticatedUserTransaction } from "@/lib/tenant-request-transaction.mjs";
+import { listActiveTenants } from "@/lib/tenant-service.mjs";
+import { createTenantForAuthenticatedUser, withAuthenticatedUserTransaction } from "@/lib/tenant-request-transaction.mjs";
 import { getTenantPrisma } from "@/lib/tenant-prisma";
 import { authPrisma, assertAuthRuntimeRole } from "@/lib/auth-prisma";
 
@@ -62,18 +62,13 @@ export async function POST(request: Request) {
     if (!allowed) return noStoreJson({ error: "try_again_later" }, 429);
 
     const tenantId = randomUUID();
-    const result = await withAuthenticatedUserTransaction({
+    const result = await createTenantForAuthenticatedUser({
       authDb: authPrisma,
       tenantDb: getTenantPrisma(),
       sessionToken,
       tenantId,
-      callback: (tx, actor) => createTenantInTransaction({
-        tx,
-        userId: actor.userId,
-        tenantId,
-        name: parsed.data.name,
-        slug: "vayro-" + randomBytes(8).toString("hex")
-      })
+      name: parsed.data.name,
+      slug: "vayro-" + randomBytes(8).toString("hex")
     });
     if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
 
