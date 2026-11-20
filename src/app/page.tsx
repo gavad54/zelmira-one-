@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { VAYRO_PRODUCTS, INDEPENDENT_PRODUCTS } from "@/lib/product-directory.mjs";
+import { VAYRO_PRODUCTS, ARIA_DOMAINS } from "@/lib/product-directory.mjs";
 
 export default function HomePage() {
   return (
@@ -15,20 +15,16 @@ export default function HomePage() {
       </header>
 
       <section className="hero">
-        <div className="eyebrow"><span className="status-dot" /> اکوسیستم فناوری وایرو</div>
-        <h1>یک جهان هوشمند،<br /><span>در یک تجربه.</span></h1>
+        <div className="eyebrow"><span className="status-dot" /> اکوسیستم مادر وایرو</div>
+        <h1>شش اپ مستقل،<br /><span>یک اکوسیستم هوشمند.</span></h1>
         <p className="hero-copy">
-          وایرو نقطه اتصال محصولات تخصصی برای تجارت، بازار، خلاقیت و فناوری است.
-          هر محصول مستقل عمل می‌کند و در صورت نیاز، با دسترسی کنترل‌شده به اکوسیستم متصل می‌شود.
+          VAYRO اپلیکیشن مادر است. شش محصول مستقل، هرکدام با مالکیت داده، منطق تجاری و چرخه انتشار جداگانه،
+          از طریق دسترسی‌های کنترل‌شده با یکدیگر ارتباط می‌گیرند.
         </p>
         <div className="hero-actions">
-          <a className="primary-action" href="#products">کشف محصولات <span aria-hidden="true">←</span></a>
+          <a className="primary-action" href="#products">مشاهده شش اپ مستقل <span aria-hidden="true">←</span></a>
           <Link className="secondary-action" href="/growth">راهکارهای رشد کسب‌وکار</Link>
-          <Link className="secondary-action" href="/ai-business-suite">۵۰ قابلیت هوشمند وایرو</Link>
-          <Link className="secondary-action" href="/dana/ai-workspace">فضای کار هوشمند دانا</Link>
-          <Link className="secondary-action" href="/dana/prompt-studio">استودیوی پرامپت دانا</Link>
-          <Link className="secondary-action" href="/negah/creative-studio">استودیوی تولید تصویر نگاه</Link>
-          <Link className="secondary-action" href="/negah/creative-brief">بریف خلاقیت نگاه</Link>
+          <Link className="secondary-action" href="/ai-business-suite">قابلیت‌های هوشمند</Link>
         </div>
         <div className="orb orb-one" aria-hidden="true" />
         <div className="orb orb-two" aria-hidden="true" />
@@ -36,43 +32,37 @@ export default function HomePage() {
 
       <section className="section" id="products">
         <div className="section-heading">
-          <div><span className="eyebrow">VAYRO PRODUCT FAMILY</span><h2>۱۱ اپلیکیشن تخصصی، یک اکوسیستم</h2></div>
-          <p>هر محصول برای یک نیاز مشخص طراحی شده است؛ دسترسی و خرید محصولات مستقل خواهد بود.</p>
+          <div><span className="eyebrow">VAYRO DIRECT APPLICATIONS</span><h2>شش محصول مستقل زیرمجموعه وایرو</h2></div>
+          <p>مستقل بودن محصول به معنی آماده‌بودن برای انتشار نیست؛ وضعیت هر اپ با شواهد واقعی نمایش داده می‌شود.</p>
         </div>
         <div className="product-grid">
           {VAYRO_PRODUCTS.map((product) => (
             <article className="product-card" key={product.name}>
               <span className="product-tag">{product.tag}</span>
               <span className={`product-status ${product.statusClass}`}>{product.status}</span>
-              <h3>{product.href ? <Link href={product.href}>{product.name}</Link> : product.name}</h3>
+              <h3>{product.name}</h3>
               <strong className="product-fa">{product.fa}</strong>
               <p>{product.detail}</p>
-              <span className="card-foot">محصول خانواده وایرو <span aria-hidden="true">✦</span></span>
+              <span className="card-foot">محصول مستقل خانواده وایرو <span aria-hidden="true">✦</span></span>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="section capability-section" aria-labelledby="dana-capability-title">
-        <div className="capability-card">
-          <div>
-            <span className="eyebrow">VAYRO CENTRAL INTELLIGENCE</span>
-            <h2 id="dana-capability-title">DANA · هوش مصنوعی مرکزی وایرو</h2>
-            <p>دانا قابلیت داخلی تحلیل و هماهنگی مرکز فرماندهی است؛ محصول مستقل دوازدهم نیست و دسترسی آن به اطلاعات و عملیات هر محصول محدود، مجاز و قابل ممیزی خواهد بود.</p>
-          </div>
-          <Link className="secondary-action" href="/dana/ai-workspace">ورود به فضای هوشمند دانا</Link>
-        </div>
-      </section>
-
-      <section className="section independent-section">
+      <section className="section" id="aria-domains">
         <div className="section-heading">
-          <div><span className="eyebrow">INDEPENDENT PRODUCTS</span><h2>محصولات مستقل و متصل</h2></div>
-          <p>محصولات تخصصی موجود، هویت و مرز داده‌ای مستقل خود را حفظ می‌کنند.</p>
+          <div><span className="eyebrow">ARIA INTERNAL DOMAINS</span><h2>چهار حوزه داخلی ARIA</h2></div>
+          <p>این حوزه‌ها اپلیکیشن مستقل نیستند و در موجودی شش محصول VAYRO دوباره شمرده نمی‌شوند.</p>
         </div>
-        <div className="independent-grid">
-          {INDEPENDENT_PRODUCTS.map((product) => (
-            <article className="independent-card" key={product.name}>
-              <h3>{product.name}</h3><p>{product.detail}</p><span className={`product-status ${product.statusClass}`}>{product.status}</span>
+        <div className="product-grid">
+          {ARIA_DOMAINS.map((domain) => (
+            <article className="product-card" key={domain.name}>
+              <span className="product-tag">دامنه داخلی ARIA</span>
+              <span className={`product-status ${domain.statusClass}`}>{domain.status}</span>
+              <h3>{domain.href ? <Link href={domain.href}>{domain.name}</Link> : domain.name}</h3>
+              <strong className="product-fa">{domain.fa}</strong>
+              <p>{domain.detail}</p>
+              <span className="card-foot">زیرمجموعه محصول ARIA <span aria-hidden="true">✦</span></span>
             </article>
           ))}
         </div>
@@ -80,8 +70,8 @@ export default function HomePage() {
 
       <section className="vision" id="vision">
         <span className="eyebrow">VAYRO INTELLIGENCE</span>
-        <h2>فناوری در خدمت تصمیم بهتر.</h2>
-        <p>وایرو مسیر یکپارچه‌ای برای کشف و مدیریت محصولات فراهم می‌کند؛ بدون ادغام ناخواسته داده‌ها یا حذف استقلال هر کسب‌وکار.</p>
+        <h2>استقلال محصول، هماهنگی کنترل‌شده.</h2>
+        <p>حسابداری و ERP فقط در ARIANA است؛ تجارت بین‌الملل در ARVAND، بازارگاه در ARMIN MARKET و عملیات رشد در LEADORA مالک مشخص دارند.</p>
       </section>
 
       <footer className="footer">
