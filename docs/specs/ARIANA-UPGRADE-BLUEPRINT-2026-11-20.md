@@ -95,3 +95,11 @@ P4: Android wrapper build، تست دستگاه، signing، UAT و release gates
 - Odoo vs ERPNext: https://www.erpresearch.com/compare/odoo-vs-erpnext
 
 **وضعیت:** SOURCE_ARCHIVE_LOCATED / CANONICAL_REPO_NOT_LOCATED / NOT_RELEASED.
+
+
+## اجرای مجدد آزمون آرشیو در 2026-11-20
+- آرشیو اصلی از Library در محیط ایزوله استخراج شد؛ `ZipFile.testzip()` بدون خطا بود.
+- `python -m pytest -q`: **89 passed** در 1.69 ثانیه.
+- `python -m compileall -q backend`: exit code 0.
+- `node --check` برای 6 فایل JavaScript در assets: همگی بدون خطای syntax.
+- این آزمون‌ها فقط صحت بخشی از سورس آرشیو را در محیط ایزوله نشان می‌دهند؛ build اندروید، اتصال production، امنیت tenant، migration زنده، backup/restore، signing و UAT همچنان اثبات نشده‌اند.
