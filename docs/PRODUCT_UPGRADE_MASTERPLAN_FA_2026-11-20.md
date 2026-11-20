@@ -45,3 +45,16 @@ ARIANA: Odoo، Zoho Books، ERPNext (ثبات رابط، سلسله‌مراتب
 - ASYCUDA 2025: https://unctad.org/system/files/official-document/dtlasycuda2025d1_en.pdf
 - Marketplace UX: https://www.lowcode.agency/blog/marketplace-ui-ux-design-best-practices-full-guide
 - ARMIN MARKET spec: https://github.com/gavad54/Armin_market/blob/main/docs/PRODUCT_SPEC_FA.md
+
+
+## ARIA preservation evidence snapshot — 2026-11-19 archive review
+
+- Canonical registry CSV: `ARIA_639_CANONICAL_MODULES_FULL_2026-11-19.csv`; 639 rows and 639 unique canonical IDs; all 639 rows have registry flag `enabled=true`.
+- Registry implementation maturity: 569 `CONTRACT_RUNTIME_ROUTABLE_NOT_E2E_VERIFIED`; 39 `CONTRACT_AND_STATIC_RUNTIME_VERIFIED`; 19 `FOUNDATION_RUNTIME_IMPLEMENTED_STATIC_E2E_PENDING`; 12 `SURFACE_RUNTIME_IMPLEMENTED_STATIC_E2E_PENDING`. Registry enablement must not be misreported as full end-to-end activation.
+- Archive lineage crosswalk: 842 rows, including 639 historical snapshots, 93 engine components, 90 exact matches, 15 semantic matches, and 5 unresolved records. Preserve unresolved records as unresolved until evidence resolves them; do not drop or force-map them.
+- Module engineering contract archive: 232 engineering contracts. Keep their IDs and domain-specific contracts in the preservation inventory.
+- Revenue engine operating model: 12 engines are specified, but all rows are `DESIGN_SPEC_READY_IMPLEMENTATION_NOT_VERIFIED`; do not claim realized revenue or production activation from specification alone.
+- The 639 registry rows all contain an adapter field; adapter presence is not proof that the external service is connected, authorized, healthy or tested.
+- ARIA source audit identifies a separate 32.0.0 archive with 639 module registry and 201 declared tables; it is not interchangeable with the 15.x archive family. Do not overwrite or conflate source lines without a deliberate lineage/import decision.
+
+The 639-ID inventory, 842-row lineage crosswalk, 232 contracts, 12 revenue-engine definitions, unresolved records, source archives and historical versions are preservation inputs. This four-product upgrade task does not authorize changing ARIA code or registries.
