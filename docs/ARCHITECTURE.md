@@ -32,20 +32,20 @@ Routes and helpers do not prove complete endpoint coverage, production email del
 6. Unknown entitlement, identity or authorization state fails closed.
 7. Database access is server-only; do not grant browser roles table privileges.
 
-## Approved product family — 11 independent products
-- ARVAND: international trade, import and export.
-- CHARSU: marketplace and commerce network.
-- GANJINEH: digital stores and e-commerce.
-- NEGAH: creative studio and content production.
-- SEPEHR: cloud and digital infrastructure.
-- NAMA: website and landing-page builder.
-- PAYAM: marketing and customer growth.
-- LEADORA: distribution, sales, inventory and commercial operations.
-- ARIANA: accounting, finance and ERP.
-- ARIA: social, communications, services and listings; explicitly excludes accounting and ERP.
-- ARMIN MARKET: buyer requests and supplier quotations.
+## Approved product family — six independent applications
 
-DANA is the central AI intelligence/orchestration capability within VAYRO Command Center, not a twelfth product. Its data and tools are task-scoped, authorized, logged and revocable.
+VAYRO is the mother platform and is not counted among the six direct applications:
+
+- ARIA: AI, communications, social/services and digital work; no accounting or ERP.
+- ARIANA: accounting, finance, general ledger and ERP; sole owner of these capabilities.
+- LEADORA: distribution, sales, inventory, commercial operations and growth; includes PAYAM's approved growth scope.
+- ARMIN MARKET: marketplace, buyer requests, supplier quotations and market intelligence; includes CHARSU's approved marketplace scope.
+- DANA: independent command-center and authorized orchestration application.
+- ARVAND: international trade, import, export and trade operations.
+
+Internal ARIA domains: GANJINEH (digital storefront/catalogue), NEGAH (creative studio), SEPEHR (cloud/resource tools) and NAMA (website/page builder). These are not additional independent products.
+
+CHARSU is consolidated into ARMIN MARKET and PAYAM into LEADORA. Preserve their historical source records and capabilities in the archive/crosswalk; do not expose them as standalone current products or delete historical records.
 
 ## Independent product boundaries
 Each product retains its own domain rules, data ownership, authorization, integrations and release evidence. Keep product data stores separate. Integrate only through separately reviewed, versioned APIs/events with scoped service identities and audit records. Purchasing one product must not require another. ARIANA alone owns accounting/ERP; ARIA must not contain accounting/ERP; LEADORA owns distribution and sales operations within its defined scope.
@@ -62,7 +62,7 @@ The Command Center provides portfolio oversight, people/access, commercial opera
 
 ## Implementation verification addendum — 2026-11-11
 
-- Main branch includes the owner Command Center, eleven-product portfolio, Future Development Lab, owner license lifecycle API and tenant-scoped product entitlement API.
+- Main branch includes the owner Command Center, six-product portfolio, Future Development Lab, owner license lifecycle API and tenant-scoped product entitlement API.
 - The owner license endpoints require a fresh owner/MFA session, validate same-origin mutations, apply request limits, and append audit events. The tenant product endpoint derives membership/session authorization and executes data reads through the tenant-scoped PostgreSQL transaction/RLS boundary. Product access fails closed unless the product is ACTIVE and its license is current.
 - The Future Development Lab stores append-only proposal/decision events. A research approval is not a production execution authorization.
 - Exact main commit `ef71857074968a639aed484df030be6d630d8539` passed VAYRO CI run [43042296724](https://github.com/gavad54/zelmira-one-/actions/runs/43042296724) and CodeQL run [43042296836](https://github.com/gavad54/zelmira-one-/actions/runs/43042296836). CI included dependency audit, unit tests, Prisma validation, isolated PostgreSQL role/RLS tests, lint, typecheck, production build, Docker build and PostgreSQL/production-HTTP integration tests.
