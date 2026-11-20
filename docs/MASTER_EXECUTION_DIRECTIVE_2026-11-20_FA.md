@@ -100,3 +100,11 @@ P2: E2E و Provider integration، entitlement/payment، Android release، UAT و
 - به کاربر موبایل‌محور دستورهای کوتاه و قابل انجام با گوشی بده؛ انجام کار روی PC را فرض نکن.
 
 **هدف نهایی: شش اپ مستقل با منطق دامنه‌ای واقعی، داده و امنیت جداگانه، اتصال API کنترل‌شده، عملیات قابل بازیابی و مدل درآمدی آزموده‌شده؛ بدون حذف تاریخچه و بدون اعلام تکمیل بی‌مدرک.**
+
+
+## ۱۱. اسناد و ماتریس‌های تاریخی
+
+- ماتریس `VAYRO_11_Product_Execution_Matrix_2026-11-18.xlsx` و فایل Library `BRAND-AND-UI.md` مربوط به معماری پیشین‌اند و نباید برای شمارش فعلی محصولات یا درصد پیشرفت استفاده شوند.
+- مرجع جاری شش اپ مستقل است؛ DANA مستقل، ARVAND مستقل، CHARSU در ARMIN MARKET، PAYAM در LEADORA و چهار حوزه GANJINEH/NEGAH/SEPEHR/NAMA داخلی ARIA هستند.
+- نسخه‌های مختلف رجیستری ARIA (115/120/231/232/329/639) با هم جمع نشوند. فقط Source ID و Crosswalk تعیین می‌کند هر قابلیت به کدام موجودی تعلق دارد.
+- برای هر ZIP، SHA-256، versionCode/versionName، applicationId، تست، migration و build evidence ثبت شود؛ نام فایل به‌تنهایی اعتبار Source را تعیین نمی‌کند.
