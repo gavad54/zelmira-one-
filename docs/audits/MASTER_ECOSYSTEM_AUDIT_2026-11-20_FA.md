@@ -276,3 +276,22 @@ Workflow رمزگذاری‌شده offsite وجود دارد؛ اما اجرای
 اکوسیستم از نظر طراحی و کد در چند مخزن پیشرفت قابل توجه دارد؛ اما موانع اصلی اکنون فقط «ساخت ماژول بیشتر» نیستند. اولویت قطعی، یکپارچگی معماری، هم‌ترازی کد و اسناد، امنیت Dependency، تکمیل DB، میزبانی مستقل، Backup/Restore و شواهد Production است.
 
 **وضعیت کل: ENGINEERING IN PROGRESS — DEPLOYMENT BLOCKED — NOT RELEASED.**
+
+
+## به‌روزرسانی شواهد CI — ۲۰ نوامبر ۲۰۲۶، ساعت ۱۳:۲۵ UTC
+
+- شاخه شش‌محصولی PR #45 روی head `f39ffebdb9f46dcbc6c27c2631a0fef6f911e67a`:
+  - VAYRO CI run [44743453473](https://github.com/gavad54/zelmira-one-/actions/runs/44743453473): **failure فقط در production dependency audit**.
+  - Unit tests: **۹۱ passed / ۰ failed**.
+  - PostgreSQL و HTTP integration tests: **۳۰ passed / ۰ failed**.
+  - Prisma generation/validation، migration در PostgreSQL ایزوله، آزمون نقش‌های auth/platform/tenant، RLS isolation، lint، typecheck، production build و Docker build همگی موفق.
+  - CodeQL run [44743453471](https://github.com/gavad54/zelmira-one-/actions/runs/44743453471): success.
+- شاخه hardening PR #39 روی head `9c2bc924a0de7557760627bcf04887a155058bde`:
+  - CodeQL run [44743973406](https://github.com/gavad54/zelmira-one-/actions/runs/44743973406): success.
+  - VAYRO CI run [44743973402](https://github.com/gavad54/zelmira-one-/actions/runs/44743973402): cancelled؛ بنابراین این head شواهد CI کامل تازه ندارد.
+  - آخرین CI کامل‌شده روی head قبلی هنوز همان failure در dependency audit است؛ کد نباید تا اجرای مجدد کامل و رفع audit، release-ready اعلام شود.
+- ARIA روی head `f3b0aa780aad5aa8e0228412398e1ff754365be4`: CI موفق؛ **۸۷۰ passed / ۰ failed**.
+- LEADORA PR #52 روی head `052ac350dc15f8fa6a27f2f62c0c94205393e7d0`: CI و regression/security موفق؛ **۹۷ تست Python passed، ۲ warning**.
+- ARMIN MARKET PR #2: Debug APK build موفق؛ این مدرک امضای Release یا نصب/پذیرش دستگاه نیست.
+
+**تفسیر:** معماری شش‌محصولی و اصلاح رابط/رجیستری در شاخه PR #45 از نظر unit/integration/build آزموده شده‌اند؛ dependency audit همچنان مانع merge/release است. CI cancelled روی PR #39 نیز نباید به‌عنوان pass ثبت شود.
