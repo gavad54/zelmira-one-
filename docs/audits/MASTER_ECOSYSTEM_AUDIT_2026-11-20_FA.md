@@ -295,3 +295,60 @@ Workflow رمزگذاری‌شده offsite وجود دارد؛ اما اجرای
 - ARMIN MARKET PR #2: Debug APK build موفق؛ این مدرک امضای Release یا نصب/پذیرش دستگاه نیست.
 
 **تفسیر:** معماری شش‌محصولی و اصلاح رابط/رجیستری در شاخه PR #45 از نظر unit/integration/build آزموده شده‌اند؛ dependency audit همچنان مانع merge/release است. CI cancelled روی PR #39 نیز نباید به‌عنوان pass ثبت شود.
+
+
+## ۱۲. بررسی باینری آرشیوهای اصلی Library
+
+فهرست metadata کتابخانه در این بررسی ۳۹۴ مورد را نشان داد: ۹ پوشه و ۳۸۵ فایل. پنج بسته منبع اصلی زیر از Library materialize، hash و از نظر ساختار/آزمون بررسی شدند. این بررسی روی کپی کاری انجام شد و فایل‌های اصلی Library تغییر نکردند.
+
+| بسته | SHA-256 | اندازه | آزمون محلی |
+|---|---|---:|---:|
+| ARIA 32 Runtime Fixes Release Readiness Source (20261119-193450).zip | `6ebe65d8058ef83c9b8a0845054dd4fd01068cf249cdf29492d8fa6d451e0be9` | 3,403,822 B | static gates با تناقض نسخه؛ Build اندروید انجام نشد |
+| ariaana_android_app_v42_benchmark_hardened(3).zip | `f07d57b9de11cc95edc104649be3838308df97f44ffa6795319c0a9a431b920a` | 379,580 B | ۱۰۹ تست Python موفق |
+| ARIANA_16.0.0_FINAL_REVENUE_FIRST.zip | `070441acead58278cc7e62886b60be760507515f8b9b64a324ed60a442527d7f` | 2,883,117 B | تست مستقل در بسته پیدا نشد؛ نام فایل با محتوای واقعی هم‌خوان نیست |
+| LEADORA_MVP_0_3_SOURCE.zip | `97a6f58c109ea6c2178795548b3234953dd0c90d270730d8948feb11097acb34` | 26,544 B | ۱۲ تست Python موفق |
+| ArminMarket_v1.3.3_FINALIZATION_BUNDLE.zip | `39665264c5d20b1616171de448e0c56e02b7b2bf16bd74b857b5a0f14ab2cb59` | 111,372 B | ۶ تست Backend موفق |
+
+### ۱۲.۱ ARIA 32 — تناقض نسخه و Release Gate
+
+- سه رجیستری Android/Backend با ۶۳۹ شناسه و نسخه 32.0.0 همگام‌اند؛ `verify_module_capability_matrix.sh` موفق شد و خروجی `MODULES=639` داد.
+- `aria24_capability_registry.json` جداگانه ۱۰۹ کلید ماژول و ۸۱ موتور دارد.
+- ماتریس‌های قدیمی 15.19/15.20/15.23 همچنان ۲۳۲ ردیف دارند.
+- README بالای آرشیو 639 شناسه و نسخه 32.0.0 را مرجع معرفی می‌کند، ولی `MODULE_OPERATIONAL_REPORT_15.19.0` و `RELEASE_READINESS_FA` اعداد ۲۳۲ و ۳۲۹ را در متن‌های قدیمی‌تر ثبت کرده‌اند.
+- `verify_module_runtime_r3.sh` به علت انتظار ۲۳۲ ماژول شکست خورد.
+- `FINAL_VERIFY.sh` بعد از عبور static verify 639، در assertion قدیمی ۲۳۲/15.24.0 شکست خورد.
+- `RELEASE_GATE.sh` چند gate ایستا و تست قرارداد را پاس کرد، اما با پیام `FAIL: missing gradle` و exit code 1 خاتمه یافت.
+- Gradle Wrapper JAR/اجرای قابل بازتولید و Android SDK در بسته حاضر نیستند؛ APK/AAB، نصب دستگاه، Provider، پرداخت و Production تأیید نشده‌اند.
+
+نتیجه: رجیستری ۶۳۹تایی در سه فایل sync است، اما release scripts با نسخه جاری هم‌تراز نیستند. این آرشیو Production-certified نیست.
+
+### ۱۲.۲ ARIANA v0.42 — کاندید واقعی‌تر، ولی دارای مانع Migration
+
+- فایل `ariaana_android_app_v42_benchmark_hardened(3).zip` به آریانا اختصاص دارد؛ README_V42 آن را ARIANA v0.42 معرفی می‌کند و V36 changelog تغییر نام از «آریا حساب» به «آریانا» را ثبت کرده است.
+- ۱۰۹ تست Python در کپی محلی موفق شد؛ این نتیجه معادل تست PostgreSQL، Android build یا Production نیست.
+- Android `applicationId` هنوز `ir.aria.hesab` و نام پروژه `AriaHesab` است؛ نام‌گذاری داخلی با برند نهایی ARIANA هم‌تراز نشده است.
+- Gradle Wrapper در بسته پیدا نشد؛ APK/AAB build و signing تأیید نشده‌اند.
+- Backend در صورت نبود `DATABASE_URL` به SQLite محلی `aria_hesab_dev.db` می‌رود و `main.py` هنگام import، `Base.metadata.create_all` را اجرا می‌کند؛ این جایگزین migration versioned و production migration نیست.
+- سه SQL migration یک زنجیره منسجم تشکیل نمی‌دهند: migration 001/002 از `organizations`, `parties`, `products` استفاده می‌کنند؛ migration 003 به `party`, `tenant`, `product` ارجاع می‌دهد و `ALTER TABLE party` دارد. جدول‌های مرجع متناظر در 001/002 ساخته نشده‌اند. Backend ORM نیز schema tenant/party/product جداگانه دارد.
+- بنابراین migration 003 در ترتیب فعلی قابل اتکا نیست و باید قبل از هر استقرار بازطراحی و با PostgreSQL واقعی آزموده شود.
+- `backend/README.md` هنوز نسخه v0.5 را معرفی می‌کند؛ مستندات Backend با v0.42 هم‌تراز نیستند.
+- `test_v42_benchmark.py` یک assertion شرطی دارد که عملاً همیشه True می‌شود؛ این تست باید اصلاح شود.
+
+نتیجه: v0.42 بهترین کاندید آرشیوی پیدا‌شده برای Source مستقل ARIANA است، اما هنوز نیازمند تثبیت نام/شناسه بسته، اصلاح migrationها، آزمون PostgreSQL، امنیت/tenant، Gradle و مخزن canonical است.
+
+### ۱۲.۳ بسته‌ای که به اشتباه ARIANA 16.0.0 نام‌گذاری شده
+
+محتوای `ARIANA_16.0.0_FINAL_REVENUE_FIRST.zip` در واقع پوشه `aria_final`، نام اپ «آریا»، package id `com.aria.ermian` و نسخه مرجع ARIA 15.18.4/231 ماژول را نشان می‌دهد. درون آن «Ariana Universal ERP» به‌عنوان یک لایه/محصول در مستندات ARIA ذکر شده است. این فایل نباید به‌عنوان Source canonical آریانا مستقل استفاده شود. نام فایل گمراه‌کننده است؛ آن را حفظ کنید اما در کاتالوگ Sourceها به‌عنوان آرشیو ARIA طبقه‌بندی کنید.
+
+### ۱۲.۴ LEADORA و ARMIN MARKET
+
+- بسته LEADORA MVP 0.3 شامل ۲۱ فایل و ۱۲ تست موفق است. README و Release Audit صریحاً آن را MVP محدود مبتنی بر SQLite می‌دانند؛ اتصال زنده شبکه‌های اجتماعی، AI واقعی، PostgreSQL، MFA، rate limiting، Backup/Restore، پرداخت و استقرار اینترنتی در آن فعال نیستند. مخزن GitHub فعلی جدیدتر است و باید مرجع توسعه باشد.
+- بسته ArminMarket v1.3.3 شامل ۱۱۲ ورودی و ۶ تست Backend موفق است. Release Gate هنوز PostgreSQL integration، Docker migration، Android SDK build، Android/API E2E، بار/همزمانی، SAST، امنیت مستقل، Backup/Restore و انطباق حقوقی را باز می‌داند. GitHub repository مرجع فعلی است؛ بسته Library یک snapshot قدیمی‌تر است.
+
+### ۱۲.۵ قاعده انتخاب Source
+
+از این تاریخ:
+- نام فایل ZIP به‌تنهایی مرجع نسخه نیست.
+- هر Source با SHA-256، applicationId/package name، versionCode/versionName، commit/source lineage، تعداد تست، migration status و build evidence ثبت شود.
+- Sourceهای متناقض یا misnamed حذف نشوند؛ در Source Ledger با وضعیت `HISTORICAL`, `CANDIDATE`, `CANONICAL` یا `REJECTED_AS_WRONG_PRODUCT` طبقه‌بندی شوند.
+- تا زمان انتخاب و تأیید مالک، هیچ آرشیوی به مخزن canonical وارد یا جایگزین Source دیگر نشود.
