@@ -44,3 +44,16 @@ All checks below were read-only. No service, deployment, environment variable, d
 - New deployment and HTTP verification: **NOT RUN** — no production deployment was authorized.
 - Railway monitor/alert inventory: **UNVERIFIED** — monitor inspection was unavailable through the connected account.
 - This record does not claim production recovery or uptime.
+
+
+## Follow-up source-code comparison
+
+The failed Railway deployment above was built from commit `93108e0d95ff940e9855f8fdc3ef4f37063b1043` on 2026-11-09. A read-only inspection of the current VAYRO PR #47 head (`cefb30a618e85997b6f4dc49f9fefb6c42b6ec8d`) found that `src/lib/auth-prisma.ts` now creates the Prisma client lazily through a Proxy. The module import/build phase therefore does not instantiate the auth database client; `AUTH_DATABASE_URL` is still required when a protected auth request actually runs, and `assertAuthRuntimeRole()` checks the effective runtime role.
+
+This is an important distinction:
+- The historical deployment log proves the old deployment failed during Next.js page-data collection because the old code required `AUTH_DATABASE_URL` at build time.
+- The current PR branch contains a build-safe lazy initialization boundary and must not be changed to weaken the production fail-closed check.
+- The current Railway service still exposes no service-level variable names. The presence of an environment-scoped `AUTH_DATABASE_URL` was not confirmed.
+- The Railway service source configuration and the failed deployment metadata report different branches (`main` vs `security/mfa-session-endpoint-gates`). Resolve this source/deployment provenance discrepancy before relying on any deployment SHA.
+
+Accordingly, the next safe action is to compare the current approved release candidate with the deployed commit, verify the required variable's presence through the protected Railway variable-name inventory, and run a CI/staging deployment check. Do not change the variable value, bypass runtime role validation, or deploy production automatically.
