@@ -84,7 +84,6 @@ test("rejects malformed timestamps and non-object event data", () => {
   );
 });
 
-
 test("allows every catalogued independent and platform product as a producer", () => {
   for (const product of ALL_PRODUCTS) {
     const event = validEnvelope();
@@ -99,5 +98,59 @@ test("keeps DANA as a VAYRO capability rather than a standalone product producer
   assert.throws(
     () => assertProductIntegrationEnvelope(event),
     /INTEGRATION_PRODUCER_UNKNOWN/
+  );
+});
+
+test("rejects oversized, deeply nested, or structurally excessive event data", () => {
+  const oversized = validEnvelope();
+  oversized.data = { payload: "x".repeat(65_000) };
+  assert.throws(
+    () => assertProductIntegrationEnvelope(oversized),
+    /INTEGRATION_DATA_TOO_LARGE/
+  );
+
+  const deeplyNested = validEnvelope();
+  let nested = {};
+  const root = nested;
+  for (let index = 0; index < 9; index += 1) {
+    nested.child = {};
+    nested = nested.child;
+  }
+  deeplyNested.data = root;
+  assert.throws(
+    () => assertProductIntegrationEnvelope(deeplyNested),
+    /INTEGRATION_DATA_TOO_DEEP/
+  );
+
+  const tooManyArrayItems = validEnvelope();
+  tooManyArrayItems.data = { items: Array.from({ length: 501 }, (_, index) => index) };
+  assert.throws(
+    () => assertProductIntegrationEnvelope(tooManyArrayItems),
+    /INTEGRATION_DATA_ARRAY_LIMIT/
+  );
+
+  const tooManyObjectKeys = validEnvelope();
+  tooManyObjectKeys.data = Object.fromEntries(
+    Array.from({ length: 101 }, (_, index) => [`key_${index}`, index])
+  );
+  assert.throws(
+    () => assertProductIntegrationEnvelope(tooManyObjectKeys),
+    /INTEGRATION_DATA_OBJECT_LIMIT/
+  );
+});
+
+test("rejects prototype-polluting keys and non-JSON values in event data", () => {
+  const unsafeKey = validEnvelope();
+  unsafeKey.data = JSON.parse('{"__proto__":{"polluted":true}}');
+  assert.throws(
+    () => assertProductIntegrationEnvelope(unsafeKey),
+    /INTEGRATION_DATA_UNSAFE_KEY/
+  );
+
+  const nonFinite = validEnvelope();
+  nonFinite.data = { amount: Number.NaN };
+  assert.throws(
+    () => assertProductIntegrationEnvelope(nonFinite),
+    /INTEGRATION_DATA_NOT_JSON/
   );
 });
