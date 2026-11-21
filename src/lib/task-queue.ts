@@ -42,9 +42,9 @@ export async function claimNextEngineeringTask({
   assertWorkerId(workerId);
   if (!Number.isInteger(leaseSeconds) || leaseSeconds < 10 || leaseSeconds > 300) throw new Error("TASK_LEASE_DURATION_INVALID");
   await assertTaskWorkerRuntimeRole();
-  const tasks = await taskWorkerPrisma.$queryRaw<ClaimedEngineeringTask[]>\`
-    SELECT * FROM public.vayro_claim_engineering_task(\${workerId}, \${leaseSeconds})
-  \`;
+  const tasks = await taskWorkerPrisma.$queryRaw<ClaimedEngineeringTask[]>`
+    SELECT * FROM public.vayro_claim_engineering_task(${workerId}, ${leaseSeconds})
+  `;
   return tasks[0] ?? null;
 }
 
@@ -56,9 +56,9 @@ export async function heartbeatEngineeringTask({
   assertLease(taskId, workerId, leaseToken);
   if (!Number.isInteger(leaseSeconds) || leaseSeconds < 10 || leaseSeconds > 300) throw new Error("TASK_LEASE_DURATION_INVALID");
   await assertTaskWorkerRuntimeRole();
-  const rows = await taskWorkerPrisma.$queryRaw<Array<{ accepted: boolean }>>\`
-    SELECT public.vayro_heartbeat_engineering_task(\${taskId}, \${workerId}, \${leaseToken}, \${leaseSeconds}) AS accepted
-  \`;
+  const rows = await taskWorkerPrisma.$queryRaw<Array<{ accepted: boolean }>>`
+    SELECT public.vayro_heartbeat_engineering_task(${taskId}, ${workerId}, ${leaseToken}, ${leaseSeconds}) AS accepted
+  `;
   return rows[0]?.accepted === true;
 }
 
@@ -73,9 +73,9 @@ export async function completeEngineeringTask({
   catch { throw new Error("TASK_RESULT_NOT_JSON"); }
   if (serialized !== null && Buffer.byteLength(serialized, "utf8") > 65_536) throw new Error("TASK_RESULT_TOO_LARGE");
   await assertTaskWorkerRuntimeRole();
-  const rows = await taskWorkerPrisma.$queryRaw<Array<{ accepted: boolean }>>\`
-    SELECT public.vayro_complete_engineering_task(\${taskId}, \${workerId}, \${leaseToken}, \${serialized}::jsonb) AS accepted
-  \`;
+  const rows = await taskWorkerPrisma.$queryRaw<Array<{ accepted: boolean }>>`
+    SELECT public.vayro_complete_engineering_task(${taskId}, ${workerId}, ${leaseToken}, ${serialized}::jsonb) AS accepted
+  `;
   return rows[0]?.accepted === true;
 }
 
@@ -91,8 +91,8 @@ export async function failEngineeringTask({
   if (typeof retryable !== "boolean") throw new Error("TASK_RETRY_FLAG_INVALID");
   await assertTaskWorkerRuntimeRole();
   const safeMessage = redactErrorMessage(errorMessage);
-  const rows = await taskWorkerPrisma.$queryRaw<Array<{ accepted: boolean }>>\`
-    SELECT public.vayro_fail_engineering_task(\${taskId}, \${workerId}, \${leaseToken}, \${errorCode}, \${safeMessage}, \${retryable}) AS accepted
-  \`;
+  const rows = await taskWorkerPrisma.$queryRaw<Array<{ accepted: boolean }>>`
+    SELECT public.vayro_fail_engineering_task(${taskId}, ${workerId}, ${leaseToken}, ${errorCode}, ${safeMessage}, ${retryable}) AS accepted
+  `;
   return rows[0]?.accepted === true;
 }
