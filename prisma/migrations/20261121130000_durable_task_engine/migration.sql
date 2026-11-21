@@ -75,7 +75,7 @@ CREATE TABLE public."EngineeringTaskAttempt" (
 CREATE INDEX "EngineeringTaskAttempt_workerId_status_idx"
   ON public."EngineeringTaskAttempt" ("workerId", "status");
 
-REVOKE ALL ON TABLE public."EngineeringTask", public."EngineeringTaskAttempt" FROM PUBLIC, vayro_task_worker;
+REVOKE ALL ON TABLE public."EngineeringTask", public."EngineeringTaskAttempt" FROM PUBLIC, anon, authenticated, service_role, vayro_app, vayro_auth, vayro_platform, vayro_platform_bootstrap, vayro_task_worker;
 
 CREATE OR REPLACE FUNCTION public.vayro_claim_engineering_task(p_worker_id TEXT, p_lease_seconds INTEGER DEFAULT 60)
 RETURNS TABLE (
