@@ -25,5 +25,7 @@ export interface VayroCapability {
 
 export const VAYRO_PRODUCTS: readonly VayroProduct[];
 export const INDEPENDENT_PRODUCTS: readonly IndependentProduct[];
+export const FLAGSHIP_APPLICATIONS: readonly IndependentProduct[];
+export const PORTFOLIO_INITIATIVES: readonly VayroProduct[];
 export const VAYRO_CAPABILITIES: readonly VayroCapability[];
 export const ALL_PRODUCTS: readonly (VayroProduct | IndependentProduct)[];
