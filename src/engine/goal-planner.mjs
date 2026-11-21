@@ -111,11 +111,13 @@ export function planGoal(goal) {
   });
 }
 
-/** Selects only tasks whose declared dependencies are already complete. */
+/** Selects unfinished tasks whose declared dependencies are already complete. */
 export function selectReadyTasks(tasks, completedTaskIds) {
   if (!Array.isArray(tasks) || !(completedTaskIds instanceof Set)) fail("READY_SELECTION_INPUT_INVALID");
   return tasks.filter(task =>
-    task && Array.isArray(task.dependsOn) &&
+    task && typeof task.criterionId === "string" &&
+    !completedTaskIds.has(task.criterionId) &&
+    Array.isArray(task.dependsOn) &&
     task.dependsOn.every(dependency => completedTaskIds.has(dependency))
   );
 }
