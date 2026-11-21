@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { assertProductIntegrationEnvelope } from "./product-integration-contract.mjs";
+import { ALL_PRODUCTS } from "./product-directory.mjs";
 
 const validEnvelope = () => ({
   eventId: "evt_01JTEST000000000000000001",
@@ -80,5 +81,23 @@ test("rejects malformed timestamps and non-object event data", () => {
   assert.throws(
     () => assertProductIntegrationEnvelope(invalidData),
     /INTEGRATION_DATA_INVALID/
+  );
+});
+
+
+test("allows every catalogued independent and platform product as a producer", () => {
+  for (const product of ALL_PRODUCTS) {
+    const event = validEnvelope();
+    event.producer.product = product.name;
+    assert.equal(assertProductIntegrationEnvelope(event), true, product.name);
+  }
+});
+
+test("keeps DANA as a VAYRO capability rather than a standalone product producer", () => {
+  const event = validEnvelope();
+  event.producer.product = "DANA";
+  assert.throws(
+    () => assertProductIntegrationEnvelope(event),
+    /INTEGRATION_PRODUCER_UNKNOWN/
   );
 });
