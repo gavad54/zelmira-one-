@@ -133,3 +133,39 @@ export async function POST(request: Request) {
     return noStoreJson({ error: "task_create_failed" }, 503);
   }
 }
+
+
+const approveSchema = z.object({ action: z.literal("approve"), taskId: z.string().min(1).max(100) }).strict();
+
+export async function PATCH(request: Request) {
+  if (!isSameOriginRequest(request)) return noStoreJson({ error: "invalid_origin" }, 403);
+  const parsed = approveSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return noStoreJson({ error: "invalid_input" }, 400);
+  try {
+    const result = await withPlatformOwnerTransaction({
+      sessionToken: await sessionToken(),
+      callback: async (tx, actor) => {
+        const rows = await tx.$queryRaw<Array<{ approved: boolean }>>`
+          SELECT public.vayro_approve_engineering_task(${parsed.data.taskId}) AS approved
+        `;
+        if (rows[0]?.approved !== true) return { kind: "not_awaiting_approval" as const };
+        await tx.auditEvent.create({
+          data: {
+            actorUserId: actor.userId,
+            action: "owner.engineering_task_approved",
+            resource: "EngineeringTask",
+            resourceId: parsed.data.taskId,
+            metadata: { decision: "APPROVED" }
+          },
+          select: { id: true }
+        });
+        return { kind: "approved" as const };
+      }
+    });
+    if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
+    if (result.value.kind === "not_awaiting_approval") return noStoreJson({ error: "task_not_awaiting_approval" }, 409);
+    return noStoreJson({ taskId: parsed.data.taskId, status: "QUEUED" });
+  } catch {
+    return noStoreJson({ error: "task_approval_failed" }, 503);
+  }
+}
