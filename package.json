@@ -15,7 +15,8 @@
     "test:integration": "node --test --test-concurrency=1 tests/*.integration.mjs",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
-    "db:migrate:deploy": "prisma migrate deploy"
+    "db:migrate:deploy": "prisma migrate deploy",
+    "worker:tasks": "node src/worker/task-worker.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
