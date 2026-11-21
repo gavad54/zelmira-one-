@@ -103,7 +103,7 @@ test("keeps DANA as a VAYRO capability rather than a standalone product producer
 
 test("rejects oversized, deeply nested, or structurally excessive event data", () => {
   const oversized = validEnvelope();
-  oversized.data = { payload: "x".repeat(65_000) };
+  oversized.data = { payload: "x".repeat(66_000) };
   assert.throws(
     () => assertProductIntegrationEnvelope(oversized),
     /INTEGRATION_DATA_TOO_LARGE/
