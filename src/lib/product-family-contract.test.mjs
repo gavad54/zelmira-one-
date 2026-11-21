@@ -29,3 +29,21 @@ test("product-family contract rejects duplicate and missing product identities",
     VAYRO_CAPABILITIES
   }), /PRODUCT_FAMILY_INCOMPLETE/);
 });
+
+test("product-family contract requires DANA exactly once as a platform capability", () => {
+  assert.throws(() => assertProductFamilyContract({
+    VAYRO_PRODUCTS,
+    INDEPENDENT_PRODUCTS,
+    VAYRO_CAPABILITIES: []
+  }), /DANA_PLATFORM_CAPABILITY_REQUIRED/);
+  assert.throws(() => assertProductFamilyContract({
+    VAYRO_PRODUCTS,
+    INDEPENDENT_PRODUCTS,
+    VAYRO_CAPABILITIES: [...VAYRO_CAPABILITIES, VAYRO_CAPABILITIES[0]]
+  }), /PLATFORM_CAPABILITY_DUPLICATE/);
+  assert.throws(() => assertProductFamilyContract({
+    VAYRO_PRODUCTS,
+    INDEPENDENT_PRODUCTS,
+    VAYRO_CAPABILITIES: [...VAYRO_CAPABILITIES, { name: "ANOTHER_APP" }]
+  }), /DANA_PLATFORM_CAPABILITY_REQUIRED/);
+});
