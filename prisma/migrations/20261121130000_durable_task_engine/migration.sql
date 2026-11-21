@@ -94,6 +94,32 @@ BEGIN
     RAISE EXCEPTION 'TASK_LEASE_DURATION_INVALID' USING ERRCODE = '22023';
   END IF;
 
+  -- Terminalize expired work before claiming another task. This prevents
+  -- expired deadlines and exhausted leases from remaining RUNNING forever.
+  UPDATE public."EngineeringTask" t
+  SET "status" = 'EXPIRED', "completedAt" = clock_timestamp(), "updatedAt" = clock_timestamp(),
+      "leaseOwner" = NULL, "leaseToken" = NULL, "leaseExpiresAt" = NULL, "heartbeatAt" = NULL
+  WHERE t."status" IN ('QUEUED','RETRYING','RUNNING')
+    AND t."deadline" IS NOT NULL AND t."deadline" <= clock_timestamp();
+
+  UPDATE public."EngineeringTaskAttempt" a
+  SET "status" = 'DEADLINE_EXPIRED', "finishedAt" = clock_timestamp()
+  WHERE a."status" = 'RUNNING'
+    AND EXISTS (SELECT 1 FROM public."EngineeringTask" t WHERE t."id" = a."taskId" AND t."status" = 'EXPIRED');
+
+  UPDATE public."EngineeringTask" t
+  SET "status" = 'FAILED', "completedAt" = clock_timestamp(), "updatedAt" = clock_timestamp(),
+      "leaseOwner" = NULL, "leaseToken" = NULL, "leaseExpiresAt" = NULL, "heartbeatAt" = NULL,
+      "lastErrorCode" = 'LEASE_ATTEMPTS_EXHAUSTED',
+      "lastErrorMessage" = 'Worker lease expired after the maximum number of attempts'
+  WHERE t."status" = 'RUNNING' AND t."leaseExpiresAt" <= clock_timestamp()
+    AND t."attemptCount" >= t."maxAttempts";
+
+  UPDATE public."EngineeringTaskAttempt" a
+  SET "status" = 'LEASE_EXPIRED', "finishedAt" = clock_timestamp()
+  WHERE a."status" = 'RUNNING'
+    AND EXISTS (SELECT 1 FROM public."EngineeringTask" t WHERE t."id" = a."taskId" AND t."status" = 'FAILED' AND t."lastErrorCode" = 'LEASE_ATTEMPTS_EXHAUSTED');
+
   SELECT t.* INTO v_task
   FROM public."EngineeringTask" t
   WHERE (
