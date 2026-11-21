@@ -2,9 +2,9 @@ name: VAYRO CI
 
 on:
   push:
-    branches: [main, brand/vayro-name-only, security/mfa-session-endpoint-gates]
+    branches: [main, brand/vayro-name-only, security/mfa-session-endpoint-gates, engineering/vayro-four-app-command-home-2026-11-19, feat/vayro-commercial-entitlements-2026-11-19]
   pull_request:
-    branches: [main, brand/vayro-name-only]
+    branches: [main, brand/vayro-name-only, feat/vayro-commercial-entitlements-2026-11-19]
 
 permissions:
   contents: read
