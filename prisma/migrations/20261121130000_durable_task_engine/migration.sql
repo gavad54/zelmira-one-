@@ -7,7 +7,11 @@ BEGIN
     CREATE ROLE vayro_task_worker NOLOGIN NOINHERIT;
   END IF;
 END
-$$;
+$;
+
+-- Worker login roles inherit only the narrowly granted function EXECUTE rights.
+-- Without INHERIT, the worker adapter would need an explicit SET ROLE on every connection.
+ALTER ROLE vayro_task_worker INHERIT;
 
 CREATE TYPE public."EngineeringTaskStatus" AS ENUM (
   'DRAFT','QUEUED','RUNNING','BLOCKED','WAITING_APPROVAL',
