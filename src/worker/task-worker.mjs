@@ -100,6 +100,8 @@ const handlers = Object.freeze({
   }
 });
 
+export const taskWorkerHandlers = handlers;
+
 async function assertWorkerRole(db) {
   const rows = await db.$queryRaw`
     SELECT r.rolsuper AS superuser, r.rolbypassrls AS bypasses_rls, r.rolcanlogin AS can_login,
