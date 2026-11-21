@@ -2,7 +2,7 @@ name: VAYRO CI
 
 on:
   push:
-    branches: [main, brand/vayro-name-only, security/mfa-session-endpoint-gates]
+    branches: [main, brand/vayro-name-only, security/mfa-session-endpoint-gates, upgrade/full-independent-product-family-modules-2026-11-20]
   pull_request:
     branches: [main, brand/vayro-name-only]
 
