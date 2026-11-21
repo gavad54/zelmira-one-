@@ -30,6 +30,14 @@ export function assertProductFamilyContract({
       allNames.some(name => !expected.includes(name))) {
     throw new Error("PRODUCT_FAMILY_INCOMPLETE");
   }
+  const capabilityNames = VAYRO_CAPABILITIES.map(capability => capability?.name);
+  if (new Set(capabilityNames).size !== capabilityNames.length) {
+    throw new Error("PLATFORM_CAPABILITY_DUPLICATE");
+  }
+  if (capabilityNames.filter(name => name === "DANA").length !== 1 ||
+      capabilityNames.some(name => name !== "DANA")) {
+    throw new Error("DANA_PLATFORM_CAPABILITY_REQUIRED");
+  }
   if (VAYRO_CAPABILITIES.some(capability => allNames.includes(capability?.name))) {
     throw new Error("PLATFORM_CAPABILITY_MUST_NOT_BE_PRODUCT");
   }
