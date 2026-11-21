@@ -7,6 +7,13 @@ export const TASK_HANDLERS = Object.freeze([
   "repo.audit", "repo.test", "product.health_check", "report.generate"
 ]);
 
+const HANDLER_TASK_TYPES = Object.freeze({
+  "repo.audit": "ENGINEERING",
+  "repo.test": "ENGINEERING",
+  "product.health_check": "OPERATIONS",
+  "report.generate": "REPORTING"
+});
+
 const TERMINAL = new Set(["SUCCEEDED", "FAILED", "CANCELLED", "EXPIRED"]);
 const MAX_PAYLOAD_BYTES = 64 * 1024;
 const MAX_DEPTH = 8;
@@ -54,6 +61,8 @@ export function validateTaskDefinition(input) {
   const { projectKey, handlerKey, title, idempotencyKey } = input;
   if (typeof projectKey !== "string" || !/^[A-Z][A-Z0-9_-]{1,39}$/.test(projectKey)) throw new Error("TASK_PROJECT_INVALID");
   if (typeof handlerKey !== "string" || !TASK_HANDLERS.includes(handlerKey)) throw new Error("TASK_HANDLER_NOT_ALLOWED");
+  const taskType = input.taskType ?? HANDLER_TASK_TYPES[handlerKey];
+  if (taskType !== HANDLER_TASK_TYPES[handlerKey]) throw new Error("TASK_TYPE_HANDLER_MISMATCH");
   if (typeof title !== "string" || title.trim().length < 3 || title.length > 160) throw new Error("TASK_TITLE_INVALID");
   if (typeof idempotencyKey !== "string" || idempotencyKey.length < 8 || idempotencyKey.length > 200) throw new Error("TASK_IDEMPOTENCY_KEY_INVALID");
   const priority = input.priority ?? 50;
@@ -68,7 +77,7 @@ export function validateTaskDefinition(input) {
   assertJson(payload);
   if (Buffer.byteLength(JSON.stringify(payload), "utf8") > MAX_PAYLOAD_BYTES) throw new Error("TASK_PAYLOAD_TOO_LARGE");
   return Object.freeze({
-    projectKey, handlerKey, title: title.trim(), idempotencyKey, priority, maxAttempts,
+    projectKey, taskType, handlerKey, title: title.trim(), idempotencyKey, priority, maxAttempts,
     approvalRequired: input.approvalRequired === true, scheduledAt, deadline, payload
   });
 }
