@@ -37,7 +37,7 @@ export async function assertTaskWorkerRuntimeRole(): Promise<void> {
     has_elevated_membership: boolean;
     has_other_role_membership: boolean;
     owns_public_tables: boolean;
-  }>>\`
+  }>>`
     SELECT
       r.rolsuper AS is_superuser,
       r.rolbypassrls AS bypasses_rls,
@@ -60,7 +60,7 @@ export async function assertTaskWorkerRuntimeRole(): Promise<void> {
       ) AS owns_public_tables
     FROM pg_roles r
     WHERE r.rolname = current_user
-  \`;
+  `;
   const role = rows[0];
   if (!role || role.is_superuser || role.bypasses_rls || !role.can_login ||
       !role.can_use_task_worker || role.has_elevated_membership ||
