@@ -14,6 +14,8 @@ const claim = task => claimTask(task, { workerId: "worker-a", leaseToken: "12345
 
 test("validates task definitions and rejects unapproved execution handlers", () => {
   assert.equal(validateTaskDefinition(DEFINITION).handlerKey, "repo.audit");
+  assert.equal(validateTaskDefinition(DEFINITION).taskType, "ENGINEERING");
+  assert.throws(() => validateTaskDefinition({ ...DEFINITION, taskType: "OPERATIONS" }), /TASK_TYPE_HANDLER_MISMATCH/);
   assert.throws(() => validateTaskDefinition({ ...DEFINITION, handlerKey: "shell.exec" }), /TASK_HANDLER_NOT_ALLOWED/);
   assert.throws(() => validateTaskDefinition({ ...DEFINITION, priority: 101 }), /TASK_PRIORITY_INVALID/);
   assert.throws(() => validateTaskDefinition({ ...DEFINITION, maxAttempts: 0 }), /TASK_MAX_ATTEMPTS_INVALID/);
