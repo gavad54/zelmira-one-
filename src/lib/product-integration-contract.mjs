@@ -1,13 +1,65 @@
 import { ALL_PRODUCTS } from "./product-directory.mjs";
 
 const KNOWN_PRODUCERS = new Set(["VAYRO", ...ALL_PRODUCTS.map(({ name }) => name)]);
-const SEMVER = /^\d+\.\d+\.\d+$/;
-const EVENT_TYPE = /^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*){1,5}$/;
-const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/;
+const SEMVER = /^\\d+\\.\\d+\\.\\d+$/;
+const EVENT_TYPE = /^[a-z][a-z0-9]*(?:\\.[a-z][a-z0-9]*){1,5}$/;
+const ISO_TIMESTAMP = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?(?:Z|[+-]\\d{2}:\\d{2})$/;
+const MAX_DATA_BYTES = 64 * 1024;
+const MAX_DATA_DEPTH = 8;
+const MAX_ARRAY_ITEMS = 500;
+const MAX_OBJECT_KEYS = 100;
+const UNSAFE_DATA_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 
 function requireString(value, code, maxLength = 200) {
   if (typeof value !== "string" || value.trim().length === 0 || value.length > maxLength) {
     throw new Error(code);
+  }
+}
+
+function assertSafeJsonValue(value, depth, ancestors) {
+  if (depth > MAX_DATA_DEPTH) throw new Error("INTEGRATION_DATA_TOO_DEEP");
+
+  if (value === null || typeof value === "string" || typeof value === "boolean") return;
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) throw new Error("INTEGRATION_DATA_NOT_JSON");
+    return;
+  }
+  if (typeof value !== "object") throw new Error("INTEGRATION_DATA_NOT_JSON");
+  if (ancestors.has(value)) throw new Error("INTEGRATION_DATA_NOT_JSON");
+
+  ancestors.add(value);
+  try {
+    if (Array.isArray(value)) {
+      if (value.length > MAX_ARRAY_ITEMS) throw new Error("INTEGRATION_DATA_ARRAY_LIMIT");
+      for (const item of value) assertSafeJsonValue(item, depth + 1, ancestors);
+      return;
+    }
+
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) {
+      throw new Error("INTEGRATION_DATA_NOT_JSON");
+    }
+    const keys = Object.keys(value);
+    if (keys.length > MAX_OBJECT_KEYS) throw new Error("INTEGRATION_DATA_OBJECT_LIMIT");
+    for (const key of keys) {
+      if (UNSAFE_DATA_KEYS.has(key)) throw new Error("INTEGRATION_DATA_UNSAFE_KEY");
+      assertSafeJsonValue(value[key], depth + 1, ancestors);
+    }
+  } finally {
+    ancestors.delete(value);
+  }
+}
+
+function assertBoundedJsonData(data) {
+  assertSafeJsonValue(data, 0, new WeakSet());
+  let serialized;
+  try {
+    serialized = JSON.stringify(data);
+  } catch {
+    throw new Error("INTEGRATION_DATA_NOT_JSON");
+  }
+  if (typeof serialized !== "string" || new TextEncoder().encode(serialized).byteLength > MAX_DATA_BYTES) {
+    throw new Error("INTEGRATION_DATA_TOO_LARGE");
   }
 }
 
@@ -57,6 +109,7 @@ export function assertProductIntegrationEnvelope(event) {
   if (!event.data || typeof event.data !== "object" || Array.isArray(event.data)) {
     throw new Error("INTEGRATION_DATA_INVALID");
   }
+  assertBoundedJsonData(event.data);
 
   return true;
 }
