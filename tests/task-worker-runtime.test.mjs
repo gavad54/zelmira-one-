@@ -1,26 +1,24 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { taskWorkerHandlers } from "../src/worker/task-worker.mjs";
 
-test("worker config rejects missing worker database credentials", () => {
-  assert.equal(process.env.TASK_WORKER_DATABASE_URL, undefined);
-  assert.throws(() => {
-    if (!process.env.TASK_WORKER_DATABASE_URL) throw new Error("TASK_WORKER_DATABASE_URL_REQUIRED");
-  }, /TASK_WORKER_DATABASE_URL_REQUIRED/);
-});
-
-test("read-only report digest is stable for identical payloads", () => {
+test("report handler emits a bounded deterministic read-only summary", async () => {
   const payload = { reportType: "engineering", taskIds: ["a", "b"] };
-  const first = createHash("sha256").update(JSON.stringify(payload)).digest("hex");
-  const second = createHash("sha256").update(JSON.stringify(payload)).digest("hex");
-  assert.equal(first, second);
-  assert.match(first, /^[a-f0-9]{64}$/);
+  const result = await taskWorkerHandlers["report.generate"]({
+    task_id: "task-test", project_key: "VAYRO", title: "Engineering report", payload
+  });
+  assert.equal(result.taskId, "task-test");
+  assert.equal(result.executionMode, "deterministic-read-only");
+  assert.equal(result.inputSha256, createHash("sha256").update(JSON.stringify(payload)).digest("hex"));
+  assert.equal(result.inputBytes, Buffer.byteLength(JSON.stringify(payload), "utf8"));
 });
 
-test("worker task handler allowlist excludes shell and arbitrary execution", () => {
-  const allowed = new Set(["repo.audit", "repo.test", "report.generate"]);
-  assert.equal(allowed.has("repo.audit"), true);
-  assert.equal(allowed.has("shell.exec"), false);
-  assert.equal(allowed.has("code.exec"), false);
-  assert.equal(allowed.has("product.health_check"), false);
+test("worker registry excludes arbitrary execution and unreviewed health checks", () => {
+  assert.equal(typeof taskWorkerHandlers["repo.audit"], "function");
+  assert.equal(typeof taskWorkerHandlers["repo.test"], "function");
+  assert.equal(typeof taskWorkerHandlers["report.generate"], "function");
+  assert.equal(taskWorkerHandlers["product.health_check"], undefined);
+  assert.equal(taskWorkerHandlers["shell.exec"], undefined);
+  assert.equal(taskWorkerHandlers["code.exec"], undefined);
 });
