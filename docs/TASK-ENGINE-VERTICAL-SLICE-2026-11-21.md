@@ -48,3 +48,18 @@ The task worker must dispatch only registered handlers. The current handler keys
 | Scheduler and worker loop | NOT IMPLEMENTED |
 | Restart recovery in a live process | NOT TESTED |
 | Production operation | NOT OPERATIONAL |
+
+
+## Follow-up implementation — owner enqueue and approval boundary
+
+The next additive slice now includes:
+
+- Owner-only task list/create API at `/api/owner/tasks`.
+- MFA-backed owner transaction, same-origin enforcement, request rate limiting, strict input validation and a 64 KiB payload cap.
+- Idempotency-key uniqueness; a repeated key is surfaced as a conflict rather than creating a second task.
+- Task creation and the corresponding audit event occur in the same database transaction.
+- Tasks marked `approvalRequired` start in `WAITING_APPROVAL`; a separate owner PATCH action invokes a SECURITY DEFINER approval function that revalidates the current owner/MFA transaction context.
+- A separate migration enables RLS and grants the platform role only SELECT/INSERT on the task table. It does not grant UPDATE/DELETE or direct access to attempt history. Worker state transitions remain function-only.
+- CI includes an isolated PostgreSQL login-role test proving inherited worker function execution and absence of direct table access.
+
+The new migration and API source are committed on the same development branch. Their CI run is pending/in progress at the time of this note. They are not applied to the live VAYRO-CORE database. The scheduler, worker loop, concrete handler implementations, outbox, and restart-recovery E2E are still open.
