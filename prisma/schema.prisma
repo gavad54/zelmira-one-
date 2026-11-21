@@ -312,7 +312,7 @@ model EngineeringTask {
   completedAt       DateTime?
   attempts          EngineeringTaskAttempt[]
 
-  @@index([status, availableAt, priority, createdAt])
+  @@index([status, availableAt, priority(sort: Desc), createdAt], map: "EngineeringTask_status_availableAt_priority_idx")
   @@index([leaseExpiresAt])
   @@index([projectKey, createdAt])
   @@map("EngineeringTask")
