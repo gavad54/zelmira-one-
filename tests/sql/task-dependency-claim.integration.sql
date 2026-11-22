@@ -1,5 +1,5 @@
--- Isolated PostgreSQL integration test: prerequisites gate claims until success.
--- Run only in CI after all Prisma migrations and worker login-role setup.
+-- Isolated PostgreSQL integration test: prerequisite gating and terminal
+-- dependency failure propagation. Runs only after all Prisma migrations.
 \set ON_ERROR_STOP on
 
 INSERT INTO public."EngineeringTask"
@@ -12,17 +12,8 @@ VALUES
 INSERT INTO public."EngineeringTaskDependency" ("taskId","dependsOnTaskId")
 VALUES ('dep-dependent','dep-prerequisite');
 
-  INSERT INTO public."EngineeringTask"
-    ("id","projectKey","taskType","handlerKey","title","priority","status","idempotencyKey","updatedAt","availableAt")
-  VALUES
-    ('dep-failed-prerequisite','VAYRO','ENGINEERING','report.generate','Failed prerequisite',60,'QUEUED','ci-dep-failed-prerequisite',clock_timestamp(),clock_timestamp() - interval '1 second'),
-    ('dep-failed-dependent','VAYRO','ENGINEERING','report.generate','Failed dependent',50,'QUEUED','ci-dep-failed-dependent',clock_timestamp(),clock_timestamp() - interval '1 second'),
-    ('dep-failed-independent','VAYRO','ENGINEERING','report.generate','Independent after failure',40,'QUEUED','ci-dep-failed-independent',clock_timestamp(),clock_timestamp() - interval '1 second');
-  INSERT INTO public."EngineeringTaskDependency" ("taskId","dependsOnTaskId")
-  VALUES ('dep-failed-dependent','dep-failed-prerequisite');
-
 SET ROLE vayro_task_worker_ci;
-DO $dependency_test$
+DO $dependency_success_test$
 DECLARE
   prerequisite_claim RECORD;
   independent_claim RECORD;
@@ -65,14 +56,32 @@ BEGIN
     RAISE EXCEPTION 'DEPENDENCY_TEST_EXPECTED_DEPENDENT_AFTER_SUCCESS got=%', dependent_claim.task_id;
   END IF;
 END
-$dependency_test$;
-  -- A terminal prerequisite failure must terminalize its dependent instead
-  -- of leaving it queued forever, while unrelated work remains claimable.
+$dependency_success_test$;
+RESET ROLE;
+
+-- Insert the failure scenario only after the success-path tasks are complete,
+-- so it cannot be mistaken for an unrelated ready task in that scenario.
+INSERT INTO public."EngineeringTask"
+  ("id","projectKey","taskType","handlerKey","title","priority","status","idempotencyKey","updatedAt","availableAt")
+VALUES
+  ('dep-failed-prerequisite','VAYRO','ENGINEERING','report.generate','Failed prerequisite',100,'QUEUED','ci-dep-failed-prerequisite',clock_timestamp(),clock_timestamp() - interval '1 second'),
+  ('dep-failed-dependent','VAYRO','ENGINEERING','report.generate','Failed dependent',90,'QUEUED','ci-dep-failed-dependent',clock_timestamp(),clock_timestamp() - interval '1 second'),
+  ('dep-failed-independent','VAYRO','ENGINEERING','report.generate','Independent after failure',80,'QUEUED','ci-dep-failed-independent',clock_timestamp(),clock_timestamp() - interval '1 second');
+INSERT INTO public."EngineeringTaskDependency" ("taskId","dependsOnTaskId")
+VALUES ('dep-failed-dependent','dep-failed-prerequisite');
+
+SET ROLE vayro_task_worker_ci;
+DO $dependency_failure_test$
+DECLARE
+  prerequisite_claim RECORD;
+  independent_claim RECORD;
+BEGIN
   SELECT * INTO prerequisite_claim
   FROM public.vayro_claim_engineering_task('dependency-ci-worker',60);
   IF prerequisite_claim.task_id IS DISTINCT FROM 'dep-failed-prerequisite' THEN
     RAISE EXCEPTION 'DEPENDENCY_FAILURE_EXPECTED_PREREQUISITE got=%', prerequisite_claim.task_id;
   END IF;
+
   IF NOT public.vayro_fail_engineering_task(
     prerequisite_claim.task_id,'dependency-ci-worker',prerequisite_claim.lease_token,
     'UPSTREAM_REJECTED','Prerequisite permanently failed',FALSE
@@ -93,20 +102,22 @@ $dependency_test$;
   IF independent_claim.task_id IS DISTINCT FROM 'dep-failed-independent' THEN
     RAISE EXCEPTION 'DEPENDENCY_FAILURE_INDEPENDENT_WORK_STOPPED got=%', independent_claim.task_id;
   END IF;
+
   IF NOT public.vayro_complete_engineering_task(
     independent_claim.task_id,'dependency-ci-worker',independent_claim.lease_token,'{"verified":true}'::jsonb
   ) THEN
     RAISE EXCEPTION 'DEPENDENCY_FAILURE_INDEPENDENT_COMPLETION_FAILED';
   END IF;
-
+END
+$dependency_failure_test$;
 RESET ROLE;
 
 DELETE FROM public."EngineeringTaskAttempt"
 WHERE "taskId" IN ('dep-prerequisite','dep-dependent','dep-independent','dep-failed-prerequisite','dep-failed-dependent','dep-failed-independent');
 DELETE FROM public."EngineeringTaskDependency"
-WHERE "taskId" IN ('dep-prerequisite','dep-dependent','dep-independent')
-   OR "dependsOnTaskId" IN ('dep-prerequisite','dep-dependent','dep-independent');
+WHERE "taskId" IN ('dep-prerequisite','dep-dependent','dep-independent','dep-failed-prerequisite','dep-failed-dependent','dep-failed-independent')
+   OR "dependsOnTaskId" IN ('dep-prerequisite','dep-dependent','dep-independent','dep-failed-prerequisite','dep-failed-dependent','dep-failed-independent');
 DELETE FROM public."EngineeringTask"
-WHERE "id" IN ('dep-prerequisite','dep-dependent','dep-independent');
+WHERE "id" IN ('dep-prerequisite','dep-dependent','dep-independent','dep-failed-prerequisite','dep-failed-dependent','dep-failed-independent');
 
 SELECT 'TASK_DEPENDENCY_CLAIM_INTEGRATION_PASS' AS result;
