@@ -12,6 +12,15 @@ VALUES
 INSERT INTO public."EngineeringTaskDependency" ("taskId","dependsOnTaskId")
 VALUES ('dep-dependent','dep-prerequisite');
 
+  INSERT INTO public."EngineeringTask"
+    ("id","projectKey","taskType","handlerKey","title","priority","status","idempotencyKey","updatedAt","availableAt")
+  VALUES
+    ('dep-failed-prerequisite','VAYRO','ENGINEERING','report.generate','Failed prerequisite',100,'QUEUED','ci-dep-failed-prerequisite',clock_timestamp(),clock_timestamp() - interval '1 second'),
+    ('dep-failed-dependent','VAYRO','ENGINEERING','report.generate','Failed dependent',90,'QUEUED','ci-dep-failed-dependent',clock_timestamp(),clock_timestamp() - interval '1 second'),
+    ('dep-failed-independent','VAYRO','ENGINEERING','report.generate','Independent after failure',80,'QUEUED','ci-dep-failed-independent',clock_timestamp(),clock_timestamp() - interval '1 second');
+  INSERT INTO public."EngineeringTaskDependency" ("taskId","dependsOnTaskId")
+  VALUES ('dep-failed-dependent','dep-failed-prerequisite');
+
 SET ROLE vayro_task_worker_ci;
 DO $dependency_test$
 DECLARE
@@ -59,15 +68,6 @@ END
 $dependency_test$;
   -- A terminal prerequisite failure must terminalize its dependent instead
   -- of leaving it queued forever, while unrelated work remains claimable.
-  INSERT INTO public."EngineeringTask"
-    ("id","projectKey","taskType","handlerKey","title","priority","status","idempotencyKey","updatedAt","availableAt")
-  VALUES
-    ('dep-failed-prerequisite','VAYRO','ENGINEERING','report.generate','Failed prerequisite',100,'QUEUED','ci-dep-failed-prerequisite',clock_timestamp(),clock_timestamp() - interval '1 second'),
-    ('dep-failed-dependent','VAYRO','ENGINEERING','report.generate','Failed dependent',90,'QUEUED','ci-dep-failed-dependent',clock_timestamp(),clock_timestamp() - interval '1 second'),
-    ('dep-failed-independent','VAYRO','ENGINEERING','report.generate','Independent after failure',80,'QUEUED','ci-dep-failed-independent',clock_timestamp(),clock_timestamp() - interval '1 second');
-  INSERT INTO public."EngineeringTaskDependency" ("taskId","dependsOnTaskId")
-  VALUES ('dep-failed-dependent','dep-failed-prerequisite');
-
   SELECT * INTO prerequisite_claim
   FROM public.vayro_claim_engineering_task('dependency-ci-worker',60);
   IF prerequisite_claim.task_id IS DISTINCT FROM 'dep-failed-prerequisite' THEN
