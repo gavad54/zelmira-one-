@@ -28,9 +28,9 @@ export function safeFailure(error) {
     : error?.name === "AbortError" ? "UPSTREAM_REQUEST_ABORTED"
     : "TASK_HANDLER_FAILED";
   const message = rawMessage
-    .replace(/([?&](?:token|key|secret|password)=)[^&\\s]+/gi, "$1[REDACTED]")
-    .replace(/(password|token|secret|authorization|api[_-]?key)\\s*[:=]\\s*[^&\\s]+/gi, "$1=[REDACTED]")
-    .replace(/\\bBearer\\s+[A-Za-z0-9._~+/-]+=*/gi, "Bearer [REDACTED]")
+    .replace(/([?&](?:token|key|secret|password)=)[^&\s]+/gi, "$1[REDACTED]")
+    .replace(/(password|token|secret|authorization|api[_-]?key)\s*[:=]\s*[^&\s]+/gi, "$1=[REDACTED]")
+    .replace(/\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi, "Bearer [REDACTED]")
     .slice(0, 500);
   return {
     code,
