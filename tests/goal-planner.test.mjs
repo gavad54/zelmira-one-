@@ -27,7 +27,7 @@ test("planner returns stable topological tasks with traceable idempotency keys",
 test("planner rejects unknown dependencies and dependency cycles", () => {
   assert.throws(() => planGoal({
     ...goal,
-    acceptanceCriteria: [{ id: "aa", title: "A", handlerKey: "report.generate", dependsOn: ["missing"] }]
+    acceptanceCriteria: [{ id: "aa", title: "Task AA", handlerKey: "report.generate", dependsOn: ["missing"] }]
   }), /UNKNOWN_DEPENDENCY/);
   assert.throws(() => planGoal({
     ...goal,
