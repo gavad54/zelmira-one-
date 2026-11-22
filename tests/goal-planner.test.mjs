@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { planGoal, selectReadyTasks } from "../src/engine/goal-planner.mjs";
+import { validateTaskDefinition } from "../src/lib/task-engine.mjs";
 
 const goal = {
   goalId: "GOAL-VAYRO-001",
@@ -22,6 +23,24 @@ test("planner returns stable topological tasks with traceable idempotency keys",
   assert.deepEqual(first.tasks.map(task => task.criterionId), ["implement", "verify", "document"]);
   assert.equal(new Set(first.tasks.map(task => task.idempotencyKey)).size, 3);
   assert.ok(first.tasks.every(task => task.idempotencyKey.startsWith("goal:GOAL-VAYRO-001:")));
+});
+
+test("planner emits task types accepted by the task-engine handler contract", () => {
+  const planned = planGoal({
+    ...goal,
+    acceptanceCriteria: [
+      { id: "report", title: "Generate audit report", handlerKey: "report.generate" },
+      { id: "audit", title: "Audit repository", handlerKey: "repo.audit" },
+      { id: "tests", title: "Observe CI results", handlerKey: "repo.test" }
+    ]
+  });
+  assert.deepEqual(
+    planned.tasks.map(task => [task.handlerKey, task.taskType]),
+    [["report.generate", "REPORTING"], ["repo.audit", "ENGINEERING"], ["repo.test", "ENGINEERING"]]
+  );
+  for (const task of planned.tasks) {
+    assert.equal(validateTaskDefinition(task).taskType, task.taskType);
+  }
 });
 
 test("planner rejects unknown dependencies and dependency cycles", () => {
