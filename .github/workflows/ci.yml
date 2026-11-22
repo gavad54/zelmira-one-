@@ -68,6 +68,8 @@ jobs:
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE vayro_task_worker_ci LOGIN PASSWORD 'ci-only' IN ROLE vayro_task_worker;"
       - name: Prove task worker least-privilege function boundary (isolated PostgreSQL only)
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "SET ROLE vayro_task_worker_ci" -f tests/sql/task-worker-role-boundary.sql
+      - name: Verify dependency-gated task claims in isolated PostgreSQL
+        run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/task-dependency-claim.integration.sql
       - name: Prove platform database role isolation (isolated PostgreSQL only)
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/platform-db-role-boundary.sql
       - name: Enable dedicated platform runtime login in isolated CI only
