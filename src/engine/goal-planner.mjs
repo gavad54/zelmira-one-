@@ -1,6 +1,11 @@
 import { createHash } from "node:crypto";
 
 const EXECUTABLE_HANDLERS = new Set(["report.generate", "repo.audit", "repo.test"]);
+const HANDLER_TASK_TYPES = Object.freeze({
+  "report.generate": "REPORTING",
+  "repo.audit": "ENGINEERING",
+  "repo.test": "ENGINEERING"
+});
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{1,99}$/;
 const PROJECT_PATTERN = /^[A-Z][A-Z0-9_-]{1,39}$/;
 const MAX_CRITERIA = 200;
@@ -83,7 +88,7 @@ export function planGoal(goal) {
   const ordered = stableTopologicalSort(criteria, byId);
   const tasks = ordered.map(item => ({
     projectKey,
-    taskType: "ENGINEERING",
+    taskType: HANDLER_TASK_TYPES[item.handlerKey],
     handlerKey: item.handlerKey,
     title: item.title,
     priority,
