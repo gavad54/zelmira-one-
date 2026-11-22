@@ -20,12 +20,22 @@ function taskError(code, message, retryable = false) {
 }
 
 export function safeFailure(error) {
-  const code = /^[A-Z0-9_]{2,80}$/.test(error?.code ?? "") ? error.code : "TASK_HANDLER_FAILED";
-  const message = String(error?.message ?? "Task handler failed")
+  const rawMessage = String(error?.message ?? "Task handler failed");
+  const knownRetryableMessage = rawMessage === "TASK_HANDLER_TIMEOUT" || rawMessage === "WORKER_SHUTTING_DOWN";
+  const code = /^[A-Z0-9_]{2,80}$/.test(error?.code ?? "")
+    ? error.code
+    : knownRetryableMessage ? rawMessage
+    : error?.name === "AbortError" ? "UPSTREAM_REQUEST_ABORTED"
+    : "TASK_HANDLER_FAILED";
+  const message = rawMessage
     .replace(/(password|token|secret|authorization|api[_-]?key)\s*[:=]\s*\S+/gi, "$1=[REDACTED]")
     .replace(/\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi, "Bearer [REDACTED]")
     .slice(0, 500);
-  return { code, message, retryable: error?.retryable === true };
+  return {
+    code,
+    message,
+    retryable: error?.retryable === true || knownRetryableMessage || error?.name === "AbortError"
+  };
 }
 
 function assertRepo(value) {
@@ -37,15 +47,21 @@ function assertRepo(value) {
 
 async function githubGet(path, signal) {
   const token = process.env.VAYRO_GITHUB_READ_TOKEN;
-  const response = await fetch(`https://api.github.com${path}`, {
-    method: "GET", redirect: "error", signal,
-    headers: {
-      accept: "application/vnd.github+json",
-      "x-github-api-version": "2022-11-28",
-      "user-agent": "VAYRO-read-only-engineering-worker",
-      ...(token ? { authorization: `Bearer ${token}` } : {})
-    }
-  });
+  let response;
+  try {
+    response = await fetch(`https://api.github.com${path}`, {
+      method: "GET", redirect: "error", signal,
+      headers: {
+        accept: "application/vnd.github+json",
+        "x-github-api-version": "2022-11-28",
+        "user-agent": "VAYRO-read-only-engineering-worker",
+        ...(token ? { authorization: `Bearer ${token}` } : {})
+      }
+    });
+  } catch (error) {
+    if (signal?.aborted) throw signal.reason ?? error;
+    throw taskError("GITHUB_NETWORK_ERROR", "GitHub API network request failed", true);
+  }
   const body = await response.text();
   if (Buffer.byteLength(body, "utf8") > 262_144) throw taskError("UPSTREAM_RESPONSE_TOO_LARGE", "GitHub response exceeded 256 KiB");
   if (!response.ok) throw taskError(response.status === 404 ? "REPOSITORY_NOT_FOUND" : "GITHUB_API_ERROR", `GitHub API HTTP ${response.status}`, response.status === 429 || response.status >= 500);
