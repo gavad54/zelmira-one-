@@ -24,6 +24,7 @@ const createSchema = z.object({
   approvalRequired: z.boolean().default(false),
   scheduledAt: z.string().datetime({ offset: true }).optional(),
   deadline: z.string().datetime({ offset: true }).optional(),
+  dependsOnTaskIds: z.array(z.string().min(1).max(100)).max(50).default([]).refine(ids => new Set(ids).size === ids.length, "duplicate dependencies"),
   payload: z.record(z.string(), z.unknown()).default({})
 }).strict();
 
@@ -107,6 +108,11 @@ export async function POST(request: Request) {
             title: true, status: true, scheduledAt: true, createdAt: true
           }
         });
+        for (const dependencyTaskId of parsed.data.dependsOnTaskIds) {
+          await tx.$queryRaw<Array<{ added: boolean }>>`
+            SELECT public.vayro_add_engineering_task_dependency(${task.id}, ${dependencyTaskId}) AS added
+          `;
+        }
         await tx.auditEvent.create({
           data: {
             actorUserId: actor.userId,
