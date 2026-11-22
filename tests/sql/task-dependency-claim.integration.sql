@@ -89,6 +89,13 @@ BEGIN
     RAISE EXCEPTION 'DEPENDENCY_FAILURE_PREREQUISITE_TERMINALIZATION_FAILED';
   END IF;
 
+END
+$dependency_failure_test$;
+RESET ROLE;
+
+-- Inspect privileged task state only after leaving the restricted worker role.
+DO $dependency_failure_assertion$
+BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public."EngineeringTask"
     WHERE "id"='dep-failed-dependent' AND "status"='BLOCKED'
@@ -96,7 +103,14 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'DEPENDENCY_FAILURE_DEPENDENT_NOT_BLOCKED';
   END IF;
+END
+$dependency_failure_assertion$;
 
+SET ROLE vayro_task_worker_ci;
+DO $dependency_independent_continues$
+DECLARE
+  independent_claim RECORD;
+BEGIN
   SELECT * INTO independent_claim
   FROM public.vayro_claim_engineering_task('dependency-ci-worker',60);
   IF independent_claim.task_id IS DISTINCT FROM 'dep-failed-independent' THEN
@@ -109,7 +123,7 @@ BEGIN
     RAISE EXCEPTION 'DEPENDENCY_FAILURE_INDEPENDENT_COMPLETION_FAILED';
   END IF;
 END
-$dependency_failure_test$;
+$dependency_independent_continues$;
 RESET ROLE;
 
 DELETE FROM public."EngineeringTaskAttempt"
