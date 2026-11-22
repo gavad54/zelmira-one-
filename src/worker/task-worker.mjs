@@ -30,7 +30,7 @@ export function safeFailure(error) {
   const message = rawMessage
     .replace(/(password|token|secret|authorization|api[_-]?key)\s*[:=]\s*\S+/gi, "$1=[REDACTED]")
     .replace(/\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi, "Bearer [REDACTED]")
-    .replace(/([?&](?:token|key|secret|password)=)[^&\\s]+/gi, "$1[REDACTED]")
+    .replace(/([?&](?:token|key|secret|password)=)[^&\s]+/gi, "$1[REDACTED]")
     .slice(0, 500);
   return {
     code,
