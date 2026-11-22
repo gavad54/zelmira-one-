@@ -44,3 +44,20 @@ test("transient upstream network failures retain their retryable classification"
   assert.equal(safeFailure(error).code, "GITHUB_NETWORK_ERROR");
   assert.equal(safeFailure(error).retryable, true);
 });
+
+test("worker failure messages redact credentials embedded in URL query strings", () => {
+  const failure = safeFailure(new Error(
+    "request failed at https://provider.example/hook?token=abc123&mode=fast&password=p%40ss"
+  ));
+  assert.equal(failure.message,
+    "request failed at https://provider.example/hook?token=[REDACTED]&mode=fast&password=[REDACTED]");
+  assert.equal(failure.retryable, false);
+});
+
+test("worker failure messages redact authorization headers and inline credentials", () => {
+  const failure = safeFailure(new Error(
+    "authorization: BasicSecret Bearer abc.def.ghi api_key=supersecret"
+  ));
+  assert.equal(failure.message,
+    "authorization=[REDACTED] Bearer [REDACTED] api_key=[REDACTED]");
+});
