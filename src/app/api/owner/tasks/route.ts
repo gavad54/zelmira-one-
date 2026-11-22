@@ -10,13 +10,12 @@ export const dynamic = "force-dynamic";
 const handlers = {
   "repo.audit": "ENGINEERING",
   "repo.test": "ENGINEERING",
-  "product.health_check": "OPERATIONS",
   "report.generate": "REPORTING"
 } as const;
 
 const createSchema = z.object({
   projectKey: z.string().regex(/^[A-Z][A-Z0-9_-]{1,39}$/),
-  handlerKey: z.enum(["repo.audit", "repo.test", "product.health_check", "report.generate"]),
+  handlerKey: z.enum(["repo.audit", "repo.test", "report.generate"]),
   title: z.string().trim().min(3).max(160),
   idempotencyKey: z.string().min(8).max(200),
   priority: z.number().int().min(0).max(100).default(50),
@@ -64,7 +63,6 @@ export async function POST(request: Request) {
   try {
     serializedPayload = JSON.stringify(parsed.data.payload);
     if (Buffer.byteLength(serializedPayload, "utf8") > 65_536) return noStoreJson({ error: "payload_too_large" }, 413);
-    // Reject values JSON.stringify silently drops, such as undefined properties.
     if (JSON.stringify(JSON.parse(serializedPayload)) !== serializedPayload) return noStoreJson({ error: "invalid_payload" }, 400);
   } catch {
     return noStoreJson({ error: "invalid_payload" }, 400);
@@ -139,7 +137,6 @@ export async function POST(request: Request) {
     return noStoreJson({ error: "task_create_failed" }, 503);
   }
 }
-
 
 const approveSchema = z.object({ action: z.literal("approve"), taskId: z.string().min(1).max(100) }).strict();
 
