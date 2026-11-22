@@ -17,6 +17,18 @@ BEGIN
      OR has_table_privilege(current_user, 'public."EngineeringTaskAttempt"', 'SELECT') THEN
     RAISE EXCEPTION 'TASK_WORKER_HAS_DIRECT_TABLE_ACCESS';
   END IF;
+  IF has_table_privilege(current_user, 'public."EngineeringTaskDependency"', 'SELECT')
+     OR has_table_privilege(current_user, 'public."EngineeringTaskDependency"', 'INSERT')
+     OR has_table_privilege(current_user, 'public."EngineeringTaskDependency"', 'UPDATE')
+     OR has_table_privilege(current_user, 'public."EngineeringTaskDependency"', 'DELETE') THEN
+    RAISE EXCEPTION 'TASK_WORKER_HAS_DEPENDENCY_TABLE_ACCESS';
+  END IF;
+  IF has_function_privilege(current_user, 'public.vayro_add_engineering_task_dependency(text,text)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'TASK_WORKER_CAN_MUTATE_DEPENDENCY_GRAPH';
+  END IF;
+  IF NOT has_function_privilege('vayro_platform', 'public.vayro_add_engineering_task_dependency(text,text)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'OWNER_DEPENDENCY_FUNCTION_EXECUTE_MISSING';
+  END IF;
   IF NOT has_function_privilege(current_user, 'public.vayro_claim_engineering_task(text,integer)', 'EXECUTE')
      OR NOT has_function_privilege(current_user, 'public.vayro_heartbeat_engineering_task(text,text,text,integer)', 'EXECUTE')
      OR NOT has_function_privilege(current_user, 'public.vayro_complete_engineering_task(text,text,text,jsonb)', 'EXECUTE')
