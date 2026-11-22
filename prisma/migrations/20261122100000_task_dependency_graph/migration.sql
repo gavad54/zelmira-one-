@@ -30,6 +30,7 @@ AS $$
 DECLARE
   v_task_project TEXT;
   v_dependency_project TEXT;
+  v_task_status public."EngineeringTaskStatus";
   v_cycle BOOLEAN;
 BEGIN
   IF NOT public.vayro_platform_actor_is_owner() THEN
@@ -41,13 +42,16 @@ BEGIN
 
   PERFORM pg_advisory_xact_lock(734901221);
 
-  SELECT "projectKey" INTO v_task_project
+  SELECT "projectKey", "status" INTO v_task_project, v_task_status
   FROM public."EngineeringTask" WHERE "id" = p_task_id FOR UPDATE;
   SELECT "projectKey" INTO v_dependency_project
   FROM public."EngineeringTask" WHERE "id" = p_depends_on_task_id FOR SHARE;
 
   IF v_task_project IS NULL OR v_dependency_project IS NULL THEN
     RAISE EXCEPTION 'TASK_DEPENDENCY_NOT_FOUND' USING ERRCODE = '23503';
+  END IF;
+  IF v_task_status NOT IN ('DRAFT','QUEUED','WAITING_APPROVAL') THEN
+    RAISE EXCEPTION 'TASK_DEPENDENCY_TARGET_ALREADY_CLAIMED' USING ERRCODE = '55000';
   END IF;
   IF v_task_project <> v_dependency_project THEN
     RAISE EXCEPTION 'TASK_DEPENDENCY_PROJECT_MISMATCH' USING ERRCODE = '23514';
