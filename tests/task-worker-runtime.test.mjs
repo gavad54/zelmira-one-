@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { taskWorkerHandlers } from "../src/worker/task-worker.mjs";
+import { safeFailure, taskWorkerHandlers } from "../src/worker/task-worker.mjs";
 
 test("report handler emits a bounded deterministic read-only summary", async () => {
   const payload = { reportType: "engineering", taskIds: ["a", "b"] };
