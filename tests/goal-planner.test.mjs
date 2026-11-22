@@ -32,8 +32,8 @@ test("planner rejects unknown dependencies and dependency cycles", () => {
   assert.throws(() => planGoal({
     ...goal,
     acceptanceCriteria: [
-      { id: "aa", title: "A", handlerKey: "report.generate", dependsOn: ["bb"] },
-      { id: "bb", title: "B", handlerKey: "report.generate", dependsOn: ["aa"] }
+      { id: "aa", title: "Task A", handlerKey: "report.generate", dependsOn: ["bb"] },
+      { id: "bb", title: "Task B", handlerKey: "report.generate", dependsOn: ["aa"] }
     ]
   }), /DEPENDENCY_CYCLE/);
 });
