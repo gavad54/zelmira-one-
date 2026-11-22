@@ -19,7 +19,7 @@ function taskError(code, message, retryable = false) {
   return Object.assign(new Error(message), { code, retryable });
 }
 
-function safeFailure(error) {
+export function safeFailure(error) {
   const code = /^[A-Z0-9_]{2,80}$/.test(error?.code ?? "") ? error.code : "TASK_HANDLER_FAILED";
   const message = String(error?.message ?? "Task handler failed")
     .replace(/(password|token|secret|authorization|api[_-]?key)\s*[:=]\s*\S+/gi, "$1=[REDACTED]")
