@@ -4,13 +4,12 @@ export const TASK_STATUSES = Object.freeze([
 ]);
 
 export const TASK_HANDLERS = Object.freeze([
-  "repo.audit", "repo.test", "product.health_check", "report.generate"
+  "repo.audit", "repo.test", "report.generate"
 ]);
 
 const HANDLER_TASK_TYPES = Object.freeze({
   "repo.audit": "ENGINEERING",
   "repo.test": "ENGINEERING",
-  "product.health_check": "OPERATIONS",
   "report.generate": "REPORTING"
 });
 
