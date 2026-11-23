@@ -28,7 +28,7 @@ export function safeFailure(error) {
     : knownRetryableMessage ? rawMessage
     : error?.name === "AbortError" ? "UPSTREAM_REQUEST_ABORTED"
     : "TASK_HANDLER_FAILED";
-  const message = redactErrorMessage(rawMessage)
+  const message = redactErrorMessage(rawMessage);
   return {
     code,
     message,
