@@ -43,7 +43,7 @@ BEGIN
   -- check that could pass with unrelated policies.
   WITH expected(table_name, role_name) AS (
     VALUES
-      ('User','vayro_app'), ('User','vayro_auth'), ('User','vayro_platform'),
+      ('User','vayro_app'), ('User','vayro_auth'), ('User','vayro_platform'), ('User','vayro_platform_bootstrap'),
       ('Tenant','vayro_app'), ('Tenant','vayro_auth'), ('Tenant','vayro_platform'),
       ('Membership','vayro_app'), ('Membership','vayro_auth'),
       ('Session','vayro_app'), ('Session','vayro_auth'), ('Session','vayro_platform'),
