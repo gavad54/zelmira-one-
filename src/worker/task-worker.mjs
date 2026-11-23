@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { redactErrorMessage } from "../lib/redact-error-message.mjs";
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const MAX_RESULT_BYTES = 65_536;
@@ -27,11 +28,7 @@ export function safeFailure(error) {
     : knownRetryableMessage ? rawMessage
     : error?.name === "AbortError" ? "UPSTREAM_REQUEST_ABORTED"
     : "TASK_HANDLER_FAILED";
-  const message = rawMessage
-    .replace(/([?&](?:token|key|secret|password)=)[^&\s]+/gi, "$1[REDACTED]")
-    .replace(/(password|token|secret|authorization|api[_-]?key)\s*[:=]\s*[^&\s]+/gi, "$1=[REDACTED]")
-    .replace(/\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi, "Bearer [REDACTED]")
-    .slice(0, 500);
+  const message = redactErrorMessage(rawMessage)
   return {
     code,
     message,
