@@ -304,6 +304,9 @@ A new read-only inspection of VAYRO-CORE `wdqhdnhpgxhmmfeyxwxr` on 2026-11-23 su
 - Security Advisor again reports 11 `rls_enabled_no_policy` findings. Health Advisor returns no findings.
 - No live schema, role, grant, policy, migration-history or data writes were made.
 
+
+The read-only object-by-object drift query is now maintained at `prisma/diagnostics/vayro-live-migration-drift.sql`; run it with a read-only catalog identity and preserve its output with the change evidence. It reports the known later-migration tables, Session columns, enum types, tenant audit FK, Prisma ledger, and RLS/FORCE-RLS summary without reading application rows or modifying the database.
+
 ### Reconciliation decision
 
 The live database is **not migration-ready**. Do not run `prisma migrate deploy`: the initial migration would attempt to create tables that already exist because the Prisma migration ledger is absent. Do not mark the initial migration applied yet: although the 11-table baseline is structurally close, exact equivalence of every column, enum, index, constraint, ownership and extension must first be proven against a verified restored clone. The missing later objects and the absent AuditEvent tenant foreign key are confirmed drift, not assumptions.
