@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { assertTaskWorkerRuntimeRole, taskWorkerPrisma } from "@/lib/task-worker-prisma";
+import { redactErrorMessage } from "@/lib/redact-error-message.mjs";
 
 export type ClaimedEngineeringTask = {
   task_id: string;
@@ -26,13 +27,6 @@ function assertLease(taskId: string, workerId: string, leaseToken: string): void
   if (!LEASE_TOKEN.test(leaseToken)) throw new Error("TASK_LEASE_TOKEN_INVALID");
 }
 
-function redactErrorMessage(message: string): string {
-  return message
-    .replace(/(password|token|secret|authorization|api[_-]?key)\s*[:=]\s*\S+/gi, "$1=[REDACTED]")
-    .replace(/\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi, "Bearer [REDACTED]")
-    .replace(/([?&](?:token|key|secret|password)=)[^&\s]+/gi, "$1[REDACTED]")
-    .slice(0, 500);
-}
 
 export async function claimNextEngineeringTask({
   workerId, leaseSeconds = 60
