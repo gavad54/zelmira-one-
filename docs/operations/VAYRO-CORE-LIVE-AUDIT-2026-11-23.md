@@ -12,6 +12,7 @@
 - Supabase migration history: empty
 - Prisma ledger: `public."_prisma_migrations"` absent
 - Public tables observed: 11
+- Exact read-only SQL row counts: 0 rows in each of the 11 observed public tables (verified 2026-11-23). This confirms the current public application tables are empty at the time of this query; it does not cover Supabase-managed schemas, Storage object bytes, external services, or data written after the query.
 - RLS enabled: 11 of 11
 - FORCE RLS: 0 of 11
 - Public-schema RLS policies: 0
