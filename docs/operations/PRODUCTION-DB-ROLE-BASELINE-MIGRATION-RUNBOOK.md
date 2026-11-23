@@ -286,3 +286,32 @@ If any command fails, stop; do not treat a partial set as a backup. Record CLI v
 Stop and keep production unchanged if source export is incomplete, encrypted artifact checksum differs, restore errors occur, catalog/row-count mismatch is unexplained, role attributes differ, or the independent reviewer cannot verify the restored environment. Do not use a Supabase development branch as the restore target: branch creation applies migrations and does not copy live production data. Do not invoke `restore_project` as a substitute for a separately verified backup artifact and isolated restore drill.
 
 **Execution status in this session:** procedure documented only. No CLI workstation or backup-export capability is connected here; no dump, encryption, off-site transfer, checksum verification, restore, or production write was performed.
+
+
+## Fresh live database reconciliation — 2026-11-23 (read-only)
+
+A new read-only inspection of VAYRO-CORE `wdqhdnhpgxhmmfeyxwxr` on 2026-11-23 supersedes the 2026-11-09 snapshot above:
+
+- Project remains `ACTIVE_HEALTHY`, PostgreSQL 17.11, region `eu-central-1`.
+- Supabase migration service still reports an empty migration list.
+- Direct PostgreSQL catalog inspection confirms `public."_prisma_migrations"` does not exist. This is stronger evidence than an empty migration list: Prisma has no migration ledger to reconcile or baseline against.
+- Exactly 11 public tables exist. All are owned by `postgres`, have RLS enabled, but none has `FORCE ROW LEVEL SECURITY`; there are zero policies and zero `vayro_%` roles or direct grants to those roles.
+- The 11 live tables and their columns correspond to the initial VAYRO core schema inventory. The later repository schema/migration sequence is not present in production:
+  - Missing tables: `UserMfa`, `MfaRecoveryCode`, `AuthChallenge`, `AiGeneration`, `EngineeringTask`, `EngineeringTaskAttempt`, `EngineeringTaskDependency`.
+  - Missing `Session` columns: `revokedAt`, `lastSeenAt`, `assurance`, `mfaAuthenticatedAt`.
+  - Missing enums introduced by later migrations include `SessionAssurance`, `AuthChallengePurpose`, and the engineering-task status type.
+  - The live `AuditEvent.tenantId` column has no `AuditEvent_tenantId_fkey` constraint, while the tenant-boundary migration expects it.
+- Security Advisor again reports 11 `rls_enabled_no_policy` findings. Health Advisor returns no findings.
+- No live schema, role, grant, policy, migration-history or data writes were made.
+
+### Reconciliation decision
+
+The live database is **not migration-ready**. Do not run `prisma migrate deploy`: the initial migration would attempt to create tables that already exist because the Prisma migration ledger is absent. Do not mark the initial migration applied yet: although the 11-table baseline is structurally close, exact equivalence of every column, enum, index, constraint, ownership and extension must first be proven against a verified restored clone. The missing later objects and the absent AuditEvent tenant foreign key are confirmed drift, not assumptions.
+
+### RLS decision
+
+RLS is enabled but currently has no policies and is not forced on any live table. This means the database does not yet enforce the intended VAYRO tenant/auth/platform separation for any application capability role. The absence of direct grants to the currently absent `vayro_%` roles does not prove the intended runtime roles are configured. The migration chain contains role-specific tenant, authentication and platform policies, but none is installed in VAYRO-CORE.
+
+A new CI-only verifier, `tests/sql/rls-policy-coverage.sql`, now asserts after migrations that all 15 core identity/tenant/platform/AI tables have RLS plus FORCE RLS, the expected capability-role policies exist, no policy grants access to PUBLIC/`anon`/`authenticated`, runtime capability roles remain NOLOGIN/NOBYPASSRLS, and protected tables are not owned by those roles. It is wired into the VAYRO CI workflow. This validates the migration chain on disposable CI PostgreSQL only; it does not change or certify VAYRO-CORE production.
+
+**Status: PRODUCTION MIGRATION / ROLE PROVISIONING / RLS POLICY APPLICATION = NOT EXECUTED.** Production remains blocked pending an independently verified backup and restore, clone-based baseline proof, reviewed drift reconciliation, and separate explicit owner authorization for each production write action.
