@@ -3,6 +3,7 @@ import { z } from "zod";
 import { isSameOriginRequest } from "@/lib/auth-core.mjs";
 import { allowAttempt, noStoreJson, sha256 } from "@/lib/auth-service";
 import { withPlatformOwnerTransaction } from "@/lib/platform-request-transaction";
+import { readJsonBody } from "@/lib/read-json-body.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -56,7 +57,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   if (!isSameOriginRequest(request)) return noStoreJson({ error: "invalid_origin" }, 403);
-  const parsed = createSchema.safeParse(await request.json().catch(() => null));
+  let body: unknown;
+  try {
+    body = await readJsonBody(request, 80_000);
+  } catch (error) {
+    return error instanceof Error && error.message === "BODY_TOO_LARGE"
+      ? noStoreJson({ error: "payload_too_large" }, 413)
+      : noStoreJson({ error: "invalid_input" }, 400);
+  }
+  const parsed = createSchema.safeParse(body);
   if (!parsed.success) return noStoreJson({ error: "invalid_input" }, 400);
 
   let serializedPayload: string;
@@ -142,7 +151,15 @@ const approveSchema = z.object({ action: z.literal("approve"), taskId: z.string(
 
 export async function PATCH(request: Request) {
   if (!isSameOriginRequest(request)) return noStoreJson({ error: "invalid_origin" }, 403);
-  const parsed = approveSchema.safeParse(await request.json().catch(() => null));
+  let body: unknown;
+  try {
+    body = await readJsonBody(request, 8_192);
+  } catch (error) {
+    return error instanceof Error && error.message === "BODY_TOO_LARGE"
+      ? noStoreJson({ error: "payload_too_large" }, 413)
+      : noStoreJson({ error: "invalid_input" }, 400);
+  }
+  const parsed = approveSchema.safeParse(body);
   if (!parsed.success) return noStoreJson({ error: "invalid_input" }, 400);
   try {
     const result = await withPlatformOwnerTransaction({
