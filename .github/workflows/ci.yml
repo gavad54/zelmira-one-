@@ -62,6 +62,8 @@ jobs:
         run: npx prisma migrate deploy
       - name: Reconcile Prisma models, migration ledger, and protected RLS catalog (isolated PostgreSQL only)
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/catalog-reconciliation.sql
+      - name: Verify complete core RLS policy and FORCE-RLS coverage (isolated PostgreSQL only)
+        run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/rls-policy-coverage.sql
       - name: Prove authentication database role isolation (isolated PostgreSQL only)
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/auth-db-role-boundary.sql
       - name: Enable dedicated authentication runtime login in isolated CI only
