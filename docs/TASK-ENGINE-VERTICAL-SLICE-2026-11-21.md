@@ -63,3 +63,33 @@ The next additive slice now includes:
 - CI includes an isolated PostgreSQL login-role test proving inherited worker function execution and absence of direct table access.
 
 The new migration and API source are committed on the same development branch. Their CI run is pending/in progress at the time of this note. They are not applied to the live VAYRO-CORE database. The scheduler, worker loop, concrete handler implementations, outbox, and restart-recovery E2E are still open.
+
+
+## Status reconciliation — 2026-11-24
+
+This section supersedes earlier statements in this document that the worker loop and owner enqueue/approval API were not implemented.
+
+### Implemented in the current development branch
+
+- The owner-only task API is implemented in `src/app/api/owner/tasks/route.ts`: authenticated owner transaction, same-origin checks, bounded request body, rate limiting, idempotency conflict handling, audit events, and a separate owner approval action.
+- The goal-planning API is implemented in `src/app/api/owner/goals/plan/route.ts`; it validates a bounded dependency graph and persists tasks plus dependency edges in one owner transaction.
+- The worker loop is implemented in `src/worker/task-worker.mjs` and starts with `npm run worker:tasks`. It requires the dedicated `TASK_WORKER_DATABASE_URL`, checks its runtime role at startup, claims one task at a time, heartbeats leases, enforces bounded handler timeouts/results, retries transient failures with bounded backoff, handles SIGTERM/SIGINT, and records terminal failures for dead-letter handling.
+- The fixed handler allowlist is `report.generate`, `repo.audit`, and `repo.test`. The latter two only observe GitHub metadata/Actions through GET requests. No shell or arbitrary code handler is registered.
+- One-time future scheduling is represented by `scheduledAt` mapped to `availableAt`; the database claim function only selects tasks whose `availableAt` is due. No separate recurring schedule materializer has been implemented.
+
+### Exact-head verification
+
+At the 2026-11-24 observation, branch head was `9b88def1959a06405b60ee1df2b326e01dfdfc96`. Push CI run [45370932019](https://github.com/gavad54/zelmira-one-/actions/runs/45370932019) completed successfully on that exact SHA. Its `validate` job passed dependency audit, unit tests, Prisma generation/validation, migrations against disposable PostgreSQL, catalog/RLS/role boundaries, task dependency and lease-recovery SQL tests, lint, typecheck, production build, Docker build and HTTP integration tests.
+
+The PR-triggered CI run [45370938684](https://github.com/gavad54/zelmira-one-/actions/runs/45370938684) was still pending and CodeQL run [45370938513](https://github.com/gavad54/zelmira-one-/actions/runs/45370938513) was still in progress at the same observation. These must not be reported as PASS based on the successful push run.
+
+The SQL restart-recovery test expires a claimed task's lease and proves a new worker can reclaim it while the old lease token is fenced. This verifies database lease-recovery semantics in isolated PostgreSQL; it is not a test that kills and restarts a deployed worker process.
+
+### Not operational / still gated
+
+- The task-engine migrations remain in the PR branch and have not been applied to VAYRO-CORE. The live Supabase migration registry is empty and the live public schema still lacks the task-engine tables.
+- No protected worker database credential has been provisioned and no Railway worker service is running. The source implementation and passing isolated CI do not prove a live persistent worker.
+- No recurring scheduler, real process-level restart drill, external evidence-store integration, or end-to-end runtime queue evidence exists yet.
+- The backup and isolated-restore workflows are present only on the unmerged branch and run only from `main`; no encrypted off-site backup artifact or successful restore was observed.
+
+Current classification: worker source and isolated database tests are implemented/tested on the observed SHA; live database integration and deployed worker operation remain NOT RUN / BLOCKED.
