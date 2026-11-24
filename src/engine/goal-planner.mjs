@@ -67,6 +67,9 @@ export function planGoal(goal) {
   if (!Number.isInteger(priority) || priority < 0 || priority > 100) fail("GOAL_PRIORITY_INVALID");
   const approvalRequired = goal.approvalRequired ?? true;
   if (typeof approvalRequired !== "boolean") fail("GOAL_APPROVAL_POLICY_INVALID");
+  const scheduledAt = validGoalDate(goal.scheduledAt, "GOAL_SCHEDULE_INVALID");
+  const deadline = validGoalDate(goal.deadline, "GOAL_DEADLINE_INVALID");
+  if (scheduledAt && deadline && deadline <= scheduledAt) fail("GOAL_DEADLINE_BEFORE_SCHEDULE");
   if (!Array.isArray(goal.acceptanceCriteria) || goal.acceptanceCriteria.length < 1 ||
       goal.acceptanceCriteria.length > MAX_CRITERIA) fail("GOAL_CRITERIA_INVALID");
 
@@ -99,6 +102,8 @@ export function planGoal(goal) {
     handlerKey: item.handlerKey,
     title: item.title,
     priority,
+    scheduledAt,
+    deadline,
     idempotencyKey: canonicalTaskKey(goalId, version, item.id),
     criterionId: item.id,
     dependsOn: [...item.dependsOn],
@@ -119,6 +124,8 @@ export function planGoal(goal) {
     version,
     title,
     approvalRequired,
+    scheduledAt,
+    deadline,
     tasks: Object.freeze(tasks.map(task => Object.freeze(task)))
   });
 }
