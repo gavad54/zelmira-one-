@@ -57,3 +57,37 @@ This is an important distinction:
 - The Railway service source configuration and the failed deployment metadata report different branches (`main` vs `security/mfa-session-endpoint-gates`). Resolve this source/deployment provenance discrepancy before relying on any deployment SHA.
 
 Accordingly, the next safe action is to compare the current approved release candidate with the deployed commit, verify the required variable's presence through the protected Railway variable-name inventory, and run a CI/staging deployment check. Do not change the variable value, bypass runtime role validation, or deploy production automatically.
+
+
+## Evidence correction — 2026-11-24
+
+This section supersedes any earlier sentence that attributed the missing `AUTH_DATABASE_URL` build error to the `ARIA Web` deployment.
+
+### Deployment `6354aa02-a334-4457-a46d-5f41188845a5` — VAYRO in `ARIA Web`
+
+- Exact source commit from Railway diagnosis: `93108e0d95ff940e9855f8fdc3ef4f37063b1043`.
+- The retrieved build log reached the Next.js route summary and completed the production build.
+- The configured `/api/health` check then returned HTTP 503 on all eight attempts; Railway marked the single replica unhealthy.
+- Therefore this deployment's observed failure stage is **HEALTHCHECK**, not the missing-`AUTH_DATABASE_URL` build-time exception.
+- The available logs do not establish why the runtime endpoint returned 503. Runtime root cause remains **UNVERIFIED**.
+
+### Deployment `f2f67daf-5d15-4dc1-91e2-3596fe521d6d` — VAYRO in `LEADORA`
+
+- Exact source commit from Railway diagnosis: `0b7d70d420371e670e9082cfdba573241749b172`.
+- The retrieved build log explicitly reports that `AUTH_DATABASE_URL` is required in production and aborts during Next.js page-data collection for `/api/auth/forgot-password`.
+- This is the deployment for which the missing build-time environment variable is directly evidenced.
+- The current VAYRO PR #47 head is now `52e7f1bc9ef5305f3637f09742bdd28003d39595`. Its `src/lib/auth-prisma.ts` uses lazy Prisma-client creation, preserving the fail-closed production requirement while avoiding database-client construction during module import. That source change does not configure Railway variables or prove runtime readiness.
+
+### Current PR #47 verification snapshot
+
+- PR: `https://github.com/gavad54/zelmira-one-/pull/47`
+- Head: `52e7f1bc9ef5305f3637f09742bdd28003d39595`
+- Exact-head GitHub Actions: VAYRO CI **success**, CodeQL **success**, lockfile validation **success**.
+- No production deployment was initiated. No variables or secrets were read or changed.
+
+### Corrected disposition
+
+- `ARIA Web` VAYRO: build completed; healthcheck returned 503; runtime cause **UNVERIFIED**.
+- `LEADORA` VAYRO: build failed because `AUTH_DATABASE_URL` was unavailable during build on commit `0b7d70d420371e670e9082cfdba573241749b172`.
+- The lazy initialization code is present on the current PR #47 branch, but no deploy/rebuild has been performed to verify it in Railway.
+- Required production environment variables, authoritative VAYRO hosting location, service health, and live database role configuration remain owner-gated or unverified.
