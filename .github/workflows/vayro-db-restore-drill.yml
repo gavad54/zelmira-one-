@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       backup_object_key:
-        description: "Exact .dump.age object key in the private B2 bucket"
+        description: "Exact .dump.age object key in the private Cloudflare R2 bucket"
         required: true
         type: string
       confirmation:
@@ -33,20 +33,28 @@ jobs:
           PRODUCTION_DATABASE_URL: ${{ secrets.VAYRO_BACKUP_DATABASE_URL }}
           RESTORE_DATABASE_URL: ${{ secrets.VAYRO_ISOLATED_RESTORE_DATABASE_URL }}
           AGE_IDENTITY: ${{ secrets.VAYRO_BACKUP_AGE_IDENTITY }}
-          B2_KEY_ID: ${{ secrets.VAYRO_B2_KEY_ID }}
-          B2_APPLICATION_KEY: ${{ secrets.VAYRO_B2_APPLICATION_KEY }}
-          B2_BUCKET: ${{ vars.VAYRO_B2_BUCKET }}
-          B2_S3_ENDPOINT: ${{ vars.VAYRO_B2_S3_ENDPOINT }}
-          B2_REGION: ${{ vars.VAYRO_B2_REGION }}
+          R2_ACCESS_KEY_ID: ${{ secrets.VAYRO_R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.VAYRO_R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ vars.VAYRO_R2_BUCKET }}
+          R2_S3_ENDPOINT: ${{ vars.VAYRO_R2_S3_ENDPOINT }}
+          R2_REGION: ${{ vars.VAYRO_R2_REGION }}
           BACKUP_OBJECT_KEY: ${{ inputs.backup_object_key }}
         run: |
           set -euo pipefail
-          for name in PRODUCTION_DATABASE_URL RESTORE_DATABASE_URL AGE_IDENTITY B2_KEY_ID B2_APPLICATION_KEY B2_BUCKET B2_S3_ENDPOINT B2_REGION BACKUP_OBJECT_KEY; do
+          for name in PRODUCTION_DATABASE_URL RESTORE_DATABASE_URL AGE_IDENTITY R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET R2_S3_ENDPOINT R2_REGION BACKUP_OBJECT_KEY; do
             if [[ -z "${!name:-}" ]]; then
               echo "::error::Missing protected configuration: $name"
               exit 1
             fi
           done
+          case "$R2_S3_ENDPOINT" in
+            https://*.r2.cloudflarestorage.com) ;;
+            *) echo "::error::R2 endpoint must be the account-specific Cloudflare R2 S3 endpoint"; exit 1 ;;
+          esac
+          if [[ "$R2_REGION" != "auto" ]]; then
+            echo "::error::Cloudflare R2 S3 region must be auto"
+            exit 1
+          fi
           if [[ ! "$BACKUP_OBJECT_KEY" =~ ^vayro/postgres/[0-9]{4}/[0-9]{2}/[0-9]{2}/[0-9]{6}/vayro\.dump\.age$ ]]; then
             echo "::error::Backup key does not match the generated VAYRO backup object format"
             exit 1
@@ -73,14 +81,14 @@ jobs:
       - name: Download, verify and decrypt selected backup
         shell: bash
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.VAYRO_B2_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.VAYRO_B2_APPLICATION_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.VAYRO_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.VAYRO_R2_SECRET_ACCESS_KEY }}
           AWS_EC2_METADATA_DISABLED: "true"
           AWS_REQUEST_CHECKSUM_CALCULATION: when_required
           AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
-          B2_BUCKET: ${{ vars.VAYRO_B2_BUCKET }}
-          B2_S3_ENDPOINT: ${{ vars.VAYRO_B2_S3_ENDPOINT }}
-          B2_REGION: ${{ vars.VAYRO_B2_REGION }}
+          R2_BUCKET: ${{ vars.VAYRO_R2_BUCKET }}
+          R2_S3_ENDPOINT: ${{ vars.VAYRO_R2_S3_ENDPOINT }}
+          R2_REGION: ${{ vars.VAYRO_R2_REGION }}
           BACKUP_OBJECT_KEY: ${{ inputs.backup_object_key }}
           AGE_IDENTITY: ${{ secrets.VAYRO_BACKUP_AGE_IDENTITY }}
         run: |
@@ -89,11 +97,11 @@ jobs:
           mkdir -p "$RUNNER_TEMP/vayro-restore"
           chmod 700 "$RUNNER_TEMP/vayro-restore"
           trap 'rm -f "$RUNNER_TEMP/vayro-restore/age-identity.txt"' EXIT
-          aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
-            s3 cp "s3://$B2_BUCKET/$BACKUP_OBJECT_KEY" \
+          aws --endpoint-url "$R2_S3_ENDPOINT" --region "$R2_REGION" \
+            s3 cp "s3://$R2_BUCKET/$BACKUP_OBJECT_KEY" \
             "$RUNNER_TEMP/vayro-restore/vayro.dump.age" --only-show-errors
-          aws --endpoint-url "$B2_S3_ENDPOINT" --region "$B2_REGION" \
-            s3 cp "s3://$B2_BUCKET/$BACKUP_OBJECT_KEY.sha256" \
+          aws --endpoint-url "$R2_S3_ENDPOINT" --region "$R2_REGION" \
+            s3 cp "s3://$R2_BUCKET/$BACKUP_OBJECT_KEY.sha256" \
             "$RUNNER_TEMP/vayro-restore/vayro.dump.age.sha256" --only-show-errors
           cd "$RUNNER_TEMP/vayro-restore"
           sha256sum --check vayro.dump.age.sha256
