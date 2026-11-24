@@ -1,6 +1,6 @@
 export const TASK_STATUSES = Object.freeze([
-  "DRAFT", "QUEUED", "RUNNING", "BLOCKED", "WAITING_APPROVAL",
-  "RETRYING", "SUCCEEDED", "FAILED", "CANCELLED", "EXPIRED"
+  "DRAFT", "QUEUED", "RUNNING", "BLOCKED", "WAITING_APPROVAL", "WAITING_FOR_OWNER",
+  "RETRYING", "SUCCEEDED", "FAILED", "DEAD_LETTER", "CANCELLED", "EXPIRED"
 ]);
 
 export const TASK_HANDLERS = Object.freeze([
@@ -13,7 +13,7 @@ const HANDLER_TASK_TYPES = Object.freeze({
   "report.generate": "REPORTING"
 });
 
-const TERMINAL = new Set(["SUCCEEDED", "FAILED", "CANCELLED", "EXPIRED"]);
+const TERMINAL = new Set(["SUCCEEDED", "FAILED", "DEAD_LETTER", "CANCELLED", "EXPIRED"]);
 const MAX_PAYLOAD_BYTES = 64 * 1024;
 const MAX_DEPTH = 8;
 const MAX_ARRAY_ITEMS = 500;
@@ -84,7 +84,7 @@ export function validateTaskDefinition(input) {
 export function createTaskRecord(definition, now = new Date()) {
   const valid = validateTaskDefinition(definition);
   const createdAt = validDate(now, "TASK_CLOCK_INVALID");
-  const status = valid.approvalRequired ? "WAITING_APPROVAL" : "QUEUED";
+  const status = valid.approvalRequired ? "WAITING_FOR_OWNER" : "QUEUED";
   return {
     ...valid, status, attemptCount: 0, availableAt: valid.scheduledAt ?? createdAt,
     leaseOwner: null, leaseToken: null, leaseExpiresAt: null, heartbeatAt: null,
@@ -94,7 +94,7 @@ export function createTaskRecord(definition, now = new Date()) {
 }
 
 export function approveTask(task, now = new Date()) {
-  if (task.status !== "WAITING_APPROVAL") throw new Error("TASK_NOT_WAITING_APPROVAL");
+  if (task.status !== "WAITING_FOR_OWNER" && task.status !== "WAITING_APPROVAL") throw new Error("TASK_NOT_WAITING_FOR_OWNER");
   const at = validDate(now, "TASK_CLOCK_INVALID");
   return { ...task, status: "QUEUED", availableAt: task.scheduledAt ?? at, updatedAt: at };
 }
@@ -148,7 +148,7 @@ export function failTask(task, { workerId, leaseToken, errorCode, errorMessage, 
   const shouldRetry = retryable && task.attemptCount < task.maxAttempts;
   const backoffMs = Math.min(60 * 60_000, 5_000 * (2 ** Math.max(0, task.attemptCount - 1)));
   return {
-    ...task, status: shouldRetry ? "RETRYING" : "FAILED",
+    ...task, status: shouldRetry ? "RETRYING" : "DEAD_LETTER",
     availableAt: shouldRetry ? new Date(at.getTime() + backoffMs) : task.availableAt,
     lastErrorCode: errorCode, lastErrorMessage: errorMessage,
     completedAt: shouldRetry ? null : at, updatedAt: at,
