@@ -24,6 +24,8 @@ const requestSchema = z.object({
     version: z.number().int().min(1).max(1_000_000).default(1),
     priority: z.number().int().min(0).max(100).default(50),
     approvalRequired: z.boolean().default(true),
+    scheduledAt: z.string().datetime({ offset: true }).optional(),
+    deadline: z.string().datetime({ offset: true }).optional(),
     acceptanceCriteria: z.array(criterionSchema).min(1).max(200)
   }).strict()
 }).strict();
@@ -85,6 +87,9 @@ export async function POST(request: Request) {
               title: item.title,
               idempotencyKey: item.idempotencyKey,
               priority: item.priority,
+              scheduledAt: item.scheduledAt,
+              deadline: item.deadline,
+              availableAt: item.scheduledAt ?? new Date(),
               approvalRequired: item.approvalRequired,
               status: item.approvalRequired ? "WAITING_APPROVAL" : "QUEUED",
               payload: item.payload
@@ -118,6 +123,8 @@ export async function POST(request: Request) {
               goalVersion: plan.version,
               taskCount: created.length,
               approvalRequired: plan.approvalRequired,
+              scheduledAt: plan.scheduledAt?.toISOString() ?? null,
+              deadline: plan.deadline?.toISOString() ?? null,
               taskIds: created.map(task => task.id)
             }
           },
