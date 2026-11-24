@@ -9,6 +9,7 @@ This change adds the first long-running worker process for the durable PostgreSQ
 - Requires the dedicated `TASK_WORKER_DATABASE_URL`; it never falls back to the web application's database URL.
 - Verifies at startup that the database login inherits only the task-worker role, is not superuser/BYPASSRLS, does not own public tables, and has no other role memberships.
 - Claims one task at a time through `vayro_claim_engineering_task`; the database function owns lease issuance and attempt counting.
+- Owner-gated work is persisted as `WAITING_FOR_OWNER` until an auditable owner approval; exhausted or non-retryable failures enter the durable `DEAD_LETTER` task state while preserving attempt evidence.
 - Heartbeats the lease while a handler is running; stale or expired leases cannot complete a task.
 - Applies a bounded handler timeout, bounded result size, bounded polling backoff, and graceful SIGTERM/SIGINT shutdown.
 - Persisting success/failure uses only the SECURITY DEFINER worker functions; no direct task-table writes are made.
