@@ -39,7 +39,25 @@ Official references:
 - https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore
 - https://supabase.com/docs/reference/cli/supabase-db-dump
 
-## 3. Backup execution
+## 3. Independent object-storage target: Cloudflare R2
+
+The selected off-provider destination for this VAYRO workflow is **Cloudflare R2** (S3-compatible API), not Backblaze B2. The GitHub Actions workflows use the AWS CLI against the account-specific R2 S3 endpoint and require the R2 region value `auto`.
+
+Configure these values only in the GitHub repository's protected Environments; never commit them:
+
+**Environment `vayro-backup`**
+- Secrets: `VAYRO_BACKUP_DATABASE_URL`, `VAYRO_B2_UNUSED` (do not create; legacy name is not used), `VAYRO_R2_ACCESS_KEY_ID`, `VAYRO_R2_SECRET_ACCESS_KEY`.
+- Variables: `VAYRO_BACKUP_AGE_RECIPIENT`, `VAYRO_R2_BUCKET`, `VAYRO_R2_S3_ENDPOINT`, `VAYRO_R2_REGION=auto`.
+
+**Environment `vayro-restore`**
+- Secrets: `VAYRO_BACKUP_DATABASE_URL`, `VAYRO_ISOLATED_RESTORE_DATABASE_URL`, `VAYRO_BACKUP_AGE_IDENTITY`, `VAYRO_R2_ACCESS_KEY_ID`, `VAYRO_R2_SECRET_ACCESS_KEY`.
+- Variables: `VAYRO_R2_BUCKET`, `VAYRO_R2_S3_ENDPOINT`, `VAYRO_R2_REGION=auto`.
+
+Use a private bucket, least-privilege R2 API credentials scoped to that bucket, and an owner-controlled age keypair. Keep the age identity private and separate from the R2 access credentials. Set retention/versioning controls in the R2 account according to the recovery policy. The workflows validate the endpoint shape and region but do not create the bucket, provision credentials, or prove account-level retention settings.
+
+The backup workflow is restricted to `main`; the restore drill is manual, requires the exact confirmation phrase, and refuses a target database on the same hostname as production. The workflows currently live on the feature branch; they do not run on `main` until the reviewed PR is merged.
+
+## 4. Backup execution
 
 Run from a controlled operator workstation or dedicated secure runner with the Supabase CLI and Docker installed. Use the connection string from the VAYRO-CORE Dashboard's **Connect** panel. Prefer the session pooler unless the operator has confirmed direct IPv6/IPv4 connectivity.
 
@@ -68,7 +86,7 @@ Then:
 - Record sanitized metadata only: artifact ID, UTC timestamp, total bytes, SHA-256 checksums, encryption method/key custody reference, storage provider/region, object version, retention, and operator.
 - Do not mark the backup gate PASS until the independent copy is downloaded and checksum-verified.
 
-## 4. Isolated restore drill
+## 5. Isolated restore drill
 
 Provision a separate disposable PostgreSQL 17 target or a separate Supabase project dedicated to restore testing. It must not share the production project, database, credentials, application URLs, or production traffic. Confirm the target identity twice before restoring.
 
@@ -91,7 +109,7 @@ Notes:
 - Restore only into the isolated target. Never substitute the production connection string.
 - If restore fails, preserve logs securely, discard/recreate the disposable target, investigate, and repeat only after review. Do not edit the source database to make the dump pass.
 
-## 5. Verification required for PASS
+## 6. Verification required for PASS
 
 Capture before/after evidence and verify all of the following:
 
@@ -112,7 +130,7 @@ Capture before/after evidence and verify all of the following:
 
 The backup/restore gate is PASS only after every required in-scope item is evidenced and independently reviewed. Any missing item is FAIL or UNVERIFIED, never PASS.
 
-## 6. Production migration gate after restore
+## 7. Production migration gate after restore
 
 A successful isolated restore does not itself authorize production changes. After the restore gate passes, separately complete:
 
@@ -126,7 +144,7 @@ A successful isolated restore does not itself authorize production changes. Afte
 
 Until those gates pass, keep VAYRO-CORE production unchanged.
 
-## 7. Evidence record template
+## 8. Evidence record template
 
 | Field | Value |
 |---|---|
@@ -144,4 +162,4 @@ Until those gates pass, keep VAYRO-CORE production unchanged.
 | Operator / independent reviewer | UNRECORDED |
 | Gate | BLOCKED |
 
-**Current truthful status:** This is an executable operator runbook, not evidence that a backup exists. The ChatGPT Supabase connector currently provides database introspection and SQL/migration operations, but no supported export-to-file, external object-storage upload, or isolated full restore workflow. The operator workstation/secure runner and independent restore target are still required.
+**Current truthful status:** Cloudflare R2 is the selected destination and the branch workflows are configured for it, but GitHub Environment secrets/variables, R2 bucket provisioning, backup execution, and restore evidence are still outstanding. This is an executable operator runbook, not evidence that a backup exists. The ChatGPT Supabase connector currently provides database introspection and SQL/migration operations, but no supported export-to-file, external object-storage upload, or isolated full restore workflow. The operator workstation/secure runner and independent restore target are still required.
