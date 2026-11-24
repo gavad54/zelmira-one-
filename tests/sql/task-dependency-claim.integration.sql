@@ -98,6 +98,12 @@ DO $dependency_failure_assertion$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public."EngineeringTask"
+    WHERE "id"='dep-failed-prerequisite' AND "status"='DEAD_LETTER'
+  ) THEN
+    RAISE EXCEPTION 'DEPENDENCY_FAILURE_PREREQUISITE_NOT_DEAD_LETTER';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public."EngineeringTask"
     WHERE "id"='dep-failed-dependent' AND "status"='BLOCKED'
       AND "lastErrorCode"='DEPENDENCY_FAILED'
   ) THEN
