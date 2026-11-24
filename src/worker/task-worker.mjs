@@ -37,8 +37,9 @@ export function safeFailure(error) {
 }
 
 function assertRepo(value) {
-  if (typeof value !== "string" || !/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/.test(value)) {
-    throw taskError("REPOSITORY_REFERENCE_INVALID", "payload.repo must be owner/repository");
+  if (typeof value !== "string" || !/^[A-Za-z0-9_.-]{1,100}\\/[A-Za-z0-9_.-]{1,100}$/.test(value) ||
+      value.split("/").some(segment => segment === "." || segment === "..")) {
+    throw taskError("REPOSITORY_REFERENCE_INVALID", "payload.repo must be a valid owner/repository reference");
   }
   return value;
 }
