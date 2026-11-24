@@ -146,3 +146,33 @@ Cloudflare R2 remains unavailable until enabled in the account dashboard: the re
 10. All products: no merge, production deployment, customer onboarding or commercial release until product-specific UAT, security, data separation, backup/restore, Android signing/device tests where applicable and owner approval have passed.
 
 Current family decision: DEVELOPMENT CI IS GREEN FOR THE LISTED WEB/BACKEND BRANCHES EXCEPT THE EXPLICIT ARMIN DEPENDENCY-REVIEW SETTING; PRODUCTION, BACKUP/RESTORE, AND COMMERCIAL RELEASE REMAIN BLOCKED.
+
+## Final verification addendum — 2026-11-24
+
+This addendum records completed checks after the earlier in-progress observations.
+
+| Product | Exact SHA | Final result |
+|---|---|---|
+| VAYRO PR #47 | 9370efb1ca94a29229a58792600f9369ea6e33fa | CI PASS; CodeQL PASS; npm lockfile validation PASS. Both push and PR CI runs completed successfully. |
+| VAYRO PR #48 | 1d933290ae34def21f78ce265d5261727bfd8017 | CI PASS; CodeQL PASS; npm lockfile validation PASS. |
+| ARIA PR #3 | 387c6ad78100a5a187d50b423c49c0b6cadfe799 | CI PASS; 984 tests PASS; web catalog CI PASS; CodeQL PASS. |
+| ARIANA PR #1 | 4bff9a8ee7575b8b4482cc6a8c83038785c271a9 | CI PASS; CodeQL PASS. Archive's 95-test result remains separate from repository CI. |
+| LEADORA PR #54 | e73e55605214a4f08a3e1585f3d20a1d0f06645a | CI PASS; regression/security PASS; Android debug APK build PASS; CodeQL PASS. |
+| ARMIN MARKET PR #2 | 6b0c66432488667569afc2bd10cf4c59acf3d3a5 | APK build job PASS; CodeQL PASS; overall workflow remains FAIL because Dependency Review is blocked by disabled Dependency Graph. |
+
+### LEADORA Android artifact verification
+
+- Workflow run: 45476439985; artifact ID: 14958929170.
+- The uploaded ZIP was downloaded and inspected. It contains the APK and checksum file.
+- APK size: 13,515 bytes.
+- APK SHA-256: 0db8079c4f0f99a27f27afb2cc2840cedfbef54b94a05c8466ad6894083778cc.
+- Build output identifies an Android APK with an APK Signing Block. The repository documentation classifies it as a debug-signed WebView test client. No real-device install, upgrade or production signature is claimed.
+- A separate push build on the same SHA initially received Maven Central HTTP 429 responses; the pull-request build passed and the failed push job passed on retry. This was an external dependency-rate-limit event, not an application compile defect.
+
+### ARIA stacked-PR dependency
+
+ARIA PR #3 is based on the still-open Draft PR #2 branch, not main. The parent PR #2 remains Draft and its earlier CI run 44739605121 failed because the test runner could not resolve ../backend/modules. The child PR #3 supplies backend/modules and its own exact-head CI passes. Do not merge PR #3 independently of its base. The owner/reviewer must decide whether to make PR #2 independently green, consolidate the stacked changes, or retarget/rebase the child while preserving all module files and historical changes. No base branch was changed in this audit.
+
+### Remaining release gates are unchanged
+
+Passing development CI does not resolve the live VAYRO-CORE schema/RLS gap, the absence of off-provider backup and isolated restore, failed/ambiguous Railway deployments, missing real provider mappings for ARIA, missing ARIA Android source ZIP, unimported ARIANA source archive, ARMIN's disabled Dependency Graph and absent commercial backend, or physical-device/UAT/signing requirements. These remain explicit blockers; no production merge or deployment is authorized by this evidence.
