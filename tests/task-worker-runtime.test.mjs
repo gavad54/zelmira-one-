@@ -69,15 +69,15 @@ test("repository audit and CI handlers reject malformed repository references be
       taskWorkerHandlers["repo.audit"]({
         task_id: "task-test", project_key: "VAYRO", title: "Audit repository",
         payload: { repo }
-      }),
-      { message: "REPOSITORY_REFERENCE_INVALID" }
+      }, { signal: undefined }),
+      error => error?.code === "REPOSITORY_REFERENCE_INVALID"
     );
     await assert.rejects(
       taskWorkerHandlers["repo.test"]({
         task_id: "task-test", project_key: "VAYRO", title: "Inspect CI",
         payload: { repo }
-      }),
-      { message: "REPOSITORY_REFERENCE_INVALID" }
+      }, { signal: undefined }),
+      error => error?.code === "REPOSITORY_REFERENCE_INVALID"
     );
   }
 });
