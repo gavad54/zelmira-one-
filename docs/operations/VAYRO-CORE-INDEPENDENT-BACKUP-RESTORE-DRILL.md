@@ -46,7 +46,7 @@ The selected off-provider destination for this VAYRO workflow is **Cloudflare R2
 Configure these values only in the GitHub repository's protected Environments; never commit them:
 
 **Environment `vayro-backup`**
-- Secrets: `VAYRO_BACKUP_DATABASE_URL`, `VAYRO_B2_UNUSED` (do not create; legacy name is not used), `VAYRO_R2_ACCESS_KEY_ID`, `VAYRO_R2_SECRET_ACCESS_KEY`.
+- Secrets: `VAYRO_BACKUP_DATABASE_URL`, `VAYRO_R2_ACCESS_KEY_ID`, `VAYRO_R2_SECRET_ACCESS_KEY`.
 - Variables: `VAYRO_BACKUP_AGE_RECIPIENT`, `VAYRO_R2_BUCKET`, `VAYRO_R2_S3_ENDPOINT`, `VAYRO_R2_REGION=auto`.
 
 **Environment `vayro-restore`**
@@ -56,6 +56,8 @@ Configure these values only in the GitHub repository's protected Environments; n
 Use a private bucket, least-privilege R2 API credentials scoped to that bucket, and an owner-controlled age keypair. Keep the age identity private and separate from the R2 access credentials. Set retention/versioning controls in the R2 account according to the recovery policy. The workflows validate the endpoint shape and region but do not create the bucket, provision credentials, or prove account-level retention settings.
 
 The backup workflow is restricted to `main`; the restore drill is manual, requires the exact confirmation phrase, and refuses a target database on the same hostname as production. The workflows currently live on the feature branch; they do not run on `main` until the reviewed PR is merged.
+
+**Important scope limitation of the automated workflows:** the current GitHub Actions backup creates one PostgreSQL custom-format archive with `pg_dump --no-owner --no-acl`. It does not export cluster-global roles or preserve source ownership/ACLs. The restore workflow correspondingly restores with `--no-owner --no-acl`; it verifies archive readability and that relations exist, but does not perform schema-diff, per-table row-count parity, RLS/effective-grant parity, or application invariant checks. Therefore a successful workflow run is an intermediate technical restore check only—not the complete backup/restore PASS gate defined in this runbook. Keep the gate BLOCKED until the remaining comparisons and independent review are recorded.
 
 ## 4. Backup execution
 
