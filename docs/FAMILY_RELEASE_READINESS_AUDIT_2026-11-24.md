@@ -139,3 +139,11 @@ Before any public or commercial release:
 - UNVERIFIED: no adequate execution evidence exists.
 
 **Current family release posture: BLOCKED.** Repository-level checks are green for several development branches, but independent hosting, live database readiness, encrypted backup/restore, provider activation, native/device UAT and commercial operations are not proven.
+
+## VAYRO product-directory and mobile-source reality check
+
+The product directory in the reviewed branch explicitly marks ARVAND, CHARSU, GANJINEH, SEPEHR, NAMA and PAYAM as planned; NEGAH is a prototype requiring service integration. DANA is correctly classified as an internal VAYRO capability, not a standalone product. The four independent products are listed as blocked pending their own release readiness.
+
+The VAYRO repository tree has 380 tracked entries and contains no Android Gradle wrapper, Android Gradle build files, settings.gradle or AndroidManifest.xml. The reviewed tree contains VAYRO shell/Command Center/auth/owner APIs and DANA/NEGAH surfaces, but not seven fully implemented, independently deployable product applications. VAYRO currently has a web application source, not a verified native Android package.
+
+This does not change the approved product architecture; it clarifies that product catalogue entries and planned domain boundaries are not evidence of implemented standalone products.
