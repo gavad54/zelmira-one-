@@ -61,3 +61,30 @@ test("worker failure messages redact authorization headers and inline credential
   assert.equal(failure.message,
     "authorization=[REDACTED] Bearer [REDACTED] api_key=[REDACTED]");
 });
+
+
+test("repository audit and CI handlers reject malformed repository references before network access", async () => {
+  for (const repo of ["", "../secrets", "owner/repo/extra", "https://github.com/owner/repo", "owner/repo?redirect=1"]) {
+    await assert.rejects(
+      taskWorkerHandlers["repo.audit"]({
+        task_id: "task-test", project_key: "VAYRO", title: "Audit repository",
+        payload: { repo }
+      }),
+      { message: "REPOSITORY_REFERENCE_INVALID" }
+    );
+    await assert.rejects(
+      taskWorkerHandlers["repo.test"]({
+        task_id: "task-test", project_key: "VAYRO", title: "Inspect CI",
+        payload: { repo }
+      }),
+      { message: "REPOSITORY_REFERENCE_INVALID" }
+    );
+  }
+});
+
+test("worker handlers are immutable and expose only the reviewed read-only registry", () => {
+  assert.equal(Object.isFrozen(taskWorkerHandlers), true);
+  assert.deepEqual(Object.keys(taskWorkerHandlers).sort(), [
+    "repo.audit", "repo.test", "report.generate"
+  ]);
+});
