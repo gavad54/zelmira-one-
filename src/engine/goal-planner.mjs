@@ -19,7 +19,14 @@ function requiredText(value, code, max) {
   return value.trim();
 }
 
-function validGoalDate(value, code) {\n  if (value == null) return null;\n  const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);\n  if (Number.isNaN(date.getTime())) fail(code);\n  return date;\n}\n\nfunction canonicalTaskKey(goalId, version, criterionId) {
+function validGoalDate(value, code) {
+  if (value == null) return null;
+  const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
+  if (Number.isNaN(date.getTime())) fail(code);
+  return date;
+}
+
+function canonicalTaskKey(goalId, version, criterionId) {
   return `goal:${goalId}:v${version}:${criterionId}`;
 }
 
