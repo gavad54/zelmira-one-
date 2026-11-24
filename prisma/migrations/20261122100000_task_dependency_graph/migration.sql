@@ -50,7 +50,7 @@ BEGIN
   IF v_task_project IS NULL OR v_dependency_project IS NULL THEN
     RAISE EXCEPTION 'TASK_DEPENDENCY_NOT_FOUND' USING ERRCODE = '23503';
   END IF;
-  IF v_task_status NOT IN ('DRAFT','QUEUED','WAITING_APPROVAL') THEN
+  IF v_task_status NOT IN ('DRAFT','QUEUED','WAITING_APPROVAL','WAITING_FOR_OWNER') THEN
     RAISE EXCEPTION 'TASK_DEPENDENCY_TARGET_ALREADY_CLAIMED' USING ERRCODE = '55000';
   END IF;
   IF v_task_project <> v_dependency_project THEN
@@ -110,7 +110,7 @@ BEGIN
     AND EXISTS (SELECT 1 FROM public."EngineeringTask" t WHERE t."id" = a."taskId" AND t."status" = 'EXPIRED');
 
   UPDATE public."EngineeringTask" t
-  SET "status" = 'FAILED', "completedAt" = clock_timestamp(), "updatedAt" = clock_timestamp(),
+  SET "status" = 'DEAD_LETTER', "completedAt" = clock_timestamp(), "updatedAt" = clock_timestamp(),
       "leaseOwner" = NULL, "leaseToken" = NULL, "leaseExpiresAt" = NULL, "heartbeatAt" = NULL,
       "lastErrorCode" = 'LEASE_ATTEMPTS_EXHAUSTED',
       "lastErrorMessage" = 'Worker lease expired after the maximum number of attempts'
@@ -120,7 +120,7 @@ BEGIN
   UPDATE public."EngineeringTaskAttempt" a
   SET "status" = 'LEASE_EXPIRED', "finishedAt" = clock_timestamp()
   WHERE a."status" = 'RUNNING'
-    AND EXISTS (SELECT 1 FROM public."EngineeringTask" t WHERE t."id" = a."taskId" AND t."status" = 'FAILED' AND t."lastErrorCode" = 'LEASE_ATTEMPTS_EXHAUSTED');
+    AND EXISTS (SELECT 1 FROM public."EngineeringTask" t WHERE t."id" = a."taskId" AND t."status" = 'DEAD_LETTER' AND t."lastErrorCode" = 'LEASE_ATTEMPTS_EXHAUSTED');
 
   SELECT t.* INTO v_task
   FROM public."EngineeringTask" t
