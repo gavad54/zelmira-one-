@@ -30,7 +30,7 @@ test("rejects unsafe, oversized and non-JSON payloads", () => {
 
 test("approval-required tasks cannot be claimed until approved", () => {
   const waiting = createTaskRecord({ ...DEFINITION, approvalRequired: true }, NOW);
-  assert.equal(waiting.status, "WAITING_APPROVAL");
+  assert.equal(waiting.status, "WAITING_FOR_OWNER");
   assert.throws(() => claim(waiting), /TASK_NOT_CLAIMABLE/);
   const approved = approveTask(waiting, NOW);
   assert.equal(approved.status, "QUEUED");
@@ -64,7 +64,7 @@ test("retry uses bounded exponential backoff and stops at max attempts", () => {
   assert.equal(retry.availableAt.getTime(), NOW.getTime() + 5_000);
   const second = claimTask(retry, { workerId: "worker-b", leaseToken: "22345678-1234-1234", now: retry.availableAt });
   const failed = failTask(second, { workerId: "worker-b", leaseToken: second.leaseToken, errorCode: "PERMANENT_ERROR", errorMessage: "Stopped", retryable: false, now: retry.availableAt });
-  assert.equal(failed.status, "FAILED");
+  assert.equal(failed.status, "DEAD_LETTER");
 });
 
 test("expired leases can be reclaimed and stale workers cannot complete", () => {
