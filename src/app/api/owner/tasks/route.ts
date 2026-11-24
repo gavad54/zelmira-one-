@@ -107,7 +107,7 @@ export async function POST(request: Request) {
             scheduledAt,
             deadline,
             availableAt: scheduledAt ?? new Date(),
-            status: parsed.data.approvalRequired ? "WAITING_APPROVAL" : "QUEUED",
+            status: parsed.data.approvalRequired ? "WAITING_FOR_OWNER" : "QUEUED",
             payload: JSON.parse(serializedPayload)
           },
           select: {
@@ -168,7 +168,7 @@ export async function PATCH(request: Request) {
         const rows = await tx.$queryRaw<Array<{ approved: boolean }>>`
           SELECT public.vayro_approve_engineering_task(${parsed.data.taskId}) AS approved
         `;
-        if (rows[0]?.approved !== true) return { kind: "not_awaiting_approval" as const };
+        if (rows[0]?.approved !== true) return { kind: "not_waiting_for_owner" as const };
         await tx.auditEvent.create({
           data: {
             actorUserId: actor.userId,
@@ -183,7 +183,7 @@ export async function PATCH(request: Request) {
       }
     });
     if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
-    if (result.value.kind === "not_awaiting_approval") return noStoreJson({ error: "task_not_awaiting_approval" }, 409);
+    if (result.value.kind === "not_waiting_for_owner") return noStoreJson({ error: "task_not_waiting_for_owner" }, 409);
     return noStoreJson({ taskId: parsed.data.taskId, status: "QUEUED" });
   } catch {
     return noStoreJson({ error: "task_approval_failed" }, 503);
