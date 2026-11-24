@@ -14,8 +14,8 @@ $$;
 ALTER ROLE vayro_task_worker INHERIT;
 
 CREATE TYPE public."EngineeringTaskStatus" AS ENUM (
-  'DRAFT','QUEUED','RUNNING','BLOCKED','WAITING_APPROVAL',
-  'RETRYING','SUCCEEDED','FAILED','CANCELLED','EXPIRED'
+  'DRAFT','QUEUED','RUNNING','BLOCKED','WAITING_APPROVAL','WAITING_FOR_OWNER',
+  'RETRYING','SUCCEEDED','FAILED','DEAD_LETTER','CANCELLED','EXPIRED'
 );
 
 CREATE TABLE public."EngineeringTask" (
@@ -112,7 +112,7 @@ BEGIN
     AND EXISTS (SELECT 1 FROM public."EngineeringTask" t WHERE t."id" = a."taskId" AND t."status" = 'EXPIRED');
 
   UPDATE public."EngineeringTask" t
-  SET "status" = 'FAILED', "completedAt" = clock_timestamp(), "updatedAt" = clock_timestamp(),
+  SET "status" = 'DEAD_LETTER', "completedAt" = clock_timestamp(), "updatedAt" = clock_timestamp(),
       "leaseOwner" = NULL, "leaseToken" = NULL, "leaseExpiresAt" = NULL, "heartbeatAt" = NULL,
       "lastErrorCode" = 'LEASE_ATTEMPTS_EXHAUSTED',
       "lastErrorMessage" = 'Worker lease expired after the maximum number of attempts'
@@ -122,7 +122,7 @@ BEGIN
   UPDATE public."EngineeringTaskAttempt" a
   SET "status" = 'LEASE_EXPIRED', "finishedAt" = clock_timestamp()
   WHERE a."status" = 'RUNNING'
-    AND EXISTS (SELECT 1 FROM public."EngineeringTask" t WHERE t."id" = a."taskId" AND t."status" = 'FAILED' AND t."lastErrorCode" = 'LEASE_ATTEMPTS_EXHAUSTED');
+    AND EXISTS (SELECT 1 FROM public."EngineeringTask" t WHERE t."id" = a."taskId" AND t."status" = 'DEAD_LETTER' AND t."lastErrorCode" = 'LEASE_ATTEMPTS_EXHAUSTED');
 
   SELECT t.* INTO v_task
   FROM public."EngineeringTask" t
@@ -245,7 +245,7 @@ BEGIN
   IF NOT FOUND THEN RETURN FALSE; END IF;
 
   v_retry := COALESCE(p_retryable,FALSE) AND v_attempt_number < v_max_attempts;
-  v_status := CASE WHEN v_retry THEN 'RETRYING' ELSE 'FAILED' END;
+  v_status := CASE WHEN v_retry THEN 'RETRYING' ELSE 'DEAD_LETTER' END;
   UPDATE public."EngineeringTask"
   SET "status" = v_status::public."EngineeringTaskStatus",
       "availableAt" = CASE WHEN v_retry
