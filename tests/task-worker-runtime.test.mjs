@@ -64,7 +64,7 @@ test("worker failure messages redact authorization headers and inline credential
 
 
 test("repository audit and CI handlers reject malformed repository references before network access", async () => {
-  for (const repo of ["", "../secrets", "./repo", "owner/..", "owner/.", "owner/repo/extra", "https://github.com/owner/repo", "owner/repo?redirect=1"]) {
+  for (const repo of [null, 123, {}, "", "../secrets", "./repo", "owner/..", "owner/.", "owner/repo/extra", "https://github.com/owner/repo", "owner/repo?redirect=1"]) {
     await assert.rejects(
       taskWorkerHandlers["repo.audit"]({
         task_id: "task-test", project_key: "VAYRO", title: "Audit repository",
