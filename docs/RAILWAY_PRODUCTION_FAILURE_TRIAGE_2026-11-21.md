@@ -91,3 +91,31 @@ This section supersedes any earlier sentence that attributed the missing `AUTH_D
 - `LEADORA` VAYRO: build failed because `AUTH_DATABASE_URL` was unavailable during build on commit `0b7d70d420371e670e9082cfdba573241749b172`.
 - The lazy initialization code is present on the current PR #47 branch, but no deploy/rebuild has been performed to verify it in Railway.
 - Required production environment variables, authoritative VAYRO hosting location, service health, and live database role configuration remain owner-gated or unverified.
+
+## Read-only refresh — 2026-11-24
+
+A fresh Railway read-only environment and service inspection was completed.
+
+### ARIA Web / VAYRO service
+
+- Project: `ARIA Web`; environment: `production`.
+- Service: `VAYRO`; source `gavad54/zelmira-one-`, branch `main`; one replica in `iad`.
+- Healthcheck path: `/api/health`; latest recorded deployment remains `6354aa02-a334-4457-a46d-5f41188845a5`, status `FAILED`.
+- The service configuration currently exposes **zero variable names**, has no attached volume, and has tracing disabled.
+- The latest service-scoped deploy log only shows a container stopping event on 2026-11-19; the failed deployment's HTTP log stream is empty. There is no runtime log evidence identifying the 503 root cause.
+- A staged patch remains present with three changes, including a staged-create service on branch `brand/vayro-name-only`. It has not been accepted or deployed.
+
+### LEADORA project / VAYRO service
+
+- Service: `VAYRO`; source branch `security/mfa-session-endpoint-gates`, configured source commit `47792d4a891795d60a4b65c11c4a4ffb8cab2f74`.
+- Latest deployment still points to failed build `f2f67daf-5d15-4dc1-91e2-3596fe521d6d`.
+- The current service configuration also exposes zero variable names, has no volume and has no public service domain.
+- The historical build log explicitly failed during Next.js page-data collection because `AUTH_DATABASE_URL` was required in production. This explains that deployment's build failure; no later successful build or runtime is evidenced.
+
+### Revised diagnosis
+
+The LEADORA-project VAYRO service has a confirmed missing build-time auth database configuration in its failed deployment. Both VAYRO services currently report no configured service variable names. For the ARIA Web deployment, missing runtime configuration is a plausible contributor to the healthcheck failure, but the actual 503 cause remains **UNVERIFIED** because the runtime log stream is insufficient.
+
+No Railway variables, deployment settings, domains, volumes, staged patches, or deployments were changed. Do not accept the staged patch or create/modify credentials as part of this read-only audit.
+
+**Current status: both VAYRO Railway services remain unverified/failed; standalone VAYRO hosting and worker runtime are not operationally proven.**
