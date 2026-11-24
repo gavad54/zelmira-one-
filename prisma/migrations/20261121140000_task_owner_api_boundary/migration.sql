@@ -31,7 +31,7 @@ BEGIN
   SET "status" = 'QUEUED',
       "availableAt" = COALESCE("scheduledAt", clock_timestamp()),
       "updatedAt" = clock_timestamp()
-  WHERE "id" = p_task_id AND "status" = 'WAITING_APPROVAL';
+  WHERE "id" = p_task_id AND "status" IN ('WAITING_APPROVAL','WAITING_FOR_OWNER');
   RETURN FOUND;
 END;
 $$;
