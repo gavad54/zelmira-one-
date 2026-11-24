@@ -85,3 +85,38 @@ This workflow is a PostgreSQL logical database backup only. It does not back up 
 - Use a private bucket. Do not enable public access.
 - Do not enable automatic deletion/retention until the owner approves a retention policy and at least one independent restore has passed.
 - A successful GitHub workflow is evidence of that specific run only. It is not evidence of ongoing monitoring, provider durability guarantees or successful application-level recovery.
+
+## Current blocker correction — 2026-11-24
+
+**Canonical destination: Cloudflare R2 only.** Older references in this runbook to Backblaze B2, `VAYRO_B2_*` secrets, or a B2 endpoint are historical and must not be used for the current workflows.
+
+The current workflow files are:
+
+- `.github/workflows/vayro-db-backup.yml`
+- `.github/workflows/vayro-db-restore-drill.yml`
+
+They expect these exact GitHub Environment values:
+
+**Environment `vayro-backup`**
+- Secrets: `VAYRO_BACKUP_DATABASE_URL`, `VAYRO_R2_ACCESS_KEY_ID`, `VAYRO_R2_SECRET_ACCESS_KEY`.
+- Variables: `VAYRO_BACKUP_AGE_RECIPIENT`, `VAYRO_R2_BUCKET`, `VAYRO_R2_S3_ENDPOINT`, `VAYRO_R2_REGION=auto`.
+
+**Environment `vayro-restore`**
+- Secrets: `VAYRO_BACKUP_DATABASE_URL`, `VAYRO_ISOLATED_RESTORE_DATABASE_URL`, `VAYRO_BACKUP_AGE_IDENTITY`, `VAYRO_R2_ACCESS_KEY_ID`, `VAYRO_R2_SECRET_ACCESS_KEY`.
+- Variables: `VAYRO_R2_BUCKET`, `VAYRO_R2_S3_ENDPOINT`, `VAYRO_R2_REGION=auto`.
+
+### Observed provider blocker
+
+A read-only Cloudflare R2 bucket-list request returned HTTP 403 / error 10042, indicating R2 has not yet been enabled in the account. No bucket, access key, or paid service was created. Neither workflow has been run successfully; there is no verified encrypted object or restore artifact.
+
+### Owner actions required before execution
+
+1. In the Cloudflare account, enable R2 after reviewing the current account eligibility, payment/usage terms and any billing prompts.
+2. Create a **private** bucket in the intended account; do not enable public access.
+3. Create a least-privilege R2 API key scoped to that bucket and provide its values only through the protected GitHub Environments.
+4. Generate an age keypair locally; store the recipient as a GitHub Environment variable and keep the private identity only in the restore Environment secret / approved offline escrow.
+5. Create both GitHub Environments with required owner approval and branch restrictions before adding production or restore credentials.
+6. Configure the isolated restore database on a different host from production. Do not reuse the production database URL.
+7. Run the backup manually from the protected default branch, verify the encrypted object and checksum, then perform the separate restore drill.
+
+Until those owner actions and the evidence checklist pass, **BACKUP = NOT EXECUTED; RESTORE = NOT EXECUTED; RELEASE GATE = BLOCKED**. Do not infer readiness from workflow files existing in a draft branch.
