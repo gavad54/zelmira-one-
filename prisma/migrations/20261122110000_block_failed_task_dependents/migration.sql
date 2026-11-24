@@ -9,7 +9,7 @@ SECURITY DEFINER
 SET search_path = pg_catalog, public
 AS $$
 BEGIN
-  IF NEW."status" IN ('FAILED', 'EXPIRED')
+  IF NEW."status" IN ('FAILED', 'EXPIRED', 'DEAD_LETTER')
      AND OLD."status" IS DISTINCT FROM NEW."status" THEN
     WITH RECURSIVE affected("taskId") AS (
       SELECT dependency."taskId"
@@ -33,7 +33,7 @@ BEGIN
         "leaseExpiresAt" = NULL,
         "heartbeatAt" = NULL
     WHERE task."id" IN (SELECT "taskId" FROM affected)
-      AND task."status" IN ('DRAFT', 'QUEUED', 'RETRYING', 'WAITING_APPROVAL');
+      AND task."status" IN ('DRAFT', 'QUEUED', 'RETRYING', 'WAITING_APPROVAL', 'WAITING_FOR_OWNER');
   END IF;
 
   RETURN NEW;
