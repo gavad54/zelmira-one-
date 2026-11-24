@@ -14,9 +14,11 @@
 - A successful disposable-CI migration is not evidence that production is backed up, baselined, or safe to migrate.
 - If catalog/schema comparison finds an unexplained difference, stop. Do not force a baseline or mark a migration as applied to make the history appear green.
 
-## 2. Current known state — fresh read-only evidence (2026-11-09)
+## 2. Historical snapshot — read-only evidence (2026-11-09; superseded)
 
-A fresh read-only inspection of Supabase project `wdqhdnhpgxhmmfeyxwxr` (`VAYRO-CORE`) on 2026-11-09 confirmed:
+The following is retained for audit history only and must not be used as the current-state baseline. The newer 2026-11-23 read-only snapshot in [VAYRO-CORE-LIVE-AUDIT-2026-11-23.md](VAYRO-CORE-LIVE-AUDIT-2026-11-23.md) supersedes it for all current decisions.
+
+A read-only inspection of Supabase project `wdqhdnhpgxhmmfeyxwxr` (`VAYRO-CORE`) on 2026-11-09 recorded:
 
 - Project status `ACTIVE_HEALTHY`; PostgreSQL 17.11; region `eu-central-1`.
 - Exactly 11 public tables were listed; all 11 reported RLS enabled and zero rows at inspection time.
