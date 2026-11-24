@@ -88,3 +88,14 @@ test("worker handlers are immutable and expose only the reviewed read-only regis
     "repo.audit", "repo.test", "report.generate"
   ]);
 });
+
+
+test("worker failure messages redact URL username and password credentials", () => {
+  const failure = safeFailure(new Error(
+    "upstream failed at https://service-user:supersecret@provider.example/v1/tasks?mode=read"
+  ));
+  assert.equal(failure.message,
+    "upstream failed at https://[REDACTED]@provider.example/v1/tasks?mode=read");
+  assert.equal(failure.message.includes("service-user"), false);
+  assert.equal(failure.message.includes("supersecret"), false);
+});
