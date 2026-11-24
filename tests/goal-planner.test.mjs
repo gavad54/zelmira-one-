@@ -71,3 +71,13 @@ test("approval policy is propagated to every generated task", () => {
   const planned = planGoal({ ...goal, approvalRequired: true });
   assert.ok(planned.tasks.every(task => task.approvalRequired === true));
 });
+
+test("planner preserves bounded scheduledAt and deadline for the durable due-task queue", () => {
+  const scheduledAt = "2026-11-25T09:00:00.000Z";
+  const deadline = "2026-11-26T09:00:00.000Z";
+  const planned = planGoal({ ...goal, scheduledAt, deadline });
+  assert.equal(planned.tasks[0].scheduledAt.toISOString(), scheduledAt);
+  assert.equal(planned.tasks[0].deadline.toISOString(), deadline);
+  assert.throws(() => planGoal({ ...goal, scheduledAt: deadline, deadline: scheduledAt }), /GOAL_DEADLINE_BEFORE_SCHEDULE/);
+  assert.throws(() => planGoal({ ...goal, scheduledAt: "not-a-date" }), /GOAL_SCHEDULE_INVALID/);
+});
