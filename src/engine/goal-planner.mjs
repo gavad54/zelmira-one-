@@ -80,10 +80,16 @@ export function planGoal(goal) {
     const criterionTitle = requiredText(item.title, "CRITERION_TITLE_INVALID", 160);
     const handlerKey = requiredText(item.handlerKey, "HANDLER_KEY_INVALID", 80);
     if (!EXECUTABLE_HANDLERS.has(handlerKey)) fail("HANDLER_NOT_APPROVED");
+    const repo = item.repo ?? null;
+    if (handlerKey === "repo.audit" || handlerKey === "repo.test") {
+      if (typeof repo !== "string" || !/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/.test(repo) || repo.split("/").some(part => part === "." || part === "..")) fail("TASK_REPOSITORY_INVALID");
+    } else if (repo !== null) {
+      fail("CRITERION_REPOSITORY_NOT_APPLICABLE");
+    }
     const dependsOn = item.dependsOn ?? [];
     if (!Array.isArray(dependsOn) || dependsOn.some(value => typeof value !== "string") ||
         new Set(dependsOn).size !== dependsOn.length || dependsOn.includes(id)) fail("DEPENDENCY_LIST_INVALID");
-    return { id, title: criterionTitle, handlerKey, dependsOn: [...dependsOn] };
+    return { id, title: criterionTitle, handlerKey, dependsOn: [...dependsOn], repo };
   });
 
   const byId = new Map(criteria.map(item => [item.id, item]));
@@ -112,7 +118,8 @@ export function planGoal(goal) {
       goalTitle: title,
       criterionId: item.id,
       acceptanceCriterion: item.title,
-      dependsOn: [...item.dependsOn]
+      dependsOn: [...item.dependsOn],
+      ...(item.repo ? { repo: item.repo } : {})
     }
   }));
 
