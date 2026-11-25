@@ -45,12 +45,12 @@ The branch contains:
 ## 4. Architecture gaps — explicitly not complete
 
 The following are genuine remaining engineering gaps, not owner tasks:
-1. **First-class durable goal hierarchy:** Goal/Epic/Feature records and lifecycle are not yet modeled as dedicated persistent entities. The current planner validates a goal and materializes task records; goal metadata is retained in task payload/audit metadata rather than a complete goal aggregate.
-2. **Recurring scheduler:** one-time due-time scheduling exists; a durable recurring schedule registry, recurrence materializer, missed-run policy and schedule lifecycle do not.
-3. **Agent/reviewer orchestration:** there is no complete agent registry, specialist execution lifecycle, independent reviewer orchestration or conflict-resolution workflow.
-4. **Controller/reconciliation loop:** the full observe-plan-dispatch-verify-reconcile-next-task controller is not yet demonstrated as a continuously running, restart-independent service.
-5. **Process-level recovery evidence:** isolated SQL verifies expired-lease reclamation and stale-token fencing. It does not prove a deployed worker can be terminated, restarted and continue a real workflow end-to-end.
-6. **Operational execution:** no dedicated VAYRO Railway project/worker service with verified runtime credentials and health has been proven. Live VAYRO-CORE migration reconciliation, role/policy provisioning and a successful encrypted off-site backup plus isolated restore remain gated.
+1. **Goal hierarchy:** persistent Goal/Epic/Feature records, owner-only multi-Epic planning, feature-to-task links and status reconciliation are now implemented on the development branch. Complex cross-goal portfolio planning, goal version diffing and automated goal decomposition remain incomplete.
+2. **Recurring scheduler:** durable UTC fixed-interval schedules, owner pause/resume, idempotent occurrence materialization and a dedicated least-privilege scheduler process are implemented in source. Calendar-month and local-time/DST recurrence remain unsupported.
+3. **Agent/reviewer orchestration:** a persistent allowlisted registry, project-scoped handler resolution and a separate deterministic evidence reviewer are implemented. These are bounded deterministic adapters, not autonomous generative AI agents or a human-equivalent independent code review.
+4. **Controller/reconciliation loop:** the scheduler continuously materializes due recurring work and reconciles Goal/Epic/Feature projections from authoritative task states. Autonomous goal discovery, autonomous creation of unbounded work and a fully verified restart-independent controller remain out of scope.
+5. **Process-level recovery evidence:** isolated SQL verifies expired-lease reclamation and stale-token fencing. It does not prove a deployed worker and scheduler can be terminated, restarted and continue a real workflow end-to-end.
+6. **Operational execution:** dedicated worker and scheduler source/runtime commands exist, but Railway services, verified runtime credentials, health and monitoring have not been proven. Live VAYRO-CORE migration reconciliation, role provisioning and encrypted off-site backup plus isolated restore remain gated.
 7. **Product integration contracts:** the product-family directory and boundaries exist, but planned products do not yet have independently verified runtime APIs, contract tests and end-to-end evidence.
 
 ## 5. Database and deployment safety
@@ -78,14 +78,12 @@ PR #47 remains Draft/Open/Unmerged. No production migration, merge, deployment, 
 
 ## 8. Required implementation order
 
-1. Add first-class Goal/Epic/Feature persistence, lifecycle transitions, ownership and audit semantics.
-2. Add recurring schedule persistence and a bounded, idempotent schedule materializer.
-3. Add typed agent registry, least-privilege execution contracts and independent review orchestration.
-4. Add a durable controller/reconciler that resumes from database state after process restart.
-5. Add process-level worker restart and multi-task continuation E2E tests in disposable infrastructure.
-6. Provision and verify a dedicated non-production worker runtime and isolated database credentials before any production request.
-7. Complete live DB baseline/reconciliation only after backup and restore gates pass.
-8. Complete independent product API contracts and E2E evidence without merging product data or release boundaries.
+1. Run and repair exact-head CI until unit, Prisma, migration, RLS, scheduler-role, worker-role, lint, typecheck, build and integration gates pass.
+2. Add disposable-PostgreSQL E2E tests for recurring schedule concurrency, catch-up semantics, schedule pause/resume, agent resolution and review-block behavior.
+3. Provision dedicated non-production task-worker and scheduler login credentials; verify each role's function-only privileges and denied table access.
+4. Deploy task worker and scheduler separately in non-production; prove health, restart recovery, idempotent schedule materialization and goal reconciliation using exact commit evidence.
+5. Complete encrypted off-site backup and isolated restore; only then reconcile the live database against a restored clone and the exact migration ledger.
+6. Complete independent product API contracts and E2E evidence without merging product data or release boundaries.
 
 All implementation remains additive and branch-scoped. Live production changes, secret/access changes, paid infrastructure, merge and public release remain approval-gated.
 
