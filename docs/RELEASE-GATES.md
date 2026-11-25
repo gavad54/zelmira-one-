@@ -475,3 +475,28 @@ This addendum supersedes earlier product-count and product-catalogue wording abo
 - [ ] Verify deployed commit parity and obtain explicit release approval.
 
 **Decision: EXACT-MAIN CI PASS + CODEQL EXECUTION PASS — LIVE DATABASE SECURITY/BASELINE AND HOSTING CONFIGURATION OPEN — DEPLOYMENT/COMMERCIAL RELEASE BLOCKED.**
+
+## Verification addendum — 2026-11-25 (current PR #47 head)
+
+This addendum supersedes older repository-head statements above where they conflict.
+
+- PR #47 remains **OPEN / DRAFT / UNMERGED**. Current head: `43d7071062fcf537fdf46fc2e26af163421a962b`.
+- VAYRO CI run [45540082141](https://github.com/gavad54/zelmira-one-/actions/runs/45540082141): **SUCCESS**.
+- CodeQL run [45540087469](https://github.com/gavad54/zelmira-one-/actions/runs/45540087469): **SUCCESS**.
+- Lockfile validation run [45540087560](https://github.com/gavad54/zelmira-one-/actions/runs/45540087560): **SUCCESS**.
+- Unit tests: **137 passed, 0 failed**.
+- PostgreSQL/production-HTTP integration tests: **30 passed, 0 failed**.
+- Isolated PostgreSQL CI applied the repository's **13 real Prisma migrations**, reconciled **18 Prisma tables**, and verified **8 protected RLS tables**. Dedicated auth, task-worker, platform and tenant DB role boundaries passed; task dependency claim, worker restart recovery/stale-lease fencing, and real-table tenant RLS isolation passed.
+- Prisma schema validation, locked dependency security audit, lint, typecheck, production build and Docker image build all passed. An unused crypto import warning was removed in this exact head.
+- These database results are from disposable isolated CI PostgreSQL only; they do not apply or prove the live VAYRO-CORE database has been repaired.
+
+### Live infrastructure blockers reconfirmed read-only
+
+1. VAYRO-CORE remains PostgreSQL 17.11 / ACTIVE_HEALTHY, but the live project still has the previously inspected 11 public tables with RLS enabled, no policies, no FORCE RLS, no migration ledger, zero initial rows and missing expected FK. The repository's 18-table/13-migration CI schema is not yet reconciled with this live 11-table state. **Do not run live migrations or grant changes.**
+2. The Railway service named VAYRO inside the ARIA Web project is connected to `main`, has no configured environment-variable names and no volume; its latest deployment remains FAILED with healthcheck 503. A second VAYRO service inside the LEADORA project is connected to an older security branch commit, has no variable names or public domain, and its latest deployment failed because `AUTH_DATABASE_URL` was missing during Next.js page-data collection. Neither is verified as an independently hosted production VAYRO environment.
+3. The current backup workflow is configured for Cloudflare R2. The prior R2 account request returned HTTP 403 / error 10042, so bucket/key setup and protected GitHub Environments remain unconfigured. No encrypted backup object, checksum evidence or isolated restore has been produced.
+4. No Android project, signed VAYRO release artifact, device test, email delivery proof, payment sandbox/E2E, UAT or approved production deployment is verified.
+
+**Current posture: REPOSITORY ENGINEERING CHECKS PASS — LIVE DATABASE / HOSTING / BACKUP-RESTORE / MOBILE / COMMERCIAL RELEASE GATES OPEN — NOT RELEASED.**
+
+No production deployment, production DB mutation, DNS change, secret modification, merge or release was performed.
