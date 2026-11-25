@@ -173,3 +173,31 @@ export async function PATCH(request: Request) {
     return noStoreJson({ error: "schedule_update_failed" }, 503);
   }
 }
+
+export async function GET() {
+  try {
+    const result = await withPlatformOwnerTransaction({
+      sessionToken: await sessionToken(),
+      callback: async (tx, actor) => {
+        if (!await allowAttempt(sha256("owner-schedule-read:" + actor.userId), 60, 60 * 60 * 1000)) {
+          return { kind: "rate_limited" as const };
+        }
+        const schedules = await tx.recurringSchedule.findMany({
+          orderBy: [{ enabled: "desc" }, { nextRunAt: "asc" }],
+          take: 100,
+          select: {
+            id: true, scheduleKey: true, projectKey: true, handlerKey: true, title: true,
+            interval: true, unit: true, missedRunPolicy: true, startAt: true, nextRunAt: true,
+            lastRunAt: true, endAt: true, maxRuns: true, runCount: true, enabled: true
+          }
+        });
+        return { kind: "ok" as const, schedules };
+      }
+    });
+    if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
+    if (result.value.kind === "rate_limited") return noStoreJson({ error: "rate_limited" }, 429);
+    return noStoreJson({ schedules: result.value.schedules });
+  } catch {
+    return noStoreJson({ error: "schedule_read_failed" }, 503);
+  }
+}
