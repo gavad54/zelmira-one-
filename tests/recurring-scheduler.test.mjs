@@ -43,3 +43,12 @@ test("does not materialize disabled, future, exhausted or ended schedules", () =
   assert.equal(materializeDueOccurrence({ ...base, maxRuns: 1, runCount: 1 }, new Date("2026-11-30T00:00:00Z")), null);
   assert.equal(materializeDueOccurrence({ ...base, endAt: "2026-11-19T00:00:00Z" }, new Date("2026-11-30T00:00:00Z")), null);
 });
+
+test("catch-up-once advances beyond the backlog instead of replaying every missed interval", () => {
+  const now = new Date("2026-11-23T10:00:00.000Z");
+  const schedule = { ...base, missedRunPolicy: "CATCH_UP_ONCE" };
+  const occurrence = materializeDueOccurrence(schedule, now);
+  const advanced = advanceRecurringSchedule(schedule, occurrence.scheduledAt, now);
+  assert.equal(occurrence.scheduledAt.toISOString(), "2026-11-20T10:00:00.000Z");
+  assert.equal(advanced.nextRunAt.toISOString(), "2026-11-24T10:00:00.000Z");
+});
