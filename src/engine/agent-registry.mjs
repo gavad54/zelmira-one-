@@ -3,7 +3,7 @@ const HANDLER_CAPABILITIES = Object.freeze({
   "repo.audit": "REPOSITORY_AUDIT",
   "repo.test": "CI_OBSERVATION"
 });
-const CAPABILITIES = new Set(Object.values(HANDLER_CAPABILITIES));
+const CAPABILITIES = new Set([...Object.values(HANDLER_CAPABILITIES), "TASK_REVIEW"]);
 const PERMISSIONS = new Set(["READ_TASK", "READ_REPOSITORY", "WRITE_TASK_RESULT", "REQUEST_OWNER_APPROVAL"]);
 const KEY = /^[a-z][a-z0-9._-]{1,63}$/;
 
