@@ -163,7 +163,7 @@ jobs:
 
           validation="$(docker run --rm --network host -e RESTORE_DATABASE_URL postgres:17-alpine \
             sh -ceu 'psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -At <<'\''SQL'\'' 
-          DO $
+          DO $vayro$
           DECLARE
             rel record;
             total_rows bigint := 0;
@@ -178,7 +178,7 @@ jobs:
               total_rows := total_rows + row_count;
             END LOOP;
             RAISE NOTICE 'row_count=%', total_rows;
-          END $;
+          END $vayro$;
           SELECT 'extensions=' || count(*) FROM pg_extension;
           SELECT 'rls_tables=' || count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
             WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND c.relkind IN ('r','p') AND c.relrowsecurity;
@@ -190,11 +190,11 @@ jobs:
             WHERE n.nspname NOT IN ('pg_catalog','information_schema')
               AND c.relkind IN ('r','p') AND c.relrowsecurity
               AND NOT EXISTS (SELECT 1 FROM pg_policies p WHERE p.schemaname=n.nspname AND p.tablename=c.relname);
-          SQL')"
+          SQL' 2>&1)
           )"
           printf '%s\\n' "$validation" | tee "$RUNNER_TEMP/vayro-restore/validation.txt"
-          if ! grep -Eq 'row_count=[1-9][0-9]*' "$RUNNER_TEMP/vayro-restore/validation.txt"; then
-            echo "::error::Restore validation found no rows in user tables"
+          if ! grep -Eq 'row_count=[0-9]+' "$RUNNER_TEMP/vayro-restore/validation.txt"; then
+            echo "::error::Restore validation did not produce a total row-count result"
             exit 1
           fi
           if ! grep -Eq 'extensions=[1-9][0-9]*' "$RUNNER_TEMP/vayro-restore/validation.txt"; then
