@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-
 const EXECUTABLE_HANDLERS = new Set(["report.generate", "repo.audit", "repo.test"]);
 const HANDLER_TASK_TYPES = Object.freeze({
   "report.generate": "REPORTING",
