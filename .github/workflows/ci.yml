@@ -72,6 +72,8 @@ jobs:
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE vayro_task_worker_ci LOGIN PASSWORD 'ci-only' IN ROLE vayro_task_worker;"
       - name: Prove task worker least-privilege function boundary (isolated PostgreSQL only)
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "SET ROLE vayro_task_worker_ci" -f tests/sql/task-worker-role-boundary.sql
+      - name: Verify registered executor and independent reviewer flow (isolated PostgreSQL only)
+        run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/task-worker-agent-review.integration.sql
       - name: Enable dedicated scheduler runtime login in isolated CI only
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE vayro_task_scheduler_ci LOGIN PASSWORD 'ci-only' IN ROLE vayro_task_scheduler;"
       - name: Prove scheduler least-privilege function boundary (isolated PostgreSQL only)
