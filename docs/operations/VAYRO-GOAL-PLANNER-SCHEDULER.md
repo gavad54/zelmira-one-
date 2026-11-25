@@ -21,7 +21,7 @@ A replay with the same task idempotency keys returns the existing task set. Part
 
 ## 2. Recurring schedules
 
-The owner-only `POST /api/owner/schedules` creates a durable `RecurringSchedule` record. Supported intervals:
+The owner-only `POST /api/owner/schedules` creates a durable `RecurringSchedule` record; `GET` lists schedule status and `PATCH` pauses/resumes a schedule. Re-enabling an exhausted or ended schedule is rejected. Supported intervals:
 - `MINUTES`
 - `HOURS`
 - `DAYS`
@@ -54,7 +54,7 @@ It has no direct SELECT/INSERT/UPDATE/DELETE rights on schedule, goal, task or a
 
 ## 4. Agent registry and task review
 
-The owner-only `POST /api/owner/agents` stores versioned agent definitions with:
+The owner-only `POST /api/owner/agents` stores versioned agent definitions, while `GET` exposes the bounded registry view, with:
 - Allowlisted capabilities: `REPORT_GENERATION`, `REPOSITORY_AUDIT`, `CI_OBSERVATION`, `TASK_REVIEW`.
 - Allowlisted permissions: `READ_TASK`, `READ_REPOSITORY`, `WRITE_TASK_RESULT`, `REQUEST_OWNER_APPROVAL`.
 - Optional project scope.
