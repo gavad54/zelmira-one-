@@ -30,7 +30,7 @@ BEGIN
   IF v_created <> 0 THEN RAISE EXCEPTION 'CATCH_UP_REPLAYED_BACKLOG'; END IF;
 
   v_start := v_now - INTERVAL '4 days';
-  v_expected_skip := v_start + floor(extract(epoch FROM (v_now - v_start)) / 86400) * INTERVAL '1 day';
+  v_expected_skip := v_start + floor(extract(epoch FROM (v_now - v_start)) / 86400)::INTEGER * INTERVAL '1 day';
   INSERT INTO public."RecurringSchedule" (
     "id","scheduleKey","projectKey","handlerKey","title","interval","unit",
     "missedRunPolicy","startAt","nextRunAt","maxRuns","runCount","enabled","createdAt","updatedAt"
