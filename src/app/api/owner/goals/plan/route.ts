@@ -16,6 +16,12 @@ const criterionSchema = z.object({
   dependsOn: z.array(z.string().min(2).max(100)).max(200).default([])
 }).strict();
 
+const epicSchema = z.object({
+  id: z.string().trim().min(2).max(100),
+  title: z.string().trim().min(2).max(160),
+  features: z.array(criterionSchema).min(1).max(200)
+}).strict();
+
 const requestSchema = z.object({
   goal: z.object({
     goalId: z.string().trim().min(2).max(100),
@@ -26,8 +32,15 @@ const requestSchema = z.object({
     approvalRequired: z.boolean().default(true),
     scheduledAt: z.string().datetime({ offset: true }).optional(),
     deadline: z.string().datetime({ offset: true }).optional(),
-    acceptanceCriteria: z.array(criterionSchema).min(1).max(200)
-  }).strict()
+    acceptanceCriteria: z.array(criterionSchema).max(200).optional(),
+    epics: z.array(epicSchema).min(1).max(50).optional()
+  }).strict().superRefine((goal, ctx) => {
+    const hasFlat = Boolean(goal.acceptanceCriteria?.length);
+    const hasEpics = Boolean(goal.epics?.length);
+    if (hasFlat === hasEpics) ctx.addIssue({ code: "custom", message: "Provide either acceptanceCriteria or epics", path: ["acceptanceCriteria"] });
+    const ids = (goal.epics ? goal.epics.flatMap(epic => epic.features) : goal.acceptanceCriteria ?? []).map(feature => feature.id);
+    if (new Set(ids).size !== ids.length) ctx.addIssue({ code: "custom", message: "Feature IDs must be unique across the goal", path: ["epics"] });
+  })
 }).strict();
 
 async function sessionToken() {
@@ -49,9 +62,12 @@ export async function POST(request: Request) {
   const parsed = requestSchema.safeParse(body);
   if (!parsed.success) return noStoreJson({ error: "invalid_input" }, 400);
 
+  const goalInput = parsed.data.goal;
+  const epicDefinitions = goalInput.epics ?? [{ id: "execution-plan", title: "Execution plan", features: goalInput.acceptanceCriteria ?? [] }];
+  const acceptanceCriteria = epicDefinitions.flatMap(epic => epic.features);
   let plan: ReturnType<typeof planGoal>;
   try {
-    plan = planGoal(parsed.data.goal);
+    plan = planGoal({ ...goalInput, acceptanceCriteria });
   } catch (error) {
     const code = error instanceof Error ? error.message : "GOAL_PLAN_INVALID";
     return noStoreJson({ error: code.toLowerCase() }, 400);
@@ -91,13 +107,18 @@ export async function POST(request: Request) {
           },
           select: { id: true }
         });
-        const epic = await tx.goalEpic.create({
-          data: {
-            goalId: goalRecord.id, epicKey: "execution-plan",
-            title: ("Execution plan: " + plan.title).slice(0, 160), status: "PLANNED", sortOrder: 0
-          },
-          select: { id: true }
-        });
+        const epicByFeature = new Map<string, string>();
+        const featureOrder = new Map<string, number>();
+        for (const [epicIndex, definition] of epicDefinitions.entries()) {
+          const epic = await tx.goalEpic.create({
+            data: { goalId: goalRecord.id, epicKey: definition.id, title: definition.title, status: "PLANNED", sortOrder: epicIndex },
+            select: { id: true }
+          });
+          definition.features.forEach((feature, index) => {
+            epicByFeature.set(feature.id, epic.id);
+            featureOrder.set(feature.id, index);
+          });
+        }
 
         const taskIds = new Map<string, string>();
         const created = [];
@@ -123,10 +144,10 @@ export async function POST(request: Request) {
           created.push(task);
           await tx.goalFeature.create({
             data: {
-              epicId: epic.id, featureKey: item.criterionId, title: item.title,
+              epicId: epicByFeature.get(item.criterionId) ?? (() => { throw new Error("GOAL_PLAN_EPIC_ID_MISSING"); })(), featureKey: item.criterionId, title: item.title,
               acceptanceCriteria: item.title, handlerKey: item.handlerKey,
               status: item.approvalRequired ? "WAITING_APPROVAL" : "QUEUED",
-              taskId: task.id, sortOrder: created.length - 1
+              taskId: task.id, sortOrder: featureOrder.get(item.criterionId) ?? 0
             },
             select: { id: true }
           });
@@ -154,6 +175,7 @@ export async function POST(request: Request) {
               projectKey: plan.projectKey,
               goalVersion: plan.version,
               taskCount: created.length,
+              epicCount: epicDefinitions.length,
               approvalRequired: plan.approvalRequired,
               scheduledAt: plan.scheduledAt?.toISOString() ?? null,
               deadline: plan.deadline?.toISOString() ?? null,
