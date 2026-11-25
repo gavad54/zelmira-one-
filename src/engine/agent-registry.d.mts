@@ -22,4 +22,4 @@ export function validateAgentDefinition(input: AgentDefinition): ValidatedAgentD
 export function assertAgentCanHandle(agent: AgentDefinition, task: { handlerKey: string; projectKey: string }): ValidatedAgentDefinition;
 export function assertAgentCanReview(agent: AgentDefinition, projectKey: string): ValidatedAgentDefinition;
 export function validateTaskReview(input: { taskId: string; executorAgentKey: string; reviewerAgentKey: string; decision: "APPROVE" | "REQUEST_CHANGES" | "BLOCK"; evidence: string[] }): Readonly<{ taskId: string; executorAgentKey: string; reviewerAgentKey: string; decision: "APPROVE" | "REQUEST_CHANGES" | "BLOCK"; evidence: readonly string[] }>;
-export function evaluateTaskResult(task: { handler_key: string }, result: Record<string, unknown>): Readonly<{ decision: "APPROVE" | "BLOCK"; evidence: readonly string[] }>;
+export function evaluateTaskResult(task: { handler_key: string; payload?: { repo?: string } }, result: Record<string, unknown>): Readonly<{ decision: "APPROVE" | "BLOCK"; evidence: readonly string[] }>;
