@@ -4,6 +4,7 @@ export interface GoalAcceptanceCriterion {
   id: string;
   title: string;
   handlerKey: GoalHandlerKey;
+  repo?: string;
   dependsOn?: string[];
 }
 
@@ -38,6 +39,7 @@ export interface PlannedGoalTask {
     criterionId: string;
     acceptanceCriterion: string;
     dependsOn: string[];
+    repo?: string;
   };
 }
 
