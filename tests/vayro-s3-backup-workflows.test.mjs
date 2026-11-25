@@ -45,3 +45,17 @@ test("restore workflow uses provider-neutral S3 configuration and verifies targe
   assert.match(restore, /age --decrypt/);
   assert.match(restore, /pg_restore --exit-on-error/);
 });
+
+
+test("restore workflow rejects the production database name as well as its host", () => {
+  assert.match(restore, /VAYRO_PRODUCTION_DATABASE_NAME/);
+  assert.match(restore, /production_database\s*==\s*target\.path\.lstrip\(["']\/["']\)/);
+});
+
+test("restore workflow validates restored data and security posture", () => {
+  assert.match(restore, /row_count|row-count/i);
+  assert.match(restore, /pg_extension/);
+  assert.match(restore, /relrowsecurity/);
+  assert.match(restore, /relforcerowsecurity/);
+  assert.match(restore, /pg_policies/);
+});
