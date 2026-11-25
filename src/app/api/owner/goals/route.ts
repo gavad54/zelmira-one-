@@ -13,20 +13,25 @@ export async function GET() {
   try {
     const result = await withPlatformOwnerTransaction({
       sessionToken: await sessionToken(),
-      callback: async tx => {
+      callback: async (tx, actor) => {
+        if (!await allowAttempt(sha256("owner-goal-read:" + actor.userId), 60, 60 * 60 * 1000)) {
+          return { kind: "rate_limited" as const };
+        }
         const goals = await tx.goalRecord.findMany({
           orderBy: { createdAt: "desc" },
-          take: 100,
+          take: 25,
           select: {
             id: true, goalKey: true, projectKey: true, title: true, version: true,
             status: true, priority: true, approvalRequired: true, scheduledAt: true,
             deadline: true, createdAt: true, updatedAt: true,
             epics: {
               orderBy: { sortOrder: "asc" },
+              take: 10,
               select: {
                 id: true, epicKey: true, title: true, status: true, sortOrder: true,
                 features: {
                   orderBy: { sortOrder: "asc" },
+                  take: 20,
                   select: {
                     id: true, featureKey: true, title: true, acceptanceCriteria: true,
                     handlerKey: true, status: true, sortOrder: true,
@@ -49,11 +54,12 @@ export async function GET() {
             }
           }
         });
-        return goals;
+        return { kind: "ok" as const, goals };
       }
     });
     if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
-    return noStoreJson({ goals: result.value });
+    if (result.value.kind === "rate_limited") return noStoreJson({ error: "rate_limited" }, 429);
+    return noStoreJson({ goals: result.value.goals });
   } catch {
     return noStoreJson({ error: "goal_read_failed" }, 503);
   }
