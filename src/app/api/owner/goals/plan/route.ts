@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const criterionSchema = z.object({
-  id: z.string().trim().min(2).max(100),
+  id: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{1,99}$/),
   title: z.string().trim().min(2).max(160),
   handlerKey: z.enum(["repo.audit", "repo.test", "report.generate"]),
   repo: z.string().regex(/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/).optional(),
@@ -41,6 +41,8 @@ const requestSchema = z.object({
     if (hasFlat === hasEpics) ctx.addIssue({ code: "custom", message: "Provide either acceptanceCriteria or epics", path: ["acceptanceCriteria"] });
     const ids = (goal.epics ? goal.epics.flatMap(epic => epic.features) : goal.acceptanceCriteria ?? []).map(feature => feature.id);
     if (new Set(ids).size !== ids.length) ctx.addIssue({ code: "custom", message: "Feature IDs must be unique across the goal", path: ["epics"] });
+    const epicIds = (goal.epics ?? []).map(epic => epic.id);
+    if (new Set(epicIds).size !== epicIds.length) ctx.addIssue({ code: "custom", message: "Epic IDs must be unique within the goal", path: ["epics"] });
   })
 }).strict();
 
