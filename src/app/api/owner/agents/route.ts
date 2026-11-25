@@ -85,3 +85,31 @@ export async function POST(request: Request) {
     return noStoreJson({ error: "agent_persistence_failed" }, 503);
   }
 }
+ 
+export async function GET() {
+  try {
+    const result = await withPlatformOwnerTransaction({
+      sessionToken: await sessionToken(),
+      callback: async (tx, actor) => {
+        if (!await allowAttempt(sha256("owner-agent-read:" + actor.userId), 60, 60 * 60 * 1000)) {
+          return { kind: "rate_limited" as const };
+        }
+        const agents = await tx.engineeringAgent.findMany({
+          orderBy: [{ enabled: "desc" }, { agentKey: "asc" }],
+          take: 100,
+          select: {
+            id: true, agentKey: true, version: true, displayName: true,
+            capabilities: true, permissions: true, projectKeys: true, enabled: true,
+            createdAt: true, updatedAt: true
+          }
+        });
+        return { kind: "ok" as const, agents };
+      }
+    });
+    if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
+    if (result.value.kind === "rate_limited") return noStoreJson({ error: "rate_limited" }, 429);
+    return noStoreJson({ agents: result.value.agents });
+  } catch {
+    return noStoreJson({ error: "agent_read_failed" }, 503);
+  }
+}
