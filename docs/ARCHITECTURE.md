@@ -88,3 +88,32 @@ PR #47 remains Draft/Open/Unmerged. No production migration, merge, deployment, 
 8. Complete independent product API contracts and E2E evidence without merging product data or release boundaries.
 
 All implementation remains additive and branch-scoped. Live production changes, secret/access changes, paid infrastructure, merge and public release remain approval-gated.
+
+## 9. Durable engineering control plane — additive implementation
+
+The development branch now adds the following source and schema components:
+
+- Persistent `GoalRecord`, `GoalEpic` and `GoalFeature` records, including versioned goal identity, acceptance criteria, ordering and a link from each feature to its EngineeringTask.
+- The owner-only `POST /api/owner/goals/plan` path now writes the goal hierarchy and task graph in the same owner transaction. It accepts either the backwards-compatible flat acceptance-criteria shape or an explicit multi-Epic hierarchy.
+- `RecurringSchedule` records and owner-only `POST /api/owner/schedules` creation. Supported recurrence is a bounded UTC-anchored interval in minutes, hours, days or weeks. Calendar-month and local-wall-clock/DST recurrence are deliberately not supported.
+- A separate `src/worker/schedule-worker.mjs` process and `worker:schedules` command. It invokes SECURITY DEFINER materialization and goal-reconciliation functions through a dedicated `vayro_task_scheduler` role. The role has no direct table grants and cannot claim engineering tasks.
+- `EngineeringAgent` registry records and owner-only `POST /api/owner/agents`. Agent permissions/capabilities are allowlisted. The migration seeds only deterministic read-only adapters and a deterministic policy reviewer; it does not seed unrestricted AI, shell or code-execution agents.
+- The task worker resolves an enabled executor by handler capability and project scope, executes only the existing fixed handler registry, applies a separate deterministic result policy, and records the reviewer decision through a restricted database function before task completion.
+- Goal/Epic/Feature status is reconciled from task state by the scheduler control loop. It is a derived projection; task status remains authoritative.
+- Unit tests cover recurrence boundaries, idempotency, catch-up behavior, agent scopes and evidence-gated review. Isolated PostgreSQL CI adds scheduler-role privilege assertions.
+
+## 10. Operational limits and release gates for the new control plane
+
+The new migration and runtime are **not production activated**. A passing source-level implementation or CI migration does not authorize applying it to live VAYRO-CORE.
+
+Required before production:
+1. Current branch CI must pass on the exact commit, including Prisma generate/validate, all migrations on disposable PostgreSQL, catalog reconciliation, RLS checks, task-worker and scheduler role-boundary tests, lint, typecheck, build, Docker and integration tests.
+2. Reconcile the live database schema against a restored clone and the exact migration ledger. No live DDL until the independent encrypted backup and isolated restore gates pass.
+3. Provision separate least-privilege login credentials for task worker and scheduler; neither may use the owner, platform, postgres, service-role or BYPASSRLS credentials.
+4. Deploy the task worker and scheduler as separate non-production services first. Verify health, exact commit, DB role assertions, logs, restart behavior, schedule materialization, stale-lease fencing and goal reconciliation.
+5. Only the existing three read-only task handlers are executable. Agent registry entries do not permit arbitrary code, shell, merge, deploy, billing, secrets or production-data changes.
+6. The reviewer is a deterministic policy validator, not a generative AI peer reviewer. A future LLM-based reviewer would require separate provider, privacy, output-validation and approval controls.
+7. UTC fixed-duration schedules do not implement calendar-month or local-time recurrence. Add those only with explicit timezone/DST semantics and dedicated tests.
+8. PR #47 remains Draft/Open/Unmerged until all release gates and owner review pass.
+
+No production migration, deployment, role grant, secret change, merge or public release was performed as part of this implementation.
