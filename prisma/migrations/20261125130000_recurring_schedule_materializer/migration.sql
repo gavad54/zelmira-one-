@@ -278,13 +278,19 @@ DECLARE
   v_reviewer_id TEXT;
   v_project_key TEXT;
   v_attempt INTEGER;
+  v_executor_valid BOOLEAN;
   v_count INTEGER;
 BEGIN
   IF p_executor_agent_key IS NULL OR p_reviewer_agent_key IS NULL OR p_executor_agent_key = p_reviewer_agent_key THEN
     RAISE EXCEPTION 'TASK_REVIEW_NOT_INDEPENDENT' USING ERRCODE = '22023';
   END IF;
-  IF p_decision NOT IN ('APPROVE','BLOCK') OR jsonb_typeof(p_evidence) <> 'array'
-     OR jsonb_array_length(p_evidence) < 1 OR jsonb_array_length(p_evidence) > 50
+  IF p_decision IS NULL OR p_decision NOT IN ('APPROVE','BLOCK') THEN
+    RAISE EXCEPTION 'TASK_REVIEW_DECISION_INVALID' USING ERRCODE = '22023';
+  END IF;
+  IF p_evidence IS NULL OR jsonb_typeof(p_evidence) IS DISTINCT FROM 'array' THEN
+    RAISE EXCEPTION 'TASK_REVIEW_EVIDENCE_INVALID' USING ERRCODE = '22023';
+  END IF;
+  IF jsonb_array_length(p_evidence) < 1 OR jsonb_array_length(p_evidence) > 50
      OR octet_length(p_evidence::TEXT) > 16000 THEN
     RAISE EXCEPTION 'TASK_REVIEW_EVIDENCE_INVALID' USING ERRCODE = '22023';
   END IF;
@@ -305,6 +311,20 @@ BEGIN
     AND (jsonb_array_length(a."projectKeys") = 0 OR a."projectKeys" ? v_project_key);
   IF v_reviewer_id IS NULL THEN
     RAISE EXCEPTION 'TASK_REVIEWER_NOT_AUTHORIZED' USING ERRCODE = '42501';
+  END IF;
+  SELECT EXISTS (
+    SELECT 1 FROM public."EngineeringAgent" a
+    WHERE a."agentKey" = p_executor_agent_key AND a."enabled" = true
+      AND a."permissions" ? 'READ_TASK'
+      AND a."capabilities" ? CASE (SELECT t."handlerKey" FROM public."EngineeringTask" t WHERE t."id" = p_task_id)
+        WHEN 'report.generate' THEN 'REPORT_GENERATION'
+        WHEN 'repo.audit' THEN 'REPOSITORY_AUDIT'
+        WHEN 'repo.test' THEN 'CI_OBSERVATION'
+        ELSE '__NOT_ALLOWED__' END
+      AND (jsonb_array_length(a."projectKeys") = 0 OR a."projectKeys" ? v_project_key)
+  ) INTO v_executor_valid;
+  IF NOT v_executor_valid THEN
+    RAISE EXCEPTION 'TASK_EXECUTOR_NOT_AUTHORIZED' USING ERRCODE = '42501';
   END IF;
 
   INSERT INTO public."TaskReview" (
