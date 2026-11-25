@@ -7,6 +7,7 @@ BEGIN
 END
 $$;
 ALTER ROLE vayro_task_scheduler INHERIT;
+GRANT USAGE ON SCHEMA public TO vayro_task_scheduler;
 
 CREATE OR REPLACE FUNCTION public.vayro_materialize_due_engineering_schedules(
   p_scheduler_id TEXT,
