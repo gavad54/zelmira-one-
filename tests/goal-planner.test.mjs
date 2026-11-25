@@ -30,8 +30,8 @@ test("planner emits task types accepted by the task-engine handler contract", ()
     ...goal,
     acceptanceCriteria: [
       { id: "report", title: "Generate audit report", handlerKey: "report.generate" },
-      { id: "audit", title: "Audit repository", handlerKey: "repo.audit" },
-      { id: "tests", title: "Observe CI results", handlerKey: "repo.test" }
+      { id: "audit", title: "Audit repository", handlerKey: "repo.audit", repo: "gavad54/zelmira-one-" },
+      { id: "tests", title: "Observe CI results", handlerKey: "repo.test", repo: "gavad54/zelmira-one-" }
     ]
   });
   assert.deepEqual(
@@ -80,4 +80,20 @@ test("planner preserves bounded scheduledAt and deadline for the durable due-tas
   assert.equal(planned.tasks[0].deadline.toISOString(), deadline);
   assert.throws(() => planGoal({ ...goal, scheduledAt: deadline, deadline: scheduledAt }), /GOAL_DEADLINE_BEFORE_SCHEDULE/);
   assert.throws(() => planGoal({ ...goal, scheduledAt: "not-a-date" }), /GOAL_SCHEDULE_INVALID/);
+});
+
+test("repository audit and CI features require a validated repository target", () => {
+  assert.throws(() => planGoal({
+    ...goal,
+    acceptanceCriteria: [{ id: "audit", title: "Audit repository", handlerKey: "repo.audit" }]
+  }), /TASK_REPOSITORY_INVALID/);
+  assert.throws(() => planGoal({
+    ...goal,
+    acceptanceCriteria: [{ id: "audit", title: "Audit repository", handlerKey: "repo.audit", repo: "../secrets" }]
+  }), /TASK_REPOSITORY_INVALID/);
+  const planned = planGoal({
+    ...goal,
+    acceptanceCriteria: [{ id: "audit", title: "Audit repository", handlerKey: "repo.audit", repo: "gavad54/zelmira-one-" }]
+  });
+  assert.equal(planned.tasks[0].payload.repo, "gavad54/zelmira-one-");
 });
