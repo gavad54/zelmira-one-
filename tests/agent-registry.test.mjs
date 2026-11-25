@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { assertAgentCanHandle, validateAgentDefinition, validateTaskReview } from "../src/engine/agent-registry.mjs";
+import { assertAgentCanHandle, assertAgentCanReview, evaluateTaskResult, validateAgentDefinition, validateTaskReview } from "../src/engine/agent-registry.mjs";
 
 const agent = {
   key: "repo-auditor", version: 1, displayName: "Repository Auditor",
@@ -26,4 +26,26 @@ test("review requires an independent reviewer and evidence-backed approval", () 
   assert.throws(() => validateTaskReview({ taskId: "t1", executorAgentKey: "repo-auditor", reviewerAgentKey: "security-reviewer", decision: "APPROVE", evidence: [] }), /TASK_REVIEW_APPROVAL_REQUIRES_EVIDENCE/);
   const review = validateTaskReview({ taskId: "t1", executorAgentKey: "repo-auditor", reviewerAgentKey: "security-reviewer", decision: "REQUEST_CHANGES", evidence: ["missing authorization test"] });
   assert.equal(review.decision, "REQUEST_CHANGES");
+});
+
+
+test("review agent must be enabled, scoped and explicitly review-capable", () => {
+  const reviewer = {
+    key: "independent-reviewer", version: 1, displayName: "Independent Reviewer",
+    capabilities: ["TASK_REVIEW"], permissions: ["READ_TASK"], projectKeys: ["VAYRO"], enabled: true
+  };
+  assert.equal(assertAgentCanReview(reviewer, "VAYRO").key, "independent-reviewer");
+  assert.throws(() => assertAgentCanReview(reviewer, "ARIA"), /REVIEW_AGENT_PROJECT_SCOPE_DENIED/);
+  assert.throws(() => assertAgentCanReview({ ...reviewer, enabled: false }, "VAYRO"), /REVIEW_AGENT_DISABLED/);
+});
+
+test("deterministic reviewer approves only handler-specific evidence contracts", () => {
+  const good = evaluateTaskResult(
+    { handler_key: "repo.audit" },
+    { repository: "gavad54/zelmira-one-", source: "GitHub REST read-only API" }
+  );
+  assert.equal(good.decision, "APPROVE");
+  const bad = evaluateTaskResult({ handler_key: "repo.audit" }, { repository: "bad" });
+  assert.equal(bad.decision, "BLOCK");
+  assert.ok(bad.evidence.length > 0);
 });
