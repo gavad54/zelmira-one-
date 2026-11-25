@@ -89,7 +89,7 @@ CREATE TABLE public."RecurringSchedule" (
   CONSTRAINT "RecurringSchedule_handler_check" CHECK ("handlerKey" IN ('report.generate','repo.audit','repo.test')),
   CONSTRAINT "RecurringSchedule_missed_policy_check" CHECK ("missedRunPolicy" IN ('SKIP','CATCH_UP_ONCE')),
   CONSTRAINT "RecurringSchedule_runs_check" CHECK ("runCount" >= 0 AND ("maxRuns" IS NULL OR "maxRuns" BETWEEN 1 AND 100000)),
-  CONSTRAINT "RecurringSchedule_dates_check" CHECK ("endAt" IS NULL OR "endAt" > "startAt")
+  CONSTRAINT "RecurringSchedule_dates_check" CHECK ("nextRunAt" >= "startAt" AND ("endAt" IS NULL OR "endAt" > "startAt"))
 );
 CREATE INDEX "RecurringSchedule_enabled_nextRunAt_idx" ON public."RecurringSchedule" ("enabled","nextRunAt");
 CREATE INDEX "RecurringSchedule_projectKey_enabled_idx" ON public."RecurringSchedule" ("projectKey","enabled");
