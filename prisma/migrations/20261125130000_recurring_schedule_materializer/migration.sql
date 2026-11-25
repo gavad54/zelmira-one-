@@ -296,9 +296,9 @@ BEGIN
     RAISE EXCEPTION 'TASK_REVIEW_EVIDENCE_INVALID' USING ERRCODE = '22023';
   END IF;
   IF EXISTS (
-    SELECT 1 FROM jsonb_array_elements(p_evidence) item
-    WHERE jsonb_typeof(item) IS DISTINCT FROM 'string'
-       OR length(item #>> '{}') > 500
+    SELECT 1 FROM jsonb_array_elements(p_evidence) AS evidence_item(value)
+    WHERE jsonb_typeof(evidence_item.value) IS DISTINCT FROM 'string'
+       OR length(evidence_item.value #>> '{}') > 500
   ) THEN
     RAISE EXCEPTION 'TASK_REVIEW_EVIDENCE_INVALID' USING ERRCODE = '22023';
   END IF;
