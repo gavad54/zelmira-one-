@@ -84,6 +84,8 @@ New unit suites:
 
 New isolated PostgreSQL privilege test:
 - `tests/sql/scheduler-worker-role-boundary.sql`
+- `tests/sql/task-worker-agent-review.integration.sql`
+- `tests/sql/recurring-scheduler-goal-reconciliation.integration.sql`
 
 CI also runs the full migration history, Prisma generation/validation, catalog reconciliation, RLS checks, task-worker role boundary, dependency claim and restart-recovery SQL tests, lint, typecheck, production build, Docker build and HTTP integration tests.
 
