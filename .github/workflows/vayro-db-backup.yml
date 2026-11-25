@@ -115,7 +115,7 @@ jobs:
           local_checksum_size="$(wc -c < "$checksum_file" | tr -d ' ')"
 
           if [[ "$remote_dump_size" != "$local_dump_size" || "$remote_checksum_size" != "$local_checksum_size" ]]; then
-            echo "::error::B2 object size verification failed; backup must not be treated as accepted"
+            echo "::error::S3 object size verification failed; backup must not be treated as accepted"
             exit 1
           fi
 
