@@ -38,6 +38,7 @@ test("restore workflow uses provider-neutral S3 configuration and verifies targe
   assert.doesNotMatch(restore, /VAYRO_B2_|B2_BUCKET|B2_S3_ENDPOINT|B2_REGION/);
   assert.match(restore, /addressing_style\s*=\s*path/);
   assert.match(restore, /RESTORE_DATABASE_URL/);
+  assert.match(restore, /VAYRO_PRODUCTION_DATABASE_HOST/);
   assert.match(restore, /source\.hostname\.lower\(\) == target\.hostname\.lower\(\)/);
   assert.match(restore, /RESTORE_TO_ISOLATED_VAYRO_TEST/);
   assert.match(restore, /sha256sum --check/);
