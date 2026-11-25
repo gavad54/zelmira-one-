@@ -65,6 +65,12 @@ export async function POST(request: Request) {
           return { kind: "rate_limited" as const };
         }
 
+        const existingGoal = await tx.goalRecord.findUnique({
+          where: { goalKey_version: { goalKey: plan.goalId, version: plan.version } },
+          select: { id: true }
+        });
+        if (existingGoal) return { kind: "goal_conflict" as const };
+
         const keys = plan.tasks.map(task => task.idempotencyKey);
         const existing = await tx.engineeringTask.findMany({
           where: { idempotencyKey: { in: keys } },
@@ -75,6 +81,23 @@ export async function POST(request: Request) {
           if (existing.length !== keys.length) return { kind: "partial_conflict" as const };
           return { kind: "duplicate" as const, tasks: existing };
         }
+
+        const goalRecord = await tx.goalRecord.create({
+          data: {
+            goalKey: plan.goalId, projectKey: plan.projectKey, title: plan.title,
+            version: plan.version, status: "PLANNED", priority: plan.tasks[0]?.priority ?? 50,
+            approvalRequired: plan.approvalRequired, scheduledAt: plan.scheduledAt,
+            deadline: plan.deadline, createdByUserId: actor.userId
+          },
+          select: { id: true }
+        });
+        const epic = await tx.goalEpic.create({
+          data: {
+            goalId: goalRecord.id, epicKey: "execution-plan",
+            title: "Execution plan: " + plan.title, status: "PLANNED", sortOrder: 0
+          },
+          select: { id: true }
+        });
 
         const taskIds = new Map<string, string>();
         const created = [];
@@ -98,6 +121,15 @@ export async function POST(request: Request) {
           });
           taskIds.set(item.criterionId, task.id);
           created.push(task);
+          await tx.goalFeature.create({
+            data: {
+              epicId: epic.id, featureKey: item.criterionId, title: item.title,
+              acceptanceCriteria: item.title, handlerKey: item.handlerKey,
+              status: item.approvalRequired ? "WAITING_APPROVAL" : "QUEUED",
+              taskId: task.id, sortOrder: created.length - 1
+            },
+            select: { id: true }
+          });
         }
 
         for (const item of plan.tasks) {
@@ -138,6 +170,7 @@ export async function POST(request: Request) {
     if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
     if (result.value.kind === "rate_limited") return noStoreJson({ error: "rate_limited" }, 429);
     if (result.value.kind === "partial_conflict") return noStoreJson({ error: "goal_plan_partially_exists" }, 409);
+    if (result.value.kind === "goal_conflict") return noStoreJson({ error: "goal_version_already_exists" }, 409);
     if (result.value.kind === "duplicate") return noStoreJson({ goalId: plan.goalId, replayed: true, tasks: result.value.tasks });
     return noStoreJson({ goalId: plan.goalId, replayed: false, tasks: result.value.tasks }, 201);
   } catch {
