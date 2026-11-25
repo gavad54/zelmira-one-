@@ -1,7 +1,7 @@
 # VAYRO Goal Planner, Recurring Scheduler and Agent Governance
 
-**Implementation state:** development-branch implementation committed; exact-head GitHub Actions verification passed on `5ab277ab2d5110033f173fa439727d213ad63dab`.
-**Verified evidence:** VAYRO CI run `45630059311` (all 34 steps successful); CodeQL run `45630059210` (success); npm lockfile validation run `45630059217` (success).  
+**Implementation state:** development-branch implementation committed; latest exact-head GitHub Actions verification passed on `395f4b3d82d23ebed4837a14cb25baf7770ce3e3`.
+**Verified evidence:** VAYRO CI run `45631295647` (success); CodeQL run `45631295505` (success); npm lockfile validation run `45631295456` (success).  
 **Production state:** NOT DEPLOYED.  
 **Branch:** `upgrade/full-independent-product-family-modules-2026-11-20`
 
@@ -90,7 +90,7 @@ New isolated PostgreSQL privilege test:
 
 CI also runs the full migration history, Prisma generation/validation, catalog reconciliation, RLS checks, task-worker role boundary, dependency claim and restart-recovery SQL tests, lint, typecheck, production build, Docker build and HTTP integration tests.
 
-**Verification record (2026-11-25):** exact branch-head CI, CodeQL and lockfile validation are green for `5ab277ab2d5110033f173fa439727d213ad63dab`. The VAYRO CI job passed unit tests, full Prisma migration deploy on isolated PostgreSQL, schema/catalog/RLS reconciliation, worker and scheduler least-privilege tests, agent-review and recurring-schedule integration tests, restart-recovery SQL, lint, TypeScript, production build, Docker build and HTTP integration tests. This proves the repository changes in isolated CI; it does not prove a live Railway runtime.
+**Verification record (2026-11-25):** exact branch-head CI, CodeQL and lockfile validation are green for `395f4b3d82d23ebed4837a14cb25baf7770ce3e3` (VAYRO CI `45631295647`; CodeQL `45631295505`; npm lockfile validation `45631295456`). The VAYRO CI job passed unit tests, full Prisma migration deploy on isolated PostgreSQL, schema/catalog/RLS reconciliation, worker and scheduler least-privilege tests, agent-review and recurring-schedule integration tests, restart-recovery SQL, lint, TypeScript, production build, Docker build and HTTP integration tests. This proves the repository changes in isolated CI; it does not prove a live Railway runtime. The verification applies to the exact source tree at that SHA; a subsequent documentation-only commit must receive its own workflow verification before it is described as green.
 
 ## 7. Production blockers
 
