@@ -257,7 +257,7 @@ BEGIN
     RAISE EXCEPTION 'REVIEW_PROJECT_SCOPE_INVALID' USING ERRCODE = '22023';
   END IF;
   RETURN QUERY
-  SELECT a."id",a."agentKey",a."version",a."capabilities",a."permissions",a."projectKeys"
+  SELECT a."id"::TEXT,a."agentKey"::TEXT,a."version"::INTEGER,a."capabilities",a."permissions",a."projectKeys"
   FROM public."EngineeringAgent" a
   WHERE a."enabled" = true
     AND a."capabilities" ? 'TASK_REVIEW'
