@@ -50,3 +50,41 @@ export function validateTaskReview(input) {
     decision: input.decision, evidence: Object.freeze([...input.evidence])
   });
 }
+
+
+export function assertAgentCanReview(agentInput, projectKey) {
+  const agent = validateAgentDefinition(agentInput);
+  if (!agent.enabled) fail("REVIEW_AGENT_DISABLED");
+  if (!agent.capabilities.includes("TASK_REVIEW")) fail("REVIEW_AGENT_CAPABILITY_REQUIRED");
+  if (!agent.permissions.includes("READ_TASK")) fail("REVIEW_AGENT_READ_TASK_DENIED");
+  if (agent.projectKeys.length && !agent.projectKeys.includes(projectKey)) fail("REVIEW_AGENT_PROJECT_SCOPE_DENIED");
+  return agent;
+}
+
+/** Deterministic evidence gate. This is a policy reviewer, not a generative AI claim. */
+export function evaluateTaskResult(task, result) {
+  if (!task || typeof task.handler_key !== "string" || !result || typeof result !== "object" || Array.isArray(result)) {
+    return Object.freeze({ decision: "BLOCK", evidence: Object.freeze(["Result is missing or is not a structured object."]) });
+  }
+  const evidence = [];
+  if (task.handler_key === "report.generate") {
+    if (!/^[a-f0-9]{64}$/.test(result.inputSha256 ?? "")) evidence.push("Report input digest is missing or malformed.");
+    if (result.executionMode !== "deterministic-read-only") evidence.push("Report execution mode is not read-only.");
+  } else if (task.handler_key === "repo.audit") {
+    if (typeof result.repository !== "string" || !result.repository.includes("/")) evidence.push("Repository identity is missing.");
+    if (result.source !== "GitHub REST read-only API") evidence.push("Repository audit source is not verified as read-only.");
+  } else if (task.handler_key === "repo.test") {
+    if (result.mode !== "read-only-existing-ci-observation" || !Array.isArray(result.runs)) evidence.push("CI observation evidence is incomplete.");
+  } else {
+    evidence.push("No reviewer policy exists for this handler.");
+  }
+  if (evidence.length) return Object.freeze({ decision: "BLOCK", evidence: Object.freeze(evidence) });
+  return Object.freeze({
+    decision: "APPROVE",
+    evidence: Object.freeze([
+      "Handler-specific output contract passed.",
+      "Read-only execution boundary is declared.",
+      `Validated handler: ${task.handler_key}.`
+    ])
+  });
+}
