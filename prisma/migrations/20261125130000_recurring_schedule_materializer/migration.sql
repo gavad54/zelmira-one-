@@ -20,6 +20,7 @@ DECLARE
   v_interval_ms BIGINT;
   v_elapsed_ms BIGINT;
   v_occurrence TIMESTAMP(3);
+  v_latest_due TIMESTAMP(3);
   v_next TIMESTAMP(3);
   v_task_type TEXT;
   v_task_id TEXT;
@@ -52,11 +53,12 @@ BEGIN
       RAISE EXCEPTION 'SCHEDULE_INTERVAL_INVALID' USING ERRCODE = '22023';
     END IF;
 
+    v_elapsed_ms := floor(extract(epoch FROM (v_now - v_schedule."nextRunAt")) * 1000)::BIGINT;
+    v_latest_due := v_schedule."nextRunAt" + make_interval(secs => (floor(v_elapsed_ms::NUMERIC / v_interval_ms) * v_interval_ms / 1000)::DOUBLE PRECISION);
     IF v_schedule."missedRunPolicy" = 'CATCH_UP_ONCE' THEN
       v_occurrence := v_schedule."nextRunAt";
     ELSE
-      v_elapsed_ms := floor(extract(epoch FROM (v_now - v_schedule."nextRunAt")) * 1000)::BIGINT;
-      v_occurrence := v_schedule."nextRunAt" + make_interval(secs => (floor(v_elapsed_ms::NUMERIC / v_interval_ms) * v_interval_ms / 1000)::DOUBLE PRECISION);
+      v_occurrence := v_latest_due;
     END IF;
 
     IF v_schedule."endAt" IS NOT NULL AND v_occurrence > v_schedule."endAt" THEN
@@ -83,7 +85,8 @@ BEGIN
     GET DIAGNOSTICS v_run_count = ROW_COUNT;
     v_created := v_created + v_run_count;
 
-    v_next := v_occurrence + make_interval(secs => (v_interval_ms / 1000)::DOUBLE PRECISION);
+    -- Both policies advance beyond the backlog; CATCH_UP_ONCE emits only the oldest missed run.
+    v_next := v_latest_due + make_interval(secs => (v_interval_ms / 1000)::DOUBLE PRECISION);
     UPDATE public."RecurringSchedule"
     SET "lastRunAt" = v_occurrence,
         "nextRunAt" = v_next,
