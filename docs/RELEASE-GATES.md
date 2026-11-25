@@ -500,3 +500,21 @@ This addendum supersedes older repository-head statements above where they confl
 **Current posture: REPOSITORY ENGINEERING CHECKS PASS — LIVE DATABASE / HOSTING / BACKUP-RESTORE / MOBILE / COMMERCIAL RELEASE GATES OPEN — NOT RELEASED.**
 
 No production deployment, production DB mutation, DNS change, secret modification, merge or release was performed.
+
+
+## Current authority and live release posture — 2026-11-25
+
+This addendum supersedes older PR-number, branch-head, CI and live-infrastructure statements in the historical notes above wherever they conflict. The dated historical records are retained for audit history and must not be treated as current state.
+
+- The active VAYRO change is **PR #47**, branch `upgrade/full-independent-product-family-modules-2026-11-20`, not the historical PR #2 references above.
+- The latest exact-head repository evidence and fresh read-only Railway / VAYRO-CORE findings are maintained in [the 2026-11-25 family engineering evidence snapshot](operations/FAMILY-ENGINEERING-EVIDENCE-2026-11-25.md). That file's latest live-verification addendum is the current operational reference.
+- The last fully verified source head before the documentation-only audit refresh was `2f973b3d23aa13469bb27f245f565c89852f88e0`. VAYRO CI, CodeQL and npm lockfile validation all completed successfully on that exact SHA (runs `45647054177`, `45647054199`, `45647054527`; duplicate CI run `45647045728` also succeeded).
+- A documentation-only audit update has since been committed on the same development branch. Its own exact-head checks must complete before that newer documentation SHA is called verified.
+- Fresh Railway inspection found no dedicated VAYRO project; both existing VAYRO-named services are offline and their latest deployments failed. Do not accept staged changes or repurpose ARIA/LEADORA infrastructure.
+- Fresh VAYRO-CORE inspection found 11 public tables with RLS enabled, zero policies, zero FORCE RLS, no `vayro%` roles, no grants to `anon`/`authenticated`/`service_role`, and no migration history. The Security Advisor reports 11 RLS-enabled/no-policy findings. No database changes were made.
+- Encrypted off-provider backup and a successful isolated restore remain unverified. Live database baseline, role provisioning and policy design remain blocked pending backup/restore and independent reconciliation.
+- No production deployment, production database write, migration, grant, policy, secret, DNS, paid-resource, PR merge or release was performed.
+
+**Current decision: REPOSITORY ENGINEERING CHECKS PASS ON THE LAST VERIFIED SOURCE HEAD — PRODUCTION / COMMERCIAL RELEASE BLOCKED — NOT RELEASED.**
+
+The owner must explicitly authorize external account setup and any production-affecting action. A green CI run does not authorize merge, deployment or database mutation.
