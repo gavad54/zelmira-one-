@@ -11,7 +11,8 @@ DECLARE
     'User','Tenant','Membership','Session','Product','License','AuditEvent',
     'EmailContact','EmailContactVerificationToken','AuthActionToken',
     'AuthRateLimit','UserMfa','MfaRecoveryCode','AuthChallenge','AiGeneration',
-    'EngineeringTask','EngineeringTaskAttempt','EngineeringTaskDependency'
+    'EngineeringTask','EngineeringTaskAttempt','EngineeringTaskDependency',
+    'GoalRecord','GoalEpic','GoalFeature','RecurringSchedule','EngineeringAgent','TaskReview'
   ];
   protected_table text;
   protected_tables text[] := ARRAY[
@@ -82,6 +83,22 @@ BEGIN
       RAISE EXCEPTION 'Runtime tenant role vayro_app must not own public.%', protected_table;
     END IF;
   END LOOP;
+
+  -- New VAYRO control-plane records must also exist with RLS enabled.
+  IF EXISTS (
+    SELECT 1 FROM unnest(ARRAY['GoalRecord','GoalEpic','GoalFeature','RecurringSchedule','EngineeringAgent','TaskReview']) AS t(name)
+    LEFT JOIN pg_class c ON c.oid = to_regclass(format('public.%I', t.name))
+    WHERE c.oid IS NULL OR NOT c.relrowsecurity
+  ) THEN
+    RAISE EXCEPTION 'VAYRO control-plane RLS coverage is incomplete';
+  END IF;
+
+  IF has_table_privilege('vayro_task_worker','public."EngineeringAgent"','SELECT')
+     OR has_table_privilege('vayro_task_worker','public."TaskReview"','INSERT')
+     OR has_table_privilege('vayro_task_scheduler','public."RecurringSchedule"','SELECT')
+     OR has_table_privilege('vayro_task_scheduler','public."EngineeringTask"','INSERT') THEN
+    RAISE EXCEPTION 'Worker roles have direct control-plane table access';
+  END IF;
 
   -- The runtime tenant capability role must exist and must not bypass RLS.
   IF NOT EXISTS (
