@@ -94,7 +94,7 @@ export async function POST(request: Request) {
         const epic = await tx.goalEpic.create({
           data: {
             goalId: goalRecord.id, epicKey: "execution-plan",
-            title: "Execution plan: " + plan.title, status: "PLANNED", sortOrder: 0
+            title: ("Execution plan: " + plan.title).slice(0, 160), status: "PLANNED", sortOrder: 0
           },
           select: { id: true }
         });
