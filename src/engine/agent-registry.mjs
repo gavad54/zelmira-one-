@@ -69,12 +69,21 @@ export function evaluateTaskResult(task, result) {
   const evidence = [];
   if (task.handler_key === "report.generate") {
     if (!/^[a-f0-9]{64}$/.test(result.inputSha256 ?? "")) evidence.push("Report input digest is missing or malformed.");
+    if (!Number.isSafeInteger(result.inputBytes) || result.inputBytes < 0) evidence.push("Report input byte count is invalid.");
     if (result.executionMode !== "deterministic-read-only") evidence.push("Report execution mode is not read-only.");
   } else if (task.handler_key === "repo.audit") {
-    if (typeof result.repository !== "string" || !result.repository.includes("/")) evidence.push("Repository identity is missing.");
+    if (typeof result.repository !== "string" || result.repository !== task.payload?.repo) evidence.push("Repository identity does not match the requested repository.");
+    if (!["public", "private"].includes(result.visibility)) evidence.push("Repository visibility is missing.");
+    if (typeof result.archived !== "boolean") evidence.push("Repository archive state is missing.");
+    if (result.defaultBranch !== null && typeof result.defaultBranch !== "string") evidence.push("Repository default branch is malformed.");
+    if (result.latestCommitSha !== null && !/^[a-f0-9]{40}$/i.test(result.latestCommitSha ?? "")) evidence.push("Latest commit SHA is malformed.");
     if (result.source !== "GitHub REST read-only API") evidence.push("Repository audit source is not verified as read-only.");
   } else if (task.handler_key === "repo.test") {
-    if (result.mode !== "read-only-existing-ci-observation" || !Array.isArray(result.runs)) evidence.push("CI observation evidence is incomplete.");
+    if (result.repository !== task.payload?.repo || result.mode !== "read-only-existing-ci-observation" || !Array.isArray(result.runs) || result.runs.length > 10) {
+      evidence.push("CI observation evidence is incomplete.");
+    } else if (result.runs.some(run => !run || typeof run.name !== "string" || typeof run.status !== "string" || (run.headSha !== null && !/^[a-f0-9]{40}$/i.test(run.headSha ?? "")))) {
+      evidence.push("One or more CI run records are malformed.");
+    }
   } else {
     evidence.push("No reviewer policy exists for this handler.");
   }
