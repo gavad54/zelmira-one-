@@ -115,3 +115,61 @@ export async function POST(request: Request) {
     return noStoreJson({ error: "schedule_persistence_failed" }, 503);
   }
 }
+
+const patchSchema = z.object({
+  scheduleId: z.string().trim().min(2).max(100),
+  enabled: z.boolean()
+}).strict();
+
+export async function PATCH(request: Request) {
+  if (!isSameOriginRequest(request)) return noStoreJson({ error: "invalid_origin" }, 403);
+  let body: unknown;
+  try {
+    body = await readJsonBody(request, 8_000);
+  } catch (error) {
+    return error instanceof Error && error.message === "BODY_TOO_LARGE"
+      ? noStoreJson({ error: "payload_too_large" }, 413)
+      : noStoreJson({ error: "invalid_input" }, 400);
+  }
+  const parsed = patchSchema.safeParse(body);
+  if (!parsed.success) return noStoreJson({ error: "invalid_input" }, 400);
+  try {
+    const result = await withPlatformOwnerTransaction({
+      sessionToken: await sessionToken(),
+      callback: async (tx, actor) => {
+        if (!await allowAttempt(sha256("owner-recurring-schedule:" + actor.userId), 10, 60 * 60 * 1000)) {
+          return { kind: "rate_limited" as const };
+        }
+        const existing = await tx.recurringSchedule.findUnique({ where: { scheduleKey: parsed.data.scheduleId } });
+        if (!existing) return { kind: "not_found" as const };
+        if (parsed.data.enabled && (
+          (existing.maxRuns !== null && existing.runCount >= existing.maxRuns) ||
+          (existing.endAt !== null && existing.nextRunAt > existing.endAt)
+        )) return { kind: "exhausted" as const };
+        const updated = await tx.recurringSchedule.update({
+          where: { id: existing.id },
+          data: { enabled: parsed.data.enabled },
+          select: { id: true, scheduleKey: true, enabled: true, nextRunAt: true, runCount: true }
+        });
+        await tx.auditEvent.create({
+          data: {
+            actorUserId: actor.userId,
+            action: parsed.data.enabled ? "owner.recurring_schedule_enabled" : "owner.recurring_schedule_paused",
+            resource: "RecurringSchedule",
+            resourceId: existing.id,
+            metadata: { scheduleKey: existing.scheduleKey, enabled: parsed.data.enabled }
+          },
+          select: { id: true }
+        });
+        return { kind: "updated" as const, schedule: updated };
+      }
+    });
+    if (!result.authorized) return noStoreJson({ error: "unauthorized" }, 401);
+    if (result.value.kind === "rate_limited") return noStoreJson({ error: "rate_limited" }, 429);
+    if (result.value.kind === "not_found") return noStoreJson({ error: "schedule_not_found" }, 404);
+    if (result.value.kind === "exhausted") return noStoreJson({ error: "schedule_exhausted" }, 409);
+    return noStoreJson({ schedule: result.value.schedule });
+  } catch {
+    return noStoreJson({ error: "schedule_update_failed" }, 503);
+  }
+}
