@@ -91,3 +91,43 @@ ChatGPT scheduled inspections are not a permanent Worker or independent schedule
 5. Surface/confirm the complete ARIANA source archive for additive import and full-suite verification.
 
 **Decision:** development CI is green for VAYRO, ARIA, ARIANA and LEADORA on the exact heads listed above. ARMIN's build and CodeQL pass, but its overall workflow remains blocked by Dependency Graph configuration. Production hosting, live database reconciliation, off-site backup/restore, native-device UAT and commercial release remain blocked.
+
+
+## Live verification addendum — 2026-11-25 20:01 UTC
+
+This addendum supersedes earlier VAYRO PR-head and live-infrastructure observations in this file where they conflict.
+
+### Exact VAYRO repository head
+
+- PR #47 is **OPEN / DRAFT / UNMERGED**. Exact head: `2f973b3d23aa13469bb27f245f565c89852f88e0`.
+- VAYRO CI [45647054177](https://github.com/gavad54/zelmira-one-/actions/runs/45647054177): **SUCCESS**.
+- Duplicate VAYRO CI [45647045728](https://github.com/gavad54/zelmira-one-/actions/runs/45647045728): **SUCCESS**.
+- CodeQL [45647054199](https://github.com/gavad54/zelmira-one-/actions/runs/45647054199): **SUCCESS**.
+- npm lockfile validation [45647054527](https://github.com/gavad54/zelmira-one-/actions/runs/45647054527): **SUCCESS**.
+- All four workflow runs identify the exact SHA above. These results establish repository/CI checks only, not deployment or production acceptance.
+
+### Railway — fresh read-only inventory
+
+- The connected Railway workspace currently lists exactly two projects: **ARIA Web** and **LEADORA**. There is **no dedicated VAYRO project**.
+- In **ARIA Web / production**, the live service named VAYRO sources `gavad54/zelmira-one-` on `main`; its latest deployment `6354aa02-a334-4457-a46d-5f41188845a5` is **FAILED**. The service has no attached volume. Environment status reports it **OFFLINE**.
+- The ARIA Web environment also has a pending staged patch containing a staged-create service sourced from `brand/vayro-name-only`. It is not live and was not accepted or deployed.
+- In **LEADORA / production**, the second service named VAYRO sources `gavad54/zelmira-one-` on `security/mfa-session-endpoint-gates`; latest deployment `f2f67daf-5d15-4dc1-91e2-3596fe521d6d` is **FAILED** and environment status reports **OFFLINE**.
+- LEADORA's own web service is also reported **OFFLINE**. Its existing `leadora-data` volume remains attached only to the LEADORA service.
+- No staged Railway changes were accepted, no variables or secret values were read, and no deploy, rollback, volume or project mutation was performed.
+
+### VAYRO-CORE — fresh read-only database inspection
+
+- Supabase project `VAYRO-CORE` (`wdqhdnhpgxhmmfeyxwxr`) reports **ACTIVE_HEALTHY**, PostgreSQL **17.11.0.018**, region `eu-central-1`.
+- The live `public` schema contains **11 tables**; the table inventory reports **zero rows** in each.
+- All 11 tables have RLS enabled; **0 policies** and **0 FORCE RLS** tables were found in the live catalog.
+- No `vayro%` database roles were found. The inspected catalog also returned **0 table grants** to `anon`, `authenticated` or `service_role`.
+- Supabase migration history is **empty**.
+- Security Advisor reports **11** `rls_enabled_no_policy` findings. Performance Advisor reports **10** unused-index findings; with the inspected tables empty, these are not grounds to drop indexes. Health Advisor returned **no findings**.
+- RLS enabled without policies is fail-closed for roles subject to RLS; it is not evidence of public read access. However, the absence of the migration ledger, dedicated roles and policies means production application access is not ready.
+- All database inspection was read-only. No DDL, DML, migration, role, grant, policy, credential or data change was performed.
+
+### Current operational decision
+
+**REPOSITORY CI / CODEQL / LOCKFILE: PASS ON EXACT SHA — PRODUCTION HOSTING: BLOCKED — LIVE DATABASE BASELINE / ROLES / POLICIES: BLOCKED — BACKUP / RESTORE: UNVERIFIED — NOT RELEASED.**
+
+The next safe sequence is: obtain an owner-approved independent backup destination, complete a checksum-verified encrypted backup and isolated restore, reconcile the restored live catalog against the repository migrations, then prepare a reviewed role/policy/migration plan. Do not apply live migrations or reuse ARIA/LEADORA infrastructure.
