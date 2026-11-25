@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import { isSameOriginRequest } from "@/lib/auth-core.mjs";
 import { allowAttempt, noStoreJson, sha256 } from "@/lib/auth-service";
 import { withPlatformOwnerTransaction } from "@/lib/platform-request-transaction";
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
             projectKey: schedule.projectKey,
             handlerKey: schedule.handlerKey,
             title: schedule.title,
-            payload: parsed.data.payload ?? undefined,
+            payload: parsed.data.payload as Prisma.InputJsonValue | undefined,
             interval: schedule.interval,
             unit: schedule.unit,
             missedRunPolicy: schedule.missedRunPolicy,
