@@ -161,8 +161,7 @@ jobs:
             exit 1
           fi
 
-          validation="$(docker run --rm --network host -e RESTORE_DATABASE_URL postgres:17-alpine \
-            sh -ceu 'psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -At <<'\''SQL'\'' 
+          cat > "$RUNNER_TEMP/vayro-restore/validate.sql" <<'SQL'
           DO $vayro$
           DECLARE
             rel record;
@@ -190,8 +189,10 @@ jobs:
             WHERE n.nspname NOT IN ('pg_catalog','information_schema')
               AND c.relkind IN ('r','p') AND c.relrowsecurity
               AND NOT EXISTS (SELECT 1 FROM pg_policies p WHERE p.schemaname=n.nspname AND p.tablename=c.relname);
-          SQL' 2>&1)
-          )"
+          SQL
+          validation="$(docker run --rm --network host -e RESTORE_DATABASE_URL \
+            -v "$RUNNER_TEMP/vayro-restore:/backup:ro" postgres:17-alpine \
+            sh -ceu 'psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -At -f /backup/validate.sql' 2>&1)"
           printf '%s\\n' "$validation" | tee "$RUNNER_TEMP/vayro-restore/validation.txt"
           if ! grep -Eq 'row_count=[0-9]+' "$RUNNER_TEMP/vayro-restore/validation.txt"; then
             echo "::error::Restore validation did not produce a total row-count result"
