@@ -76,6 +76,8 @@ jobs:
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE vayro_task_scheduler_ci LOGIN PASSWORD 'ci-only' IN ROLE vayro_task_scheduler;"
       - name: Prove scheduler least-privilege function boundary (isolated PostgreSQL only)
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "SET ROLE vayro_task_scheduler_ci" -f tests/sql/scheduler-worker-role-boundary.sql
+      - name: Verify recurring schedule materialization and goal reconciliation (isolated PostgreSQL only)
+        run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/recurring-scheduler-goal-reconciliation.integration.sql
       - name: Verify dependency-gated task claims in isolated PostgreSQL
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/task-dependency-claim.integration.sql
       - name: Verify worker restart recovery and stale-lease fencing (isolated PostgreSQL only)
