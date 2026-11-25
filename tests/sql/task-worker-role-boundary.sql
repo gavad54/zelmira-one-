@@ -29,6 +29,17 @@ BEGIN
   IF NOT has_function_privilege('vayro_platform', 'public.vayro_add_engineering_task_dependency(text,text)', 'EXECUTE') THEN
     RAISE EXCEPTION 'OWNER_DEPENDENCY_FUNCTION_EXECUTE_MISSING';
   END IF;
+  IF has_table_privilege(current_user, 'public."EngineeringAgent"', 'SELECT')
+     OR has_table_privilege(current_user, 'public."TaskReview"', 'INSERT')
+     OR has_table_privilege(current_user, 'public."RecurringSchedule"', 'SELECT')
+     OR has_table_privilege(current_user, 'public."GoalRecord"', 'SELECT') THEN
+    RAISE EXCEPTION 'TASK_WORKER_HAS_CONTROL_PLANE_TABLE_ACCESS';
+  END IF;
+  IF NOT has_function_privilege(current_user, 'public.vayro_resolve_engineering_agent(text,text)', 'EXECUTE')
+     OR NOT has_function_privilege(current_user, 'public.vayro_resolve_task_reviewer(text)', 'EXECUTE')
+     OR NOT has_function_privilege(current_user, 'public.vayro_record_engineering_task_review(text,text,text,text,text,text,jsonb)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'TASK_WORKER_AGENT_REVIEW_FUNCTION_EXECUTE_MISSING';
+  END IF;
   IF NOT has_function_privilege(current_user, 'public.vayro_claim_engineering_task(text,integer)', 'EXECUTE')
      OR NOT has_function_privilege(current_user, 'public.vayro_heartbeat_engineering_task(text,text,text,integer)', 'EXECUTE')
      OR NOT has_function_privilege(current_user, 'public.vayro_complete_engineering_task(text,text,text,jsonb)', 'EXECUTE')
