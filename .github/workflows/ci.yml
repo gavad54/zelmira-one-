@@ -72,6 +72,10 @@ jobs:
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE vayro_task_worker_ci LOGIN PASSWORD 'ci-only' IN ROLE vayro_task_worker;"
       - name: Prove task worker least-privilege function boundary (isolated PostgreSQL only)
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "SET ROLE vayro_task_worker_ci" -f tests/sql/task-worker-role-boundary.sql
+      - name: Enable dedicated scheduler runtime login in isolated CI only
+        run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE vayro_task_scheduler_ci LOGIN PASSWORD 'ci-only' IN ROLE vayro_task_scheduler;"
+      - name: Prove scheduler least-privilege function boundary (isolated PostgreSQL only)
+        run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "SET ROLE vayro_task_scheduler_ci" -f tests/sql/scheduler-worker-role-boundary.sql
       - name: Verify dependency-gated task claims in isolated PostgreSQL
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/task-dependency-claim.integration.sql
       - name: Verify worker restart recovery and stale-lease fencing (isolated PostgreSQL only)
