@@ -144,3 +144,27 @@ REVOKE ALL ON TABLE public."GoalRecord", public."GoalEpic", public."GoalFeature"
 -- No direct table grants are introduced here. Owner-only access must be added
 -- through reviewed SECURITY DEFINER APIs after verifying the platform actor
 -- and least-privilege role boundaries on the target database.
+
+-- Platform owner APIs receive only explicit control-plane CRUD, protected by
+-- an owner-checking RLS policy. The task and scheduler workers get no table grants.
+GRANT SELECT, INSERT, UPDATE ON public."GoalRecord", public."GoalEpic", public."GoalFeature" TO vayro_platform;
+GRANT SELECT, INSERT, UPDATE ON public."RecurringSchedule", public."EngineeringAgent" TO vayro_platform;
+GRANT SELECT ON public."TaskReview" TO vayro_platform;
+
+CREATE POLICY vayro_platform_goal_record_owner ON public."GoalRecord"
+  FOR ALL TO vayro_platform USING (public.vayro_platform_actor_is_owner())
+  WITH CHECK (public.vayro_platform_actor_is_owner());
+CREATE POLICY vayro_platform_goal_epic_owner ON public."GoalEpic"
+  FOR ALL TO vayro_platform USING (public.vayro_platform_actor_is_owner())
+  WITH CHECK (public.vayro_platform_actor_is_owner());
+CREATE POLICY vayro_platform_goal_feature_owner ON public."GoalFeature"
+  FOR ALL TO vayro_platform USING (public.vayro_platform_actor_is_owner())
+  WITH CHECK (public.vayro_platform_actor_is_owner());
+CREATE POLICY vayro_platform_recurring_schedule_owner ON public."RecurringSchedule"
+  FOR ALL TO vayro_platform USING (public.vayro_platform_actor_is_owner())
+  WITH CHECK (public.vayro_platform_actor_is_owner());
+CREATE POLICY vayro_platform_engineering_agent_owner ON public."EngineeringAgent"
+  FOR ALL TO vayro_platform USING (public.vayro_platform_actor_is_owner())
+  WITH CHECK (public.vayro_platform_actor_is_owner());
+CREATE POLICY vayro_platform_task_review_owner_read ON public."TaskReview"
+  FOR SELECT TO vayro_platform USING (public.vayro_platform_actor_is_owner());
