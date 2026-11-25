@@ -13,6 +13,7 @@ const criterionSchema = z.object({
   id: z.string().trim().min(2).max(100),
   title: z.string().trim().min(2).max(160),
   handlerKey: z.enum(["repo.audit", "repo.test", "report.generate"]),
+  repo: z.string().regex(/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/).optional(),
   dependsOn: z.array(z.string().min(2).max(100)).max(200).default([])
 }).strict();
 
