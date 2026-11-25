@@ -79,7 +79,7 @@ BEGIN
         'scheduleKey',v_schedule."scheduleKey",
         'scheduledFor',to_char(v_occurrence,'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
       ),
-      'schedule:' || v_schedule."scheduleKey" || ':' || to_char(v_occurrence AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+      'schedule:' || v_schedule."scheduleKey" || ':' || to_char(v_occurrence,'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
       v_occurrence,v_now,3,0,false,v_now,v_now
     )
     ON CONFLICT ("idempotencyKey") DO NOTHING;
