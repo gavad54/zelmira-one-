@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { advanceRecurringSchedule, materializeDueOccurrence, occurrenceIdempotencyKey, validateRecurringSchedule } from "../src/engine/recurring-scheduler.mjs";
+import { advanceRecurringSchedule, materializeDueOccurrence, occurrenceIdempotencyKey, validateRecurringSchedule, validateSchedulePayload } from "../src/engine/recurring-scheduler.mjs";
 
 const base = {
   scheduleId: "daily-audit", projectKey: "VAYRO", handlerKey: "repo.audit", title: "Audit VAYRO",
@@ -53,4 +53,12 @@ test("catch-up-once advances beyond the backlog instead of replaying every misse
   const advanced = advanceRecurringSchedule(schedule, occurrence.scheduledAt, now);
   assert.equal(occurrence.scheduledAt.toISOString(), "2026-11-20T10:00:00.000Z");
   assert.equal(advanced.nextRunAt.toISOString(), "2026-11-24T10:00:00.000Z");
+});
+
+test("schedule payloads are handler-specific and cannot carry arbitrary fields", () => {
+  assert.deepEqual(validateSchedulePayload("repo.audit", { repo: "gavad54/zelmira-one-" }), { repo: "gavad54/zelmira-one-" });
+  assert.throws(() => validateSchedulePayload("repo.audit", { repo: "../secrets" }), /SCHEDULE_REPOSITORY_INVALID/);
+  assert.throws(() => validateSchedulePayload("repo.test", { repo: "gavad54/zelmira-one-", token: "secret" }), /SCHEDULE_REPOSITORY_INVALID/);
+  assert.deepEqual(validateSchedulePayload("report.generate", { reportType: "weekly" }), { reportType: "weekly" });
+  assert.throws(() => validateSchedulePayload("report.generate", { reportType: "weekly", token: "secret" }), /SCHEDULE_REPORT_PAYLOAD_INVALID/);
 });
