@@ -30,7 +30,19 @@ export async function GET() {
                   select: {
                     id: true, featureKey: true, title: true, acceptanceCriteria: true,
                     handlerKey: true, status: true, sortOrder: true,
-                    task: { select: { id: true, status: true, attemptCount: true, lastErrorCode: true } }
+                    task: {
+                      select: {
+                        id: true, status: true, attemptCount: true, lastErrorCode: true,
+                        reviews: {
+                          orderBy: { reviewRound: "desc" },
+                          take: 3,
+                          select: {
+                            reviewRound: true, decision: true, evidence: true, createdAt: true,
+                            reviewer: { select: { agentKey: true, displayName: true, version: true } }
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }
