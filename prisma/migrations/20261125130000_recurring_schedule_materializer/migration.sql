@@ -295,6 +295,13 @@ BEGIN
      OR octet_length(p_evidence::TEXT) > 16000 THEN
     RAISE EXCEPTION 'TASK_REVIEW_EVIDENCE_INVALID' USING ERRCODE = '22023';
   END IF;
+  IF EXISTS (
+    SELECT 1 FROM jsonb_array_elements(p_evidence) item
+    WHERE jsonb_typeof(item) IS DISTINCT FROM 'string'
+       OR length(item #>> '{}') > 500
+  ) THEN
+    RAISE EXCEPTION 'TASK_REVIEW_EVIDENCE_INVALID' USING ERRCODE = '22023';
+  END IF;
 
   SELECT t."projectKey",t."attemptCount" INTO v_project_key,v_attempt
   FROM public."EngineeringTask" t
