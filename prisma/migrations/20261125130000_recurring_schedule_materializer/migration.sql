@@ -16,7 +16,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public
 AS $$
 DECLARE
   v_schedule public."RecurringSchedule"%ROWTYPE;
-  v_now TIMESTAMP(3) := clock_timestamp()::TIMESTAMP(3);
+  v_now TIMESTAMP(3) := timezone('UTC', clock_timestamp())::TIMESTAMP(3);
   v_interval_ms BIGINT;
   v_elapsed_ms BIGINT;
   v_occurrence TIMESTAMP(3);
@@ -76,7 +76,7 @@ BEGIN
       v_task_id,v_schedule."projectKey",v_task_type,v_schedule."handlerKey",v_schedule."title",50,'QUEUED',
       COALESCE(v_schedule."payload",'{}'::JSONB) || jsonb_build_object(
         'scheduleKey',v_schedule."scheduleKey",
-        'scheduledFor',to_char(v_occurrence AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+        'scheduledFor',to_char(v_occurrence,'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
       ),
       'schedule:' || v_schedule."scheduleKey" || ':' || to_char(v_occurrence AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
       v_occurrence,v_now,3,0,false,v_now,v_now
@@ -145,7 +145,7 @@ BEGIN
       WHEN c.task_status IN ('WAITING_APPROVAL','WAITING_FOR_OWNER') THEN 'WAITING_APPROVAL'
       ELSE 'QUEUED'
     END,
-    "updatedAt" = clock_timestamp()
+    "updatedAt" = timezone('UTC', clock_timestamp())
   FROM candidates c
   WHERE f."id" = c."id";
   GET DIAGNOSTICS v_count = ROW_COUNT;
