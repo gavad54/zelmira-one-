@@ -41,7 +41,7 @@ test("does not materialize disabled, future, exhausted or ended schedules", () =
   assert.equal(materializeDueOccurrence({ ...base, enabled: false }, new Date("2026-11-30T00:00:00Z")), null);
   assert.equal(materializeDueOccurrence(base, new Date("2026-11-19T00:00:00Z")), null);
   assert.equal(materializeDueOccurrence({ ...base, maxRuns: 1, runCount: 1 }, new Date("2026-11-30T00:00:00Z")), null);
-  assert.equal(materializeDueOccurrence({ ...base, endAt: "2026-11-19T00:00:00Z" }, new Date("2026-11-30T00:00:00Z")), null);
+  assert.equal(materializeDueOccurrence({ ...base, endAt: "2026-11-21T00:00:00Z" }, new Date("2026-11-30T00:00:00Z")), null);
 });
 
 test("catch-up-once advances beyond the backlog instead of replaying every missed interval", () => {
