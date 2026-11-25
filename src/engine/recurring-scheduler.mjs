@@ -78,3 +78,27 @@ export function advanceRecurringSchedule(input, emittedOccurrence, now = emitted
   const enabled = (schedule.maxRuns === null || runCount < schedule.maxRuns) && (!schedule.endAt || nextRunAt <= schedule.endAt);
   return Object.freeze({ ...schedule, nextRunAt, runCount, enabled, lastRunAt: emittedAt });
 }
+
+export function validateSchedulePayload(handlerKey, payload = {}) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload) ||
+      (Object.getPrototypeOf(payload) !== Object.prototype && Object.getPrototypeOf(payload) !== null)) {
+    fail("SCHEDULE_PAYLOAD_INVALID");
+  }
+  const keys = Object.keys(payload);
+  if (keys.some(key => ["__proto__", "prototype", "constructor"].includes(key))) fail("SCHEDULE_PAYLOAD_UNSAFE_KEY");
+  if (handlerKey === "repo.audit" || handlerKey === "repo.test") {
+    if (keys.length !== 1 || keys[0] !== "repo" || typeof payload.repo !== "string" ||
+        !/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/.test(payload.repo) ||
+        payload.repo.split("/").some(part => part === "." || part === "..")) fail("SCHEDULE_REPOSITORY_INVALID");
+    return Object.freeze({ repo: payload.repo });
+  }
+  if (handlerKey === "report.generate") {
+    if (keys.some(key => key !== "reportType")) fail("SCHEDULE_REPORT_PAYLOAD_INVALID");
+    if (payload.reportType !== undefined &&
+        (typeof payload.reportType !== "string" || payload.reportType.trim().length < 2 || payload.reportType.length > 80)) {
+      fail("SCHEDULE_REPORT_TYPE_INVALID");
+    }
+    return Object.freeze(payload.reportType === undefined ? {} : { reportType: payload.reportType.trim() });
+  }
+  fail("SCHEDULE_HANDLER_NOT_ALLOWED");
+}
