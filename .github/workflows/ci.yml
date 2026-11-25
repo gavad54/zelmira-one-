@@ -45,6 +45,20 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Test security override in isolated remediation branch only
+        if: github.head_ref == 'feat/vayro-s3-backup-implementation-2026-11-25' || github.ref == 'refs/heads/feat/vayro-s3-backup-implementation-2026-11-25'
+        run: |
+          npm pkg set 'overrides.effect=3.22.1'
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Upload generated dependency manifests for review
+        if: github.head_ref == 'feat/vayro-s3-backup-implementation-2026-11-25' || github.ref == 'refs/heads/feat/vayro-s3-backup-implementation-2026-11-25'
+        uses: actions/upload-artifact@v4
+        with:
+          name: vayro-dependency-remediation-manifests
+          path: |
+            package.json
+            package-lock.json
+          if-no-files-found: error
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Enforce locked dependency security audit
