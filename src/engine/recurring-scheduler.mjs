@@ -25,13 +25,18 @@ export function validateRecurringSchedule(input) {
   if (endAt && endAt <= startAt) fail("SCHEDULE_END_BEFORE_START");
   const maxRuns = input.maxRuns ?? null;
   if (maxRuns !== null && (!Number.isSafeInteger(maxRuns) || maxRuns < 1 || maxRuns > 100_000)) fail("SCHEDULE_MAX_RUNS_INVALID");
+  const runCount = input.runCount ?? 0;
+  if (!Number.isSafeInteger(runCount) || runCount < 0 || (maxRuns !== null && runCount > maxRuns)) fail("SCHEDULE_RUN_COUNT_INVALID");
+  const enabled = input.enabled ?? true;
+  if (typeof enabled !== "boolean") fail("SCHEDULE_ENABLED_INVALID");
+  const nextRunAt = input.nextRunAt == null ? startAt : date(input.nextRunAt, "SCHEDULE_NEXT_RUN_INVALID");
+  if (nextRunAt < startAt) fail("SCHEDULE_NEXT_BEFORE_START");
   const missedRunPolicy = input.missedRunPolicy ?? "SKIP";
   if (!["SKIP", "CATCH_UP_ONCE"].includes(missedRunPolicy)) fail("SCHEDULE_MISSED_POLICY_INVALID");
   return Object.freeze({
     scheduleId: input.scheduleId, projectKey: input.projectKey, handlerKey: input.handlerKey,
     title: input.title.trim(), interval: input.interval, unit: input.unit, intervalMs,
-    startAt, nextRunAt: input.nextRunAt == null ? startAt : date(input.nextRunAt, "SCHEDULE_NEXT_RUN_INVALID"),
-    endAt, maxRuns, runCount: input.runCount ?? 0, enabled: input.enabled ?? true, missedRunPolicy
+    startAt, nextRunAt, endAt, maxRuns, runCount, enabled, missedRunPolicy
   });
 }
 
