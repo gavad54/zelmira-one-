@@ -3,7 +3,7 @@
 - تاریخ: 2026-11-25
 - شاخه اجرا: `feat/vayro-s3-backup-implementation-2026-11-25`
 - سند طراحی مبنا: `docs/specs/2026-11-25-vayro-s3-compatible-backup-design.md`
-- وضعیت: برنامه آماده اجرا؛ هیچ کد عملیاتی در این commit تغییر نمی‌کند.
+- وضعیت: پیاده‌سازی اولیه workflowها و آزمون قراردادی در شاخه مستقل انجام شده؛ اجرای واقعی backup/restore هنوز مسدود به تنظیمات و سرویس مالک است.
 
 ## قواعد غیرقابل‌مذاکره
 
@@ -18,8 +18,8 @@
 ## بررسی پایه و آماده‌سازی
 
 - [ ] بررسی وضعیت شاخه و اطمینان از اینکه شاخه اجرا از commit سند طراحی منشعب شده است.
-- [ ] فراهم‌کردن workspace ایزوله. در این نشست ابزار محلی Git/worktree در دسترس نیست؛ شاخه مستقل GitHub جایگزین مرزبندی تغییرات است، اما آزمون محلی تا فراهم‌شدن محیط واقعی قابل اجرا نیست.
-- [ ] بررسی کامل هر دو workflow فعلی و تمام ارجاعات R2 در فایل‌های مرتبط.
+- [x] فراهم‌کردن مرزبندی ایزوله با شاخه مستقل GitHub؛ ابزار محلی Git/worktree در این نشست در دسترس نبود.
+- [x] بررسی هر دو workflow و تبدیل متغیرهای ارائه‌دهنده قبلی به قرارداد عمومی `VAYRO_S3_*`.
 - [ ] ثبت baseline با Node.js >=22 و نصب وابستگی‌ها.
 - [ ] اجرای `npm test`, `npm run test:integration`, `npm run lint`, `npm run typecheck`, `npm run build` پیش از تغییرات؛ خطاهای baseline جداگانه ثبت شوند.
 
@@ -29,26 +29,26 @@
 - [ ] ردکردن endpoint ناامن، region خالی، bucket نامعتبر و مقادیر ناقص.
 - [ ] حذف فرض‌های مختص Cloudflare از قرارداد عمومی.
 - [ ] افزودن تست‌های رفتاری برای حالت معتبر، HTTP، endpoint نامعتبر، region مفقود و پیکربندی ناقص.
-- [ ] اجرای چرخه TDD: ابتدا تست قرمز با شکست مورد انتظار، سپس حداقل پیاده‌سازی و تست سبز.
+- [x] افزودن تست‌های قراردادی workflow و اجرای آن‌ها در CI سبز؛ ثبت شواهد اجرای قرمز مستقل/تاریخی در این مرحله موجود نیست.
 
 ## گام 2 — workflow پشتیبان‌گیری
 
-- [ ] تغییر `.github/workflows/vayro-db-backup.yml` به نام‌های عمومی `VAYRO_S3_*`.
+- [x] تغییر `.github/workflows/vayro-db-backup.yml` به نام‌های عمومی `VAYRO_S3_*`.
 - [ ] حفظ زمان‌بندی و اجرای دستی فعلی و محدودیت branch/environment.
-- [ ] تنظیم صریح path-style برای AWS CLI و آزمون سازگاری checksum.
-- [ ] نگه‌داشتن رمزگذاری age پیش از upload و checksum SHA-256.
+- [x] تنظیم صریح path-style و گزینه‌های checksum برای AWS CLI؛ سازگاری با provider واقعی هنوز آزموده نشده است.
+- [x] حفظ رمزگذاری age پیش از upload و checksum SHA-256.
 - [ ] محدودکردن مجوز کلید backup به عملیات لازم؛ عدم اعطای مجوز حذف.
 - [ ] اعتبارسنجی کلید object و جلوگیری از چاپ متغیرهای حساس.
-- [ ] افزودن بررسی upload با head-object و گزارش خلاصه بدون اطلاعات حساس.
-- [ ] افزودن تست‌های ساختاری/اسکریپتی برای جلوگیری از بازگشت endpoint و region اختصاصی Cloudflare.
+- [x] افزودن بررسی اندازه object با `head-object` و گزارش خلاصه بدون اطلاعات حساس؛ این بررسی جایگزین checksum/restore نیست.
+- [x] افزودن تست‌های ساختاری برای قرارداد عمومی S3، path-style، checksum، رمزگذاری و محدودیت مقصد restore.
 
 ## گام 3 — workflow بازیابی آزمایشی
 
-- [ ] تغییر `.github/workflows/vayro-db-restore-drill.yml` به تنظیمات عمومی S3.
+- [x] تغییر `.github/workflows/vayro-db-restore-drill.yml` به تنظیمات عمومی S3.
 - [ ] حفظ تأیید صریح اجرای دستی و Environment محافظت‌شده restore.
 - [ ] دریافت فایل و checksum، بررسی SHA-256 و سپس رمزگشایی age.
-- [ ] الزام مقصد PostgreSQL آزمایشی مستقل از host تولید.
-- [ ] حفظ شرط خالی بودن مقصد و اجرای pg_restore با توقف در اولین خطا.
+- [x] الزام میزبان مقصد restore متفاوت از میزبان production و نام‌گذاری صریح دیتابیس آزمایشی.
+- [x] حفظ شرط خالی بودن مقصد و اجرای `pg_restore --exit-on-error`.
 - [ ] بررسی نسخه PostgreSQL و وجود relationها.
 - [ ] افزودن کنترل‌های تکمیلی برای نقش‌ها، extensionها، RLS، شمارش رکوردها و invariantهای دامنه؛ مواردی که در dump فعلی موجود نیستند باید به‌عنوان محدودیت مستند شوند، نه اینکه موفق فرض شوند.
 - [ ] تست‌های منفی برای مقصد همسان با production، مقصد غیرخالی، checksum نامعتبر و فایل رمزگشایی‌ناپذیر.
@@ -71,9 +71,28 @@
 - [ ] اجرای `npm run typecheck`.
 - [ ] اجرای `npm run build`.
 - [ ] بررسی YAML workflowها و permissionها.
-- [ ] اجرای CI/CodeQL روی شاخه و ثبت شناسه اجرا و SHA.
+- [x] CI و CodeQL روی آخرین SHA اجرا و سبز شدند: `e9227003838029fb598cf120e4d89728e9d14ed3`؛ CI run `45551078289` و CodeQL run `45551078375`.
 - [ ] فقط پس از فراهم‌شدن credentialهای مالک در GitHub Environment و تأیید هزینه، اجرای backup آزمایشی روی داده غیرتولیدی.
 - [ ] اجرای restore آزمایشی و نگهداری شواهد checksum، نسخه PostgreSQL، شمارش‌ها و نتیجه smoke tests.
+
+## شواهد فعلی CI
+
+- `npm audit`: صفر آسیب‌پذیری در lockfile تولیدشده داخل runner.
+- Unit tests: 93 موفق، صفر ناموفق.
+- Integration tests: 30 موفق، صفر ناموفق.
+- PostgreSQL role boundaries و tenant RLS: موفق روی PostgreSQL موقت CI.
+- Lint، typecheck، build و Docker build: موفق.
+- CodeQL: موفق.
+- Artifact manifests: `vayro-dependency-remediation-manifests`؛ `effect` در lockfile برابر `3.22.1` است. این تغییر هنوز به‌صورت دائمی در `package.json` و `package-lock.json` شاخه ثبت نشده است.
+
+## محدودیت‌های باقی‌مانده
+
+- workflowها هنوز به سرویس S3 واقعی وصل نشده‌اند؛ اعتبارسنجی endpoint، path-style و checksum با ارائه‌دهنده واقعی انجام نشده است.
+- bucket خصوصی، access keyهای محدود، age recipient/identity و GitHub Environments/Secrets/Variables ایجاد یا تنظیم نشده‌اند.
+- backup واقعی، checksum از شیء واقعی، رمزگشایی واقعی و restore واقعی انجام نشده‌اند.
+- dump فعلی با `--no-owner --no-acl` ساخته می‌شود؛ بنابراین بازیابی roleها و grantها از این dump تضمین نمی‌شود. پیش از پذیرش restore باید این محدودیت با روش بازیابی مناسب محیط managed PostgreSQL حل و در آزمون ثابت شود.
+- پس از restore فعلی فقط نسخه PostgreSQL و وجود relationها بررسی می‌شود؛ row-count، extension، RLS و invariantهای دامنه هنوز نیازمند آزمون تکمیلی‌اند.
+- وابستگی `effect@3.22.1` فقط در manifestهای Artifact تولیدشده در CI وجود دارد و باید بعداً به شکل بازبینی‌شده به شاخه commit شود.
 
 ## معیار خروج
 
