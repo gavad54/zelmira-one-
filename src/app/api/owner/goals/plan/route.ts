@@ -65,12 +65,6 @@ export async function POST(request: Request) {
           return { kind: "rate_limited" as const };
         }
 
-        const existingGoal = await tx.goalRecord.findUnique({
-          where: { goalKey_version: { goalKey: plan.goalId, version: plan.version } },
-          select: { id: true }
-        });
-        if (existingGoal) return { kind: "goal_conflict" as const };
-
         const keys = plan.tasks.map(task => task.idempotencyKey);
         const existing = await tx.engineeringTask.findMany({
           where: { idempotencyKey: { in: keys } },
@@ -81,6 +75,12 @@ export async function POST(request: Request) {
           if (existing.length !== keys.length) return { kind: "partial_conflict" as const };
           return { kind: "duplicate" as const, tasks: existing };
         }
+
+        const existingGoal = await tx.goalRecord.findUnique({
+          where: { goalKey_version: { goalKey: plan.goalId, version: plan.version } },
+          select: { id: true }
+        });
+        if (existingGoal) return { kind: "goal_conflict" as const };
 
         const goalRecord = await tx.goalRecord.create({
           data: {
