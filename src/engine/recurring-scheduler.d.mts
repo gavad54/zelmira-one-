@@ -45,3 +45,5 @@ export function materializeDueOccurrence(input: RecurringScheduleDefinition, now
   payload: { scheduleId: string; scheduledFor: string; recurrence: { interval: number; unit: RecurrenceUnit } };
 }> | null;
 export function advanceRecurringSchedule(input: RecurringScheduleDefinition, emittedOccurrence: string | Date, now?: string | Date): Readonly<ValidatedRecurringSchedule & { lastRunAt: Date }>;
+
+export function validateSchedulePayload(handlerKey: RecurringScheduleDefinition["handlerKey"], payload?: Record<string, unknown>): Readonly<Record<string, string>>;
