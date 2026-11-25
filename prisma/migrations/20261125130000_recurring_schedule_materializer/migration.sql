@@ -102,3 +102,94 @@ $$;
 
 REVOKE ALL ON FUNCTION public.vayro_materialize_due_engineering_schedules(TEXT,INTEGER) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.vayro_materialize_due_engineering_schedules(TEXT,INTEGER) TO vayro_task_scheduler;
+
+
+-- Reconcile durable goal/epic/feature status from authoritative task states.
+-- This is a read-derived projection update; it does not dispatch or approve work.
+CREATE OR REPLACE FUNCTION public.vayro_reconcile_goal_progress(p_batch_size INTEGER DEFAULT 100)
+RETURNS INTEGER
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public
+AS $$
+DECLARE
+  v_updated INTEGER := 0;
+  v_count INTEGER;
+BEGIN
+  IF p_batch_size IS NULL OR p_batch_size < 1 OR p_batch_size > 1000 THEN
+    RAISE EXCEPTION 'GOAL_RECONCILE_BATCH_INVALID' USING ERRCODE = '22023';
+  END IF;
+
+  WITH candidates AS (
+    SELECT f."id", t."status" AS task_status
+    FROM public."GoalFeature" f
+    JOIN public."EngineeringTask" t ON t."id" = f."taskId"
+    WHERE f."status" IS DISTINCT FROM CASE
+      WHEN t."status" = 'SUCCEEDED' THEN 'SUCCEEDED'
+      WHEN t."status" IN ('FAILED','DEAD_LETTER','CANCELLED','EXPIRED') THEN 'FAILED'
+      WHEN t."status" = 'RUNNING' THEN 'RUNNING'
+      WHEN t."status" = 'BLOCKED' THEN 'BLOCKED'
+      WHEN t."status" IN ('WAITING_APPROVAL','WAITING_FOR_OWNER') THEN 'WAITING_APPROVAL'
+      ELSE 'QUEUED'
+    END
+    ORDER BY f."updatedAt"
+    LIMIT p_batch_size
+  )
+  UPDATE public."GoalFeature" f
+  SET "status" = CASE
+      WHEN c.task_status = 'SUCCEEDED' THEN 'SUCCEEDED'
+      WHEN c.task_status IN ('FAILED','DEAD_LETTER','CANCELLED','EXPIRED') THEN 'FAILED'
+      WHEN c.task_status = 'RUNNING' THEN 'RUNNING'
+      WHEN c.task_status = 'BLOCKED' THEN 'BLOCKED'
+      WHEN c.task_status IN ('WAITING_APPROVAL','WAITING_FOR_OWNER') THEN 'WAITING_APPROVAL'
+      ELSE 'QUEUED'
+    END,
+    "updatedAt" = clock_timestamp()
+  FROM candidates c
+  WHERE f."id" = c."id";
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  v_updated := v_updated + v_count;
+
+  WITH epic_states AS (
+    SELECT e."id",
+      CASE
+        WHEN bool_and(f."status" = 'SUCCEEDED') THEN 'SUCCEEDED'
+        WHEN bool_or(f."status" IN ('FAILED','BLOCKED')) THEN 'BLOCKED'
+        WHEN bool_or(f."status" = 'RUNNING') THEN 'RUNNING'
+        WHEN bool_or(f."status" = 'WAITING_APPROVAL') THEN 'WAITING_APPROVAL'
+        ELSE 'QUEUED'
+      END AS derived_status
+    FROM public."GoalEpic" e
+    JOIN public."GoalFeature" f ON f."epicId" = e."id"
+    GROUP BY e."id"
+  )
+  UPDATE public."GoalEpic" e
+  SET "status" = s.derived_status, "updatedAt" = clock_timestamp()
+  FROM epic_states s
+  WHERE e."id" = s."id" AND e."status" IS DISTINCT FROM s.derived_status;
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  v_updated := v_updated + v_count;
+
+  WITH goal_states AS (
+    SELECT g."id",
+      CASE
+        WHEN bool_and(e."status" = 'SUCCEEDED') THEN 'SUCCEEDED'
+        WHEN bool_or(e."status" IN ('BLOCKED','FAILED')) THEN 'BLOCKED'
+        WHEN bool_or(e."status" = 'RUNNING') THEN 'RUNNING'
+        WHEN bool_or(e."status" = 'WAITING_APPROVAL') THEN 'WAITING_APPROVAL'
+        ELSE 'QUEUED'
+      END AS derived_status
+    FROM public."GoalRecord" g
+    JOIN public."GoalEpic" e ON e."goalId" = g."id"
+    GROUP BY g."id"
+  )
+  UPDATE public."GoalRecord" g
+  SET "status" = s.derived_status, "updatedAt" = clock_timestamp()
+  FROM goal_states s
+  WHERE g."id" = s."id" AND g."status" IS DISTINCT FROM s.derived_status;
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  v_updated := v_updated + v_count;
+
+  RETURN v_updated;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.vayro_reconcile_goal_progress(INTEGER) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.vayro_reconcile_goal_progress(INTEGER) TO vayro_task_scheduler;
