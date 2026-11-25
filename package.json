@@ -16,7 +16,8 @@
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate:deploy": "prisma migrate deploy",
-    "worker:tasks": "node src/worker/task-worker.mjs"
+    "worker:tasks": "node src/worker/task-worker.mjs",
+    "worker:schedules": "node src/worker/schedule-worker.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
