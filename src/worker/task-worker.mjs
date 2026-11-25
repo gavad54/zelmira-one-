@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { redactErrorMessage } from "../lib/redact-error-message.mjs";
+import { assertAgentCanHandle, assertAgentCanReview, evaluateTaskResult } from "../engine/agent-registry.mjs";
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const MAX_RESULT_BYTES = 65_536;
@@ -152,13 +153,50 @@ async function executeTask(db, task, shutdownSignal) {
   const timeout = setTimeout(() => controller.abort(new Error("TASK_HANDLER_TIMEOUT")), TIMEOUT_MS);
   timeout.unref?.();
   try {
+    const executorRows = await db.$queryRaw`
+      SELECT * FROM public.vayro_resolve_engineering_agent(${task.handler_key}, ${task.project_key})
+    `;
+    if (!executorRows[0]) throw taskError("TASK_AGENT_UNAVAILABLE", "No enabled agent is registered for this task", false);
+    const executor = assertAgentCanHandle({
+      key: executorRows[0].agent_key, version: Number(executorRows[0].agent_version),
+      displayName: executorRows[0].agent_key, capabilities: executorRows[0].capabilities,
+      permissions: executorRows[0].permissions, projectKeys: executorRows[0].project_keys, enabled: true
+    }, { handlerKey: task.handler_key, projectKey: task.project_key });
+
+    const reviewerRows = await db.$queryRaw`
+      SELECT * FROM public.vayro_resolve_task_reviewer(${task.project_key})
+    `;
+    if (!reviewerRows[0]) throw taskError("TASK_REVIEWER_UNAVAILABLE", "No enabled independent policy reviewer is registered", false);
+    const reviewer = assertAgentCanReview({
+      key: reviewerRows[0].agent_key, version: Number(reviewerRows[0].agent_version),
+      displayName: reviewerRows[0].agent_key, capabilities: reviewerRows[0].capabilities,
+      permissions: reviewerRows[0].permissions, projectKeys: reviewerRows[0].project_keys, enabled: true
+    }, task.project_key);
+
     const handler = handlers[task.handler_key];
     if (!handler) throw taskError("TASK_HANDLER_NOT_IMPLEMENTED", `No approved handler for ${task.handler_key}`);
     const aborted = new Promise((_, reject) => {
       if (controller.signal.aborted) reject(controller.signal.reason);
       else controller.signal.addEventListener("abort", () => reject(controller.signal.reason), { once: true });
     });
-    const result = await Promise.race([handler(task, { signal: controller.signal }), aborted]);
+    const handlerResult = await Promise.race([handler(task, { signal: controller.signal }), aborted]);
+    const review = evaluateTaskResult(task, handlerResult);
+    const reviewRows = await db.$queryRaw`
+      SELECT public.vayro_record_engineering_task_review(
+        ${task.task_id}, ${WORKER_ID}, ${task.lease_token},
+        ${executor.key}, ${reviewer.key}, ${review.decision}, ${JSON.stringify(review.evidence)}::jsonb
+      ) AS accepted
+    `;
+    if (reviewRows[0]?.accepted !== true) throw taskError("TASK_REVIEW_PERSIST_FAILED", "Independent review record was not accepted");
+    if (review.decision !== "APPROVE") throw taskError("TASK_REVIEW_BLOCKED", review.evidence.join("; "));
+    const result = {
+      ...(handlerResult && typeof handlerResult === "object" && !Array.isArray(handlerResult) ? handlerResult : { value: handlerResult ?? null }),
+      agentExecution: {
+        executorAgentKey: executor.key, executorAgentVersion: executor.version,
+        reviewerAgentKey: reviewer.key, reviewerAgentVersion: reviewer.version,
+        reviewDecision: review.decision, reviewedAt: new Date().toISOString()
+      }
+    };
     const serialized = JSON.stringify(result ?? null);
     if (Buffer.byteLength(serialized, "utf8") > MAX_RESULT_BYTES) throw taskError("TASK_RESULT_TOO_LARGE", "Result exceeded 64 KiB");
     const rows = await db.$queryRaw`
