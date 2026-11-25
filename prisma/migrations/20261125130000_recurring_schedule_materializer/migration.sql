@@ -193,3 +193,129 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.vayro_reconcile_goal_progress(INTEGER) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.vayro_reconcile_goal_progress(INTEGER) TO vayro_task_scheduler;
+
+
+-- Seed bounded deterministic adapters and a separate policy reviewer.
+-- These are not unrestricted shell/code agents and cannot deploy or mutate products.
+INSERT INTO public."EngineeringAgent" (
+  "id","agentKey","version","displayName","capabilities","permissions","projectKeys","enabled","createdAt","updatedAt"
+) VALUES
+  (gen_random_uuid()::TEXT,'vayro-report-agent',1,'VAYRO Report Adapter',
+   '["REPORT_GENERATION"]'::JSONB,'["READ_TASK","WRITE_TASK_RESULT"]'::JSONB,'[]'::JSONB,true,clock_timestamp(),clock_timestamp()),
+  (gen_random_uuid()::TEXT,'vayro-repository-auditor',1,'VAYRO Repository Auditor',
+   '["REPOSITORY_AUDIT"]'::JSONB,'["READ_TASK","READ_REPOSITORY","WRITE_TASK_RESULT"]'::JSONB,'[]'::JSONB,true,clock_timestamp(),clock_timestamp()),
+  (gen_random_uuid()::TEXT,'vayro-ci-observer',1,'VAYRO CI Observer',
+   '["CI_OBSERVATION"]'::JSONB,'["READ_TASK","READ_REPOSITORY","WRITE_TASK_RESULT"]'::JSONB,'[]'::JSONB,true,clock_timestamp(),clock_timestamp()),
+  (gen_random_uuid()::TEXT,'vayro-policy-reviewer',1,'VAYRO Deterministic Policy Reviewer',
+   '["TASK_REVIEW"]'::JSONB,'["READ_TASK"]'::JSONB,'[]'::JSONB,true,clock_timestamp(),clock_timestamp())
+ON CONFLICT ("agentKey") DO NOTHING;
+
+CREATE OR REPLACE FUNCTION public.vayro_resolve_engineering_agent(
+  p_handler_key TEXT, p_project_key TEXT
+) RETURNS TABLE (
+  agent_id TEXT, agent_key TEXT, agent_version INTEGER,
+  capabilities JSONB, permissions JSONB, project_keys JSONB
+)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public
+AS $$
+DECLARE v_capability TEXT;
+BEGIN
+  v_capability := CASE p_handler_key
+    WHEN 'report.generate' THEN 'REPORT_GENERATION'
+    WHEN 'repo.audit' THEN 'REPOSITORY_AUDIT'
+    WHEN 'repo.test' THEN 'CI_OBSERVATION'
+    ELSE NULL
+  END;
+  IF v_capability IS NULL OR p_project_key IS NULL OR p_project_key !~ '^[A-Z][A-Z0-9_-]{1,39}$' THEN
+    RAISE EXCEPTION 'AGENT_TASK_SCOPE_INVALID' USING ERRCODE = '22023';
+  END IF;
+  RETURN QUERY
+  SELECT a."id",a."agentKey",a."version",a."capabilities",a."permissions",a."projectKeys"
+  FROM public."EngineeringAgent" a
+  WHERE a."enabled" = true
+    AND a."capabilities" ? v_capability
+    AND a."permissions" ? 'READ_TASK'
+    AND (jsonb_array_length(a."projectKeys") = 0 OR a."projectKeys" ? p_project_key)
+  ORDER BY a."agentKey"
+  LIMIT 1;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.vayro_resolve_task_reviewer(p_project_key TEXT)
+RETURNS TABLE (
+  agent_id TEXT, agent_key TEXT, agent_version INTEGER,
+  capabilities JSONB, permissions JSONB, project_keys JSONB
+)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public
+AS $$
+BEGIN
+  IF p_project_key IS NULL OR p_project_key !~ '^[A-Z][A-Z0-9_-]{1,39}$' THEN
+    RAISE EXCEPTION 'REVIEW_PROJECT_SCOPE_INVALID' USING ERRCODE = '22023';
+  END IF;
+  RETURN QUERY
+  SELECT a."id",a."agentKey",a."version",a."capabilities",a."permissions",a."projectKeys"
+  FROM public."EngineeringAgent" a
+  WHERE a."enabled" = true
+    AND a."capabilities" ? 'TASK_REVIEW'
+    AND a."permissions" ? 'READ_TASK'
+    AND (jsonb_array_length(a."projectKeys") = 0 OR a."projectKeys" ? p_project_key)
+  ORDER BY a."agentKey"
+  LIMIT 1;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.vayro_record_engineering_task_review(
+  p_task_id TEXT, p_worker_id TEXT, p_lease_token TEXT,
+  p_executor_agent_key TEXT, p_reviewer_agent_key TEXT,
+  p_decision TEXT, p_evidence JSONB
+) RETURNS BOOLEAN
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public
+AS $$
+DECLARE
+  v_reviewer_id TEXT;
+  v_project_key TEXT;
+  v_attempt INTEGER;
+  v_count INTEGER;
+BEGIN
+  IF p_executor_agent_key IS NULL OR p_reviewer_agent_key IS NULL OR p_executor_agent_key = p_reviewer_agent_key THEN
+    RAISE EXCEPTION 'TASK_REVIEW_NOT_INDEPENDENT' USING ERRCODE = '22023';
+  END IF;
+  IF p_decision NOT IN ('APPROVE','BLOCK') OR jsonb_typeof(p_evidence) <> 'array'
+     OR jsonb_array_length(p_evidence) < 1 OR jsonb_array_length(p_evidence) > 50
+     OR octet_length(p_evidence::TEXT) > 16000 THEN
+    RAISE EXCEPTION 'TASK_REVIEW_EVIDENCE_INVALID' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT t."projectKey",t."attemptCount" INTO v_project_key,v_attempt
+  FROM public."EngineeringTask" t
+  WHERE t."id" = p_task_id AND t."status" = 'RUNNING'
+    AND t."leaseOwner" = p_worker_id AND t."leaseToken" = p_lease_token
+    AND t."leaseExpiresAt" > clock_timestamp()
+  FOR UPDATE;
+  IF NOT FOUND THEN RETURN FALSE; END IF;
+
+  SELECT a."id" INTO v_reviewer_id
+  FROM public."EngineeringAgent" a
+  WHERE a."agentKey" = p_reviewer_agent_key AND a."enabled" = true
+    AND a."capabilities" ? 'TASK_REVIEW'
+    AND a."permissions" ? 'READ_TASK'
+    AND (jsonb_array_length(a."projectKeys") = 0 OR a."projectKeys" ? v_project_key);
+  IF v_reviewer_id IS NULL THEN
+    RAISE EXCEPTION 'TASK_REVIEWER_NOT_AUTHORIZED' USING ERRCODE = '42501';
+  END IF;
+
+  INSERT INTO public."TaskReview" (
+    "id","taskId","executorAgentKey","reviewerAgentId","reviewRound","decision","evidence","createdAt"
+  ) VALUES (
+    gen_random_uuid()::TEXT,p_task_id,p_executor_agent_key,v_reviewer_id,v_attempt,p_decision,p_evidence,clock_timestamp()
+  );
+  RETURN TRUE;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.vayro_resolve_engineering_agent(TEXT,TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.vayro_resolve_task_reviewer(TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.vayro_record_engineering_task_review(TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,JSONB) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.vayro_resolve_engineering_agent(TEXT,TEXT) TO vayro_task_worker;
+GRANT EXECUTE ON FUNCTION public.vayro_resolve_task_reviewer(TEXT) TO vayro_task_worker;
+GRANT EXECUTE ON FUNCTION public.vayro_record_engineering_task_review(TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,JSONB) TO vayro_task_worker;
