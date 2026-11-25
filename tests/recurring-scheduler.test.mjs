@@ -12,6 +12,8 @@ test("validates bounded UTC interval schedules and rejects unsafe handlers", () 
   assert.throws(() => validateRecurringSchedule({ ...base, handlerKey: "shell.exec" }), /SCHEDULE_HANDLER_NOT_ALLOWED/);
   assert.throws(() => validateRecurringSchedule({ ...base, interval: 0 }), /SCHEDULE_INTERVAL_INVALID/);
   assert.throws(() => validateRecurringSchedule({ ...base, unit: "MONTHS" }), /SCHEDULE_UNIT_INVALID/);
+  assert.throws(() => validateRecurringSchedule({ ...base, runCount: -1 }), /SCHEDULE_RUN_COUNT_INVALID/);
+  assert.throws(() => validateRecurringSchedule({ ...base, nextRunAt: "2026-11-19T00:00:00.000Z" }), /SCHEDULE_NEXT_BEFORE_START/);
 });
 
 test("materializes deterministic occurrence keys for a missed schedule", () => {
