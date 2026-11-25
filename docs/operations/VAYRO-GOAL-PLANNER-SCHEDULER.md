@@ -71,7 +71,7 @@ The task worker:
 5. Applies a deterministic handler-specific output contract and records evidence through a restricted SQL function.
 6. Completes the task only after the review record is accepted and the decision is `APPROVE`. A `BLOCK` decision fails the task closed.
 
-The review function independently verifies the executor and reviewer registry identities, project scope, task lease and distinct agent keys. The reviewer is deterministic policy validation, not an LLM or human-equivalent code review. Generative review remains a separate future capability requiring privacy, provider, prompt-injection, validation and approval controls.
+The review function independently verifies the executor and reviewer registry identities, project scope, task lease and distinct agent keys. The reviewer is deterministic policy validation, not an LLM or human-equivalent code review. **The executor and reviewer have distinct registry identities and a separate persisted decision record, but they are currently resolved and evaluated inside the same task-worker process and deployment. This is logical identity separation, not independent process, service, queue, credential or runtime isolation.** No separately deployed reviewer service is implemented or verified. Generative review remains a separate future capability requiring privacy, provider, prompt-injection, validation and approval controls.
 
 ## 5. Goal progress reconciliation
 
@@ -99,7 +99,7 @@ CI also runs the full migration history, Prisma generation/validation, catalog r
 - Encrypted off-site backup and isolated restore are not yet evidenced.
 - Dedicated scheduler/task-worker login credentials have not been provisioned or validated in Railway.
 - The scheduler and task worker have not been deployed as separate services.
-- No Railway runtime health, real process restart drill or live recurring schedule E2E evidence exists.
+- No Railway runtime health, real process restart drill or live recurring schedule E2E evidence exists. The SQL restart-recovery test simulates process loss by expiring a lease in disposable PostgreSQL; it verifies reclaim and stale-worker fencing, not an actual operating-system process termination/restart.
 - PR #47 remains Draft/Open/Unmerged.
 
 No production migration, production role grant, secret change, service deployment, merge or public release is authorized by these commits.
