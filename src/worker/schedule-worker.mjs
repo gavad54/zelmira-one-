@@ -48,8 +48,12 @@ async function main() {
         const rows = await db.$queryRaw`
           SELECT public.vayro_materialize_due_engineering_schedules(${SCHEDULER_ID}, ${BATCH_SIZE}) AS created
         `;
+        const reconciled = await db.$queryRaw`
+          SELECT public.vayro_reconcile_goal_progress(1000) AS updated
+        `;
         const created = Number(rows[0]?.created ?? 0);
-        console.info(JSON.stringify({ event: "scheduler_cycle", schedulerId: SCHEDULER_ID, created }));
+        const updated = Number(reconciled[0]?.updated ?? 0);
+        console.info(JSON.stringify({ event: "scheduler_cycle", schedulerId: SCHEDULER_ID, created, reconciled: updated }));
         backoff = POLL_MS;
         if (created === 0) await sleep(POLL_MS);
       } catch (error) {
