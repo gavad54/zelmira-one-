@@ -62,11 +62,13 @@ export function materializeDueOccurrence(input, now = new Date()) {
 }
 
 /** Advances from the emitted occurrence, not from wall-clock now, preserving deterministic cadence. */
-export function advanceRecurringSchedule(input, emittedOccurrence) {
+export function advanceRecurringSchedule(input, emittedOccurrence, now = emittedOccurrence) {
   const schedule = validateRecurringSchedule(input);
   const emittedAt = date(emittedOccurrence, "SCHEDULE_OCCURRENCE_INVALID");
+  const clock = date(now, "SCHEDULE_CLOCK_INVALID");
   if (emittedAt < schedule.nextRunAt || (emittedAt - schedule.nextRunAt) % schedule.intervalMs !== 0) fail("SCHEDULE_OCCURRENCE_MISMATCH");
-  const nextRunAt = new Date(emittedAt.getTime() + schedule.intervalMs);
+  const latestDue = new Date(schedule.nextRunAt.getTime() + Math.floor(Math.max(0, clock - schedule.nextRunAt) / schedule.intervalMs) * schedule.intervalMs);
+  const nextRunAt = new Date((schedule.missedRunPolicy === "CATCH_UP_ONCE" ? latestDue : emittedAt).getTime() + schedule.intervalMs);
   const runCount = schedule.runCount + 1;
   const enabled = (schedule.maxRuns === null || runCount < schedule.maxRuns) && (!schedule.endAt || nextRunAt <= schedule.endAt);
   return Object.freeze({ ...schedule, nextRunAt, runCount, enabled, lastRunAt: emittedAt });
