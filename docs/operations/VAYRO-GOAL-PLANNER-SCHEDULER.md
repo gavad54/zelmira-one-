@@ -1,6 +1,7 @@
 # VAYRO Goal Planner, Recurring Scheduler and Agent Governance
 
-**Implementation state:** development-branch implementation committed; exact-head CI verification pending.  
+**Implementation state:** development-branch implementation committed; exact-head GitHub Actions verification passed on `5ab277ab2d5110033f173fa439727d213ad63dab`.
+**Verified evidence:** VAYRO CI run `45630059311` (all 34 steps successful); CodeQL run `45630059210` (success); npm lockfile validation run `45630059217` (success).  
 **Production state:** NOT DEPLOYED.  
 **Branch:** `upgrade/full-independent-product-family-modules-2026-11-20`
 
@@ -89,7 +90,7 @@ New isolated PostgreSQL privilege test:
 
 CI also runs the full migration history, Prisma generation/validation, catalog reconciliation, RLS checks, task-worker role boundary, dependency claim and restart-recovery SQL tests, lint, typecheck, production build, Docker build and HTTP integration tests.
 
-**Do not report success until the exact branch-head CI results are green.** Source files and SQL migration commits alone are not execution evidence.
+**Verification record (2026-11-25):** exact branch-head CI, CodeQL and lockfile validation are green for `5ab277ab2d5110033f173fa439727d213ad63dab`. The VAYRO CI job passed unit tests, full Prisma migration deploy on isolated PostgreSQL, schema/catalog/RLS reconciliation, worker and scheduler least-privilege tests, agent-review and recurring-schedule integration tests, restart-recovery SQL, lint, TypeScript, production build, Docker build and HTTP integration tests. This proves the repository changes in isolated CI; it does not prove a live Railway runtime.
 
 ## 7. Production blockers
 
