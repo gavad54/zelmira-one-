@@ -1,71 +1,90 @@
-# Architecture — VAYRO
+# VAYRO Architecture — Verified Development Baseline
 
-## Purpose
-VAYRO is the platform shell and governance plane for independent specialist products. Tenant authorization and the operational control plane remain under development.
+**Reviewed:** 2026-11-25  
+**Repository:** `gavad54/zelmira-one-`  
+**Reviewed branch:** `upgrade/full-independent-product-family-modules-2026-11-20`  
+**Reviewed head:** `24dd343ee1221f13253e99207eb7de2de5d6934c`  
+**PR:** #47 — OPEN / DRAFT / UNMERGED
 
-## Current infrastructure
-- Web application: Next.js App Router, React and TypeScript.
-- Database: dedicated Supabase PostgreSQL 17 project named VAYRO-CORE, region eu-central-1, Free plan.
-- Database is separate from ARIA. No ARIA database, volume or credentials are used.
-- Eleven initial Prisma-aligned tables are provisioned. RLS is enabled on all eleven; client-role table privileges are revoked. No user, tenant or sample records were inserted.
-- The schema was provisioned directly. Prisma migration history is not yet baselined; do not run migrate deploy until baseline reconciliation and isolated forward/rollback testing are complete.
-- GitHub Actions CI and CodeQL are configured.
-- No VAYRO application hosting or production deployment exists. Railway free-plan resource limits blocked a separate project.
+## 1. Purpose and boundary
 
-## Implemented foundation (not production certification)
-- Public Persian-first product directory and responsive web shell.
-- Password hashing, opaque server-side sessions, email verification and password-reset token primitives.
-- Login, registration, logout, session inspection, email verification, password recovery and one-time owner-bootstrap routes.
-- Database-backed rate-limit records and selected audit events.
-- Database-derived tenant membership authorization helper and a minimal tenant access proof endpoint.
-- Health and database-readiness endpoints.
-- Prisma models for users, tenants, memberships, sessions, products, licenses, audit events and authentication support records.
+VAYRO is the parent platform and governance plane for independently operated specialist products. DANA is an internal orchestration capability, not a separate product. Product repositories, data ownership, identities, authorization, deployments, backups and release evidence remain independent.
 
-Routes and helpers do not prove complete endpoint coverage, production email delivery, MFA, full tenant-aware CRUD, billing or operational readiness.
+Product invariants:
+- ARIA does not contain accounting or ERP.
+- ARIANA owns accounting, finance and ERP.
+- LEADORA owns distribution and sales operations.
+- ARMIN MARKET remains a separate marketplace product.
+- ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM retain their approved product boundaries and must not be represented as production-ready without independent implementation and evidence.
 
-## Trust boundaries
-1. Enforce authorization on the server for every protected operation.
-2. Derive tenant membership from the authenticated session, never a browser-supplied tenant ID alone.
-3. Require server-verified platform roles and audit records for owner actions.
-4. Use versioned APIs, narrow scopes, timeouts, idempotency and auditable service identities.
-5. Store secrets only in protected runtime/CI secret stores.
-6. Unknown entitlement, identity or authorization state fails closed.
-7. Database access is server-only; do not grant browser roles table privileges.
+## 2. Verified application foundation
 
-## Approved product family — 11 independent products
-- ARVAND: international trade, import and export.
-- CHARSU: marketplace and commerce network.
-- GANJINEH: digital stores and e-commerce.
-- NEGAH: creative studio and content production.
-- SEPEHR: cloud and digital infrastructure.
-- NAMA: website and landing-page builder.
-- PAYAM: marketing and customer growth.
-- LEADORA: distribution, sales, inventory and commercial operations.
-- ARIANA: accounting, finance and ERP.
-- ARIA: social, communications, services and listings; explicitly excludes accounting and ERP.
-- ARMIN MARKET: buyer requests and supplier quotations.
+The development branch contains:
+- Next.js App Router, React, TypeScript, Node.js and Prisma.
+- Password/session authentication, email verification and recovery flows.
+- MFA enrollment/verification and recovery-code flows.
+- Owner-only APIs protected by session assurance, same-origin checks, rate limits and audit events where implemented.
+- Tenant membership authorization and tenant-scoped transaction/RLS helpers.
+- Product catalog, entitlement and license lifecycle foundations.
+- Owner Command Center, product directory and Future Development Lab.
+- Health/readiness routes and GitHub Actions CI / CodeQL.
 
-DANA is the central AI intelligence/orchestration capability within VAYRO Command Center, not a twelfth product. Its data and tools are task-scoped, authorized, logged and revocable.
+These are source-level capabilities. Their presence does not certify complete endpoint coverage, live email delivery, tenant isolation against the live database, payment operations or production readiness.
 
-## Independent product boundaries
-Each product retains its own domain rules, data ownership, authorization, integrations and release evidence. Keep product data stores separate. Integrate only through separately reviewed, versioned APIs/events with scoped service identities and audit records. Purchasing one product must not require another. ARIANA alone owns accounting/ERP; ARIA must not contain accounting/ERP; LEADORA owns distribution and sales operations within its defined scope.
+## 3. Engineering task control plane — source implementation
 
-## Command Center and Future Development Lab
-The Command Center provides portfolio oversight, people/access, commercial operations, platform/integrations, security/audit, backup/recovery, release governance and DANA orchestration. The Future Development Lab is the governed path for ideas, impact assessment, design proposals, isolated prototypes, testing/security review, explicit owner decisions, staged rollout and rollback. It has no direct production-write credentials and does not bypass release gates.
+The branch contains:
+- A durable PostgreSQL task schema with task attempts and dependency edges.
+- Owner-only task creation/approval and goal-to-task planning APIs.
+- Bounded task definitions, handler allowlists, idempotency keys, priority, one-time `scheduledAt`, deadline and dependency validation.
+- Worker-only database role checks and SECURITY DEFINER function boundaries for claim, heartbeat, completion and failure.
+- A long-running worker process requiring the dedicated `TASK_WORKER_DATABASE_URL`.
+- Lease ownership/token/expiry, bounded handler timeout and result size, retry/backoff, dead-letter state and graceful shutdown.
+- Three registered handlers: `report.generate`, `repo.audit` and `repo.test`. Repository and CI handlers are read-only; arbitrary shell/code execution, deployment, merge and financial actions are not registered.
 
-## Reliability and release boundary
-- Review migrations and test forward/rollback in isolated environments.
-- Store encrypted backups outside the hosting provider and prove an isolated restore.
-- AI tools require allowlists, scoped identities, budgets, approval for consequential actions and audit trails.
-- No VAYRO application deployment, independent backup/restore drill, owner UAT or public commercial release is verified. Keep customer onboarding, real payments and production data collection disabled until release gates pass and the authorized owner approves release.
+## 4. Architecture gaps — explicitly not complete
 
+The following are genuine remaining engineering gaps, not owner tasks:
+1. **First-class durable goal hierarchy:** Goal/Epic/Feature records and lifecycle are not yet modeled as dedicated persistent entities. The current planner validates a goal and materializes task records; goal metadata is retained in task payload/audit metadata rather than a complete goal aggregate.
+2. **Recurring scheduler:** one-time due-time scheduling exists; a durable recurring schedule registry, recurrence materializer, missed-run policy and schedule lifecycle do not.
+3. **Agent/reviewer orchestration:** there is no complete agent registry, specialist execution lifecycle, independent reviewer orchestration or conflict-resolution workflow.
+4. **Controller/reconciliation loop:** the full observe-plan-dispatch-verify-reconcile-next-task controller is not yet demonstrated as a continuously running, restart-independent service.
+5. **Process-level recovery evidence:** isolated SQL verifies expired-lease reclamation and stale-token fencing. It does not prove a deployed worker can be terminated, restarted and continue a real workflow end-to-end.
+6. **Operational execution:** no dedicated VAYRO Railway project/worker service with verified runtime credentials and health has been proven. Live VAYRO-CORE migration reconciliation, role/policy provisioning and a successful encrypted off-site backup plus isolated restore remain gated.
+7. **Product integration contracts:** the product-family directory and boundaries exist, but planned products do not yet have independently verified runtime APIs, contract tests and end-to-end evidence.
 
-## Implementation verification addendum — 2026-11-11
+## 5. Database and deployment safety
 
-- Main branch includes the owner Command Center, eleven-product portfolio, Future Development Lab, owner license lifecycle API and tenant-scoped product entitlement API.
-- The owner license endpoints require a fresh owner/MFA session, validate same-origin mutations, apply request limits, and append audit events. The tenant product endpoint derives membership/session authorization and executes data reads through the tenant-scoped PostgreSQL transaction/RLS boundary. Product access fails closed unless the product is ACTIVE and its license is current.
-- The Future Development Lab stores append-only proposal/decision events. A research approval is not a production execution authorization.
-- Exact main commit `ef71857074968a639aed484df030be6d630d8539` passed VAYRO CI run [43042296724](https://github.com/gavad54/zelmira-one-/actions/runs/43042296724) and CodeQL run [43042296836](https://github.com/gavad54/zelmira-one-/actions/runs/43042296836). CI included dependency audit, unit tests, Prisma validation, isolated PostgreSQL role/RLS tests, lint, typecheck, production build, Docker build and PostgreSQL/production-HTTP integration tests.
-- A Railway service named `VAYRO` exists in project `ARIA Web`, not in an independently controlled VAYRO project. Its latest deployment reports SUCCESS on 2026-11-11, but the service has no configured variable names, no mounted volumes and no custom domain. Deployment success alone does not prove the application can connect to VAYRO-CORE or pass runtime readiness.
-- VAYRO-CORE remains ACTIVE_HEALTHY (PostgreSQL 17.11), but its live Prisma migration history is empty. The live catalog contains 11 public tables, all with RLS enabled, but no RLS policies; Supabase Security Advisor reports 11 RLS-enabled/no-policy findings. The tables currently report zero rows.
-- Repository migrations and isolated CI prove the intended schema works in disposable PostgreSQL; they do not reconcile or secure the live database. Do not apply migrations or grants to production until encrypted external backup, successful isolated restore, schema/object reconciliation, and rehearsed recovery are evidenced.
+The development branch includes Prisma migrations and disposable-PostgreSQL CI tests. The live VAYRO-CORE database has not been reconciled with the branch migration history. Do not apply migrations, DDL, role grants or RLS policy changes to the live database until schema/object reconciliation, encrypted external backup, isolated restore and an approved recovery procedure are evidenced.
+
+Do not infer a production deployment from a successful CI run or a Railway deployment record. A production claim requires the exact deployed commit, healthy runtime, verified database connectivity and passing readiness checks.
+
+## 6. Exact-head verification
+
+At the reviewed head `24dd343ee1221f13253e99207eb7de2de5d6934c`, the associated GitHub Actions runs completed successfully:
+- VAYRO CI: run `45593868836` — SUCCESS.
+- CodeQL: run `45593868798` — SUCCESS.
+- npm lockfile validation: run `45593868846` — SUCCESS.
+
+These results verify the repository's configured CI scope on this exact SHA. They do not certify production infrastructure or the operational autonomy acceptance test.
+
+## 7. Release classification
+
+**Development foundation: implemented with passing exact-head CI.**  
+**Autonomous production operation: NOT READY.**  
+**Commercial release: BLOCKED.**
+
+PR #47 remains Draft/Open/Unmerged. No production migration, merge, deployment, billing activation or live-data mutation is authorized by this document.
+
+## 8. Required implementation order
+
+1. Add first-class Goal/Epic/Feature persistence, lifecycle transitions, ownership and audit semantics.
+2. Add recurring schedule persistence and a bounded, idempotent schedule materializer.
+3. Add typed agent registry, least-privilege execution contracts and independent review orchestration.
+4. Add a durable controller/reconciler that resumes from database state after process restart.
+5. Add process-level worker restart and multi-task continuation E2E tests in disposable infrastructure.
+6. Provision and verify a dedicated non-production worker runtime and isolated database credentials before any production request.
+7. Complete live DB baseline/reconciliation only after backup and restore gates pass.
+8. Complete independent product API contracts and E2E evidence without merging product data or release boundaries.
+
+All implementation remains additive and branch-scoped. Live production changes, secret/access changes, paid infrastructure, merge and public release remain approval-gated.
