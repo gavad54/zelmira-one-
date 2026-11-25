@@ -74,7 +74,7 @@ BEGIN
       v_task_id,v_schedule."projectKey",v_task_type,v_schedule."handlerKey",v_schedule."title",50,'QUEUED',
       COALESCE(v_schedule."payload",'{}'::JSONB) || jsonb_build_object(
         'scheduleKey',v_schedule."scheduleKey",
-        'scheduledFor",to_char(v_occurrence AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+        'scheduledFor',to_char(v_occurrence AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
       ),
       'schedule:' || v_schedule."scheduleKey" || ':' || to_char(v_occurrence AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
       v_occurrence,v_now,3,0,false,v_now,v_now
