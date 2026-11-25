@@ -5,7 +5,7 @@ import { isSameOriginRequest } from "@/lib/auth-core.mjs";
 import { allowAttempt, noStoreJson, sha256 } from "@/lib/auth-service";
 import { withPlatformOwnerTransaction } from "@/lib/platform-request-transaction";
 import { readJsonBody } from "@/lib/read-json-body.mjs";
-import { validateRecurringSchedule } from "@/engine/recurring-scheduler.mjs";
+import { validateRecurringSchedule, validateSchedulePayload } from "@/engine/recurring-scheduler.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,7 +42,9 @@ export async function POST(request: Request) {
   if (!parsed.success) return noStoreJson({ error: "invalid_input" }, 400);
 
   let schedule: ReturnType<typeof validateRecurringSchedule>;
+  let safePayload: Readonly<Record<string, string>>;
   try {
+    safePayload = validateSchedulePayload(parsed.data.handlerKey, parsed.data.payload);
     schedule = validateRecurringSchedule({
       ...parsed.data,
       scheduleId: parsed.data.scheduleId,
@@ -73,7 +75,7 @@ export async function POST(request: Request) {
             projectKey: schedule.projectKey,
             handlerKey: schedule.handlerKey,
             title: schedule.title,
-            payload: parsed.data.payload as Prisma.InputJsonValue | undefined,
+            payload: safePayload as Prisma.InputJsonValue,
             interval: schedule.interval,
             unit: schedule.unit,
             missedRunPolicy: schedule.missedRunPolicy,
