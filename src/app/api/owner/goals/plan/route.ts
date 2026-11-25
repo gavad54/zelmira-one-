@@ -18,7 +18,7 @@ const criterionSchema = z.object({
 }).strict();
 
 const epicSchema = z.object({
-  id: z.string().trim().min(2).max(100),
+  id: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{1,99}$/),
   title: z.string().trim().min(2).max(160),
   features: z.array(criterionSchema).min(1).max(200)
 }).strict();
