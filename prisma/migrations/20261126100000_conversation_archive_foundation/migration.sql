@@ -60,7 +60,8 @@ CREATE TABLE public."ConversationAttachment" (
 CREATE INDEX "ConversationAttachment_tenantId_messageId_createdAt_idx" ON public."ConversationAttachment"("tenantId","messageId","createdAt");
 CREATE INDEX "ConversationAttachment_tenantId_deletedAt_idx" ON public."ConversationAttachment"("tenantId","deletedAt");
 
-GRANT SELECT, INSERT, UPDATE ON public."Conversation" TO vayro_app;
+GRANT SELECT, INSERT ON public."Conversation" TO vayro_app;
+GRANT UPDATE ("title","archivedAt","deletedAt","updatedAt") ON public."Conversation" TO vayro_app;
 GRANT SELECT, INSERT ON public."ConversationMessage" TO vayro_app;
 GRANT SELECT, INSERT ON public."ConversationAttachment" TO vayro_app;
 
