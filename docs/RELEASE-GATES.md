@@ -533,3 +533,17 @@ This section supersedes older repository-head statements above.
 - Encrypted off-provider backup and isolated restore remain unverified. No live migration, grant, policy, credential, DNS, service, deployment or merge change was made.
 
 **Decision: EXACT-HEAD SOURCE CI / CODEQL / LOCKFILE PASS — LIVE HOSTING AND DATABASE BASELINE BLOCKED — BACKUP/RESTORE UNVERIFIED — NOT RELEASED.**
+
+
+## Live verification addendum — 2026-11-26 (supersedes stale PR/head snapshots above)
+
+This addendum is based on fresh GitHub, Supabase and Railway reads. It supersedes older references to PR #2 and the historical 2026-11-07 head.
+
+- Active integration chain: PR #47 is OPEN/DRAFT/UNMERGED (head `479f144962ce16c98ce22d44b84bc5005d964652`, base `main` at `f0d31804e695cd3d73b452c7507affdca9573740`). PR #54 is OPEN/DRAFT/UNMERGED and builds on #47 (inspected source head `6801d32110ec54d1f45d32008c6f3cbb1493f739`). PR #52 (schema drift) and #53 (S3 backup work) are also OPEN/DRAFT/UNMERGED. PR #21 is OPEN/DRAFT and currently reports mergeable=false. Do not assume any of these are integrated into main.
+- On exact source head `6801d32110ec54d1f45d32008c6f3cbb1493f739`, VAYRO CI [45775706143](https://github.com/gavad54/zelmira-one-/actions/runs/45775706143) and CodeQL [45775705952](https://github.com/gavad54/zelmira-one-/actions/runs/45775705952) completed successfully. CI includes dependency audit, unit tests, Prisma validation, disposable-PostgreSQL migration/RLS/role isolation, lint, typecheck, production build, Docker and PostgreSQL/HTTP integration. This is not live-production evidence.
+- Fresh VAYRO-CORE read-only catalog inspection: 11 public tables, zero applied migration records, zero public RLS policies, all 11 tables RLS-enabled but zero FORCE RLS, zero expected VAYRO runtime roles, and 0 of 16 checked application-domain tables present. The 11 current tables returned zero rows. Security advisor reports 11 RLS-enabled/no-policy findings. Live DDL, baseline creation, grants and policies remain BLOCKED until exact schema reconciliation, independent encrypted backup and successful isolated restore are evidenced.
+- Fresh Railway workspace inspection found only `ARIA Web` and `LEADORA` projects. Both contain a service named `VAYRO`, but neither is a dedicated VAYRO project; their latest VAYRO deployments are FAILED. ARIA Web also has one staged environment change. No project, deployment, environment, volume, domain or secret was changed.
+- Portfolio count correction: the approved family has 11 products (ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA, PAYAM, LEADORA, ARIANA, ARIA, ARMIN MARKET). DANA is an internal VAYRO capability, not a product. Any older count that includes DANA among eight products is stale.
+- PR #54 adds the first tenant-scoped conversation/archive source slice. Attachment upload/download, object storage, export jobs, retention/legal hold, full AI threading and archive UI are not complete.
+
+**Current disposition:** SOURCE CI GREEN ON THE INSPECTED HEAD; PRODUCTION DEPLOYMENT BLOCKED. Hosting, live DB migration/RLS/roles, independent backup/restore, email, payments/legal, product integrations, Android, UAT and owner release approval remain open. No production change or merge is authorized by this addendum.
