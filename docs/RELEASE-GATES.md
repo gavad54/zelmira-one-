@@ -547,3 +547,17 @@ This addendum is based on fresh GitHub, Supabase and Railway reads. It supersede
 - PR #54 adds the first tenant-scoped conversation/archive source slice. Attachment upload/download, object storage, export jobs, retention/legal hold, full AI threading and archive UI are not complete.
 
 **Current disposition:** SOURCE CI GREEN ON THE INSPECTED HEAD; PRODUCTION DEPLOYMENT BLOCKED. Hosting, live DB migration/RLS/roles, independent backup/restore, email, payments/legal, product integrations, Android, UAT and owner release approval remain open. No production change or merge is authorized by this addendum.
+
+
+## Live verification addendum — 2026-11-26 13:40 Asia/Tehran
+
+This addendum supersedes earlier PR/head and infrastructure snapshots above. The full five-repository SHA/check inventory and read-only Railway/Supabase evidence is recorded in [the 2026-11-26 family engineering evidence snapshot](operations/FAMILY-ENGINEERING-EVIDENCE_2026-11-26.md).
+
+- PR #47 was merged by gavad54 at 2026-11-26 08:15:28 UTC (merge commit 20e65253e45cbd43a5e64967745d453a6262e743). Current VAYRO main head is 527db3a8051c3eef15c974c43ded4b6e755a75b3; exact-main VAYRO CI and CodeQL both passed (runs 45785290596 and 45785290581).
+- The merged source now includes tenant-scoped conversation/archive UI and bounded JSON export, plus transactional DANA conversation-turn persistence. This is source/CI evidence only.
+- Live VAYRO-CORE remains unreconciled: 16 repository migration directories versus zero live migration records; 27 Prisma models versus 11 live public tables; 16 model tables absent; 11 RLS-enabled tables but zero policies and zero dedicated vayro_* roles.
+- Railway still exposes only ARIA Web and LEADORA projects. Both VAYRO-named services and the LEADORA app are OFFLINE; no independent VAYRO project exists. A staged ARIA Web service creation remains unapplied.
+- No verified encrypted off-host backup artifact or isolated restore proof was found. Worker/scheduler source and isolated CI tests do not establish an independent permanent runtime or process-level restart drill.
+- ARIA #3, ARIANA #1, LEADORA #54 and ARMIN MARKET #2 remain open Draft PRs. ARMIN's Dependency Review is blocked by disabled GitHub Dependency Graph; its separate APK build job passed.
+
+**Current decision:** source checks are green on the exact SHAs recorded in the evidence snapshot; production deployment and commercial release remain BLOCKED. No live DB, Railway, secret, billing, DNS, merge or release action was performed by this audit.
