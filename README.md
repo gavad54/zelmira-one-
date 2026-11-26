@@ -24,18 +24,24 @@ VAYRO is the Persian-first, mobile-first mother application and platform for ele
 
 ## Engineering status — 2026-11-26
 
-The main branch includes the VAYRO product-family/task-engine foundation, tenant-scoped conversation and archive metadata/API foundation, provider-neutral encrypted S3 backup/restore workflows, and an Android WebView wrapper.
+The main branch now includes:
+- The VAYRO product-family and task-engine foundation.
+- Tenant-scoped conversation APIs, Persian RTL conversation list/detail UI, active/archive views, pagination, full-text search and audited bounded JSON export (5,000-message / 10 MiB caps).
+- DANA conversation context using up to 20 validated USER/ASSISTANT messages, with the user/assistant turn and AI generation persisted transactionally.
+- Provider-neutral encrypted S3-compatible database backup and isolated-restore workflows, plus workflow contract tests and runbooks.
+- A hardened Android WebView wrapper and Gradle debug-build workflow.
 
-The exact-head repository CI and CodeQL checks passed for the conversation/archive and backup integration commit. The Android Gradle debug build also passed on its isolated integration branch. These are source/CI checks, not production acceptance or security certification.
+Exact-head CI and CodeQL passed for the conversation/archive + backup integration and DANA conversation-context changes. Android Gradle compilation passed on the isolated integration branch. These are source/CI checks, not production acceptance, a live backup/restore proof or a security certification.
 
 ### Live infrastructure and release gates
 
 - VAYRO-CORE is a dedicated Supabase PostgreSQL 17 project. Its live public schema is not reconciled with the current Prisma migration history: 11 public tables, no registered migration history, no public RLS policies and no dedicated VAYRO runtime roles were observed in the latest read-only audit. Do not run production migrations until an independent encrypted backup and isolated restore are verified.
-- No independent VAYRO Railway project could be created because the connected Railway account reports that its trial has expired. Existing VAYRO-named services inside ARIA Web and LEADORA are not independent VAYRO hosting and must not be reused.
-- Encrypted S3 backup and isolated restore workflows are committed, but provider selection, private bucket, GitHub Environment secrets/variables, successful backup and successful restore drill are not yet evidenced.
-- Transactional email adapters and owner license management foundations exist. Production email delivery, a legally approved payment provider, payment webhooks/reconciliation/refunds and commercial activation are not production-proven.
-- Android WebView source and compile CI exist. An installable APK requires the exact dedicated VAYRO HTTPS URL; real-device tests and owner-controlled release signing remain outstanding.
-- Archive binary upload/download, object storage integration, export jobs, retention/legal hold, archive UI and complete DANA thread/stream orchestration remain incomplete.
+- An independent VAYRO Railway project could not be created because the connected Railway account's trial has expired. Existing VAYRO-named services inside ARIA Web and LEADORA are not independent VAYRO hosting and must not be reused.
+- Encrypted S3 backup and isolated-restore workflows are committed, but provider selection, private bucket, protected GitHub Environment secrets/variables, successful encrypted backup and successful restore drill are not yet evidenced.
+- Transactional email adapters and owner license-management foundations exist. Production email delivery, a legally approved payment provider, payment webhooks/reconciliation/refunds and commercial activation are not production-proven.
+- Android WebView source and compile CI exist. An installable APK requires the exact dedicated VAYRO HTTPS URL; real-device tests and owner-controlled release signing remain outstanding. The current compile-only workflow does not publish a test APK.
+- Archive binary upload/download and private object storage, background/bulk export jobs, retention/legal hold and complete DANA streaming/tool orchestration remain incomplete.
+- DANA's provider credentials/model selection are not configured in a dedicated VAYRO runtime. AI billing is explicitly NOT_CONNECTED.
 - The eleven products are not all independently implemented, deployed and acceptance-tested. A catalogue or API contract is not a completed product.
 - Owner UAT, incident/restore rehearsal, endpoint-by-endpoint authorization review, CSP/security review and explicit release approval remain required.
 
