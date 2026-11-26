@@ -9,7 +9,7 @@ DECLARE
   v_bad_table text;
   v_public_policy text;
 BEGIN
-  -- The 15 identity, tenant, platform and AI tables must all enforce RLS,
+  -- The 18 identity, tenant, platform, AI and conversation tables must all enforce RLS,
   -- including table-owner access, and must have at least one scoped policy.
   WITH required(table_name) AS (
     VALUES
@@ -17,7 +17,7 @@ BEGIN
       ('License'), ('AuditEvent'), ('EmailContact'),
       ('EmailContactVerificationToken'), ('AuthActionToken'),
       ('AuthRateLimit'), ('UserMfa'), ('MfaRecoveryCode'),
-      ('AuthChallenge'), ('AiGeneration')
+      ('AuthChallenge'), ('AiGeneration'), ('Conversation'), ('ConversationMessage'), ('ConversationAttachment')
   )
   SELECT string_agg(r.table_name, ', ' ORDER BY r.table_name)
     INTO v_missing
@@ -55,7 +55,8 @@ BEGIN
       ('EmailContactVerificationToken','vayro_platform'),
       ('AuthActionToken','vayro_auth'), ('AuthRateLimit','vayro_auth'),
       ('UserMfa','vayro_auth'), ('MfaRecoveryCode','vayro_auth'),
-      ('AuthChallenge','vayro_auth'), ('AiGeneration','vayro_app')
+      ('AuthChallenge','vayro_auth'), ('AiGeneration','vayro_app'),
+      ('Conversation','vayro_app'), ('ConversationMessage','vayro_app'), ('ConversationAttachment','vayro_app')
   )
   SELECT string_agg(e.table_name || ':' || e.role_name, ', ' ORDER BY e.table_name, e.role_name)
     INTO v_missing
@@ -113,7 +114,8 @@ BEGIN
     AND c.relname IN (
       'User','Tenant','Membership','Session','Product','License','AuditEvent',
       'EmailContact','EmailContactVerificationToken','AuthActionToken',
-      'AuthRateLimit','UserMfa','MfaRecoveryCode','AuthChallenge','AiGeneration'
+      'AuthRateLimit','UserMfa','MfaRecoveryCode','AuthChallenge','AiGeneration',
+      'Conversation','ConversationMessage','ConversationAttachment'
     )
     AND r.rolname IN ('vayro_app','vayro_auth','vayro_platform','vayro_platform_bootstrap');
 
