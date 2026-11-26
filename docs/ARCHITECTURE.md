@@ -142,3 +142,18 @@ This addendum supersedes the older reviewed-head and deployment snapshots above.
 - The approved product family contains 11 products; DANA remains an internal VAYRO capability. ARIA remains outside accounting/ERP; ARIANA remains the accounting/ERP product.
 
 **Updated release classification:** repository source CI is green on the inspected PR #54 head; live infrastructure and production readiness remain BLOCKED. Independent encrypted backup and verified isolated restore must precede live DB reconciliation. Dedicated hosting, operational services, product contracts, Android acceptance, UAT and explicit release approval remain outstanding.
+
+
+## 12. Live main-branch and infrastructure verification — 2026-11-26
+
+This addendum supersedes earlier statements in this document that PR #47 or PR #54 remain open.
+
+- Main branch was read at `527db3a8051c3eef15c974c43ded4b6e755a75b3`. Its latest commit changes `README.md` only.
+- PR #47 is CLOSED / MERGED. PR #54 is CLOSED / NOT MERGED. Do not infer that PR #54's archive/conversation code is part of main without checking the actual main tree.
+- Combined commit status and the available workflow-run lookup returned no current-main checks for `527db3a8051c3eef15c974c43ded4b6e755a75b3`. Exact-main CI, CodeQL, dependency audit and build are therefore unverified; successful runs on older development heads do not establish current-main health.
+- Railway currently exposes only ARIA Web and LEADORA projects in the connected workspace. The VAYRO-named service in each has a latest FAILED deployment; neither has a mounted VAYRO data volume. ARIA Web also has an unaccepted staged-create service. None is an independent VAYRO production environment.
+- Supabase VAYRO-CORE is ACTIVE_HEALTHY on PostgreSQL 17.11. A fresh read-only catalog query found 11 public tables, all RLS-enabled, zero FORCE RLS, zero public policies, zero `vayro%` roles and no migration ledger. No database changes were made.
+- The database is not production-ready merely because the Supabase project is healthy. Runtime identity/privileges, migration reconciliation, policies/authorization and independent backup/restore must be proven before production use.
+- No Railway changes, deployments, database mutations, secret changes or public release were performed in this verification.
+
+**Current classification: SOURCE TREE PRESENT — CURRENT-MAIN CHECKS UNVERIFIED — HOSTING / DATABASE / BACKUP GATES BLOCKED — NOT RELEASED.**
