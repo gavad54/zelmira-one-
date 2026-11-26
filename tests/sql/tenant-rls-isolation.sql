@@ -233,6 +233,15 @@ BEGIN
      OR NOT EXISTS (SELECT 1 FROM public."ConversationMessage" WHERE id='rls-message-a-member') THEN
     RAISE EXCEPTION 'Tenant A owner cannot see exactly its tenant messages';
   END IF;
+  SELECT count(*) INTO n FROM public."ConversationMessage"
+  WHERE to_tsvector('simple', "content") @@ websearch_to_tsquery('simple', 'owner');
+  IF n <> 1 OR NOT EXISTS (
+    SELECT 1 FROM public."ConversationMessage"
+    WHERE id='rls-message-a-owner'
+      AND to_tsvector('simple', "content") @@ websearch_to_tsquery('simple', 'owner')
+  ) THEN
+    RAISE EXCEPTION 'Full-text conversation search did not respect owner-visible message scope';
+  END IF;
 END $$;
 
 -- Cross-tenant update is filtered to zero rows; cross-tenant deletes are also no-ops.
@@ -301,6 +310,11 @@ BEGIN
   SELECT count(*) INTO n FROM public."ConversationMessage";
   IF n <> 1 OR NOT EXISTS (SELECT 1 FROM public."ConversationMessage" WHERE id='rls-message-a-member') THEN
     RAISE EXCEPTION 'MEMBER can see messages outside their own conversation';
+  END IF;
+  SELECT count(*) INTO n FROM public."ConversationMessage"
+  WHERE to_tsvector('simple', "content") @@ websearch_to_tsquery('simple', 'owner');
+  IF n <> 0 THEN
+    RAISE EXCEPTION 'Full-text search leaked another member conversation content';
   END IF;
   BEGIN
     UPDATE public."ConversationMessage" SET content='tampered' WHERE id='rls-message-a-member';
