@@ -518,3 +518,18 @@ This addendum supersedes older PR-number, branch-head, CI and live-infrastructur
 **Current decision: REPOSITORY ENGINEERING CHECKS PASS ON THE LAST VERIFIED SOURCE HEAD — PRODUCTION / COMMERCIAL RELEASE BLOCKED — NOT RELEASED.**
 
 The owner must explicitly authorize external account setup and any production-affecting action. A green CI run does not authorize merge, deployment or database mutation.
+
+
+## Exact-head release posture — 2026-11-26
+
+This section supersedes older repository-head statements above.
+
+- PR #47: OPEN / DRAFT / UNMERGED. Exact head: `c1dc326d7dd483cafb67b5fc769ca90ee6e8a485`.
+- VAYRO CI `45691131869`: SUCCESS; duplicate CI `45691118417`: SUCCESS.
+- CodeQL `45691132030`: SUCCESS.
+- npm lockfile validation `45691131853`: SUCCESS.
+- Fresh Railway environment status: VAYRO service in ARIA Web OFFLINE; VAYRO service in LEADORA OFFLINE; LEADORA web OFFLINE. No independent VAYRO project exists in the connected Railway workspace.
+- Fresh read-only VAYRO-CORE catalog: 11 public tables, all 11 RLS-enabled, zero policies, zero FORCE RLS, zero `vayro%` roles, zero migration-history tables.
+- Encrypted off-provider backup and isolated restore remain unverified. No live migration, grant, policy, credential, DNS, service, deployment or merge change was made.
+
+**Decision: EXACT-HEAD SOURCE CI / CODEQL / LOCKFILE PASS — LIVE HOSTING AND DATABASE BASELINE BLOCKED — BACKUP/RESTORE UNVERIFIED — NOT RELEASED.**
