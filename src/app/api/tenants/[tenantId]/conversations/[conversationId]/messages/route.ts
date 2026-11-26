@@ -17,7 +17,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ tenantId: string; conversationId: string }> };
-const messageSchema = z.object({ content: z.string().min(1).max(24_000) }).strict();
+const messageSchema = z.object({ content: z.string().trim().min(1).max(24_000) }).strict();
 
 export async function GET(request: NextRequest, context: RouteContext) {
   await assertAuthRuntimeRole();
@@ -89,6 +89,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
           data: { tenantId, conversationId, ...message },
           select: { id: true, role: true, content: true, contentSha256: true, createdAt: true, senderUserId: true }
         });
+        await tx.conversation.updateMany({ where: { id: conversationId, tenantId }, data: { updatedAt: created.createdAt } });
         await tx.auditEvent.create({
           data: { tenantId, actorUserId: actor.userId, action: "conversation.message.create", resource: "ConversationMessage", resourceId: created.id }
         });
