@@ -33,7 +33,6 @@ jobs:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/vayro_ci?schema=public
       MIGRATION_DATABASE_URL: postgresql://ci:ci@localhost:5432/vayro_ci?schema=public
       NEXT_PUBLIC_APP_URL: http://localhost:3000
-      NODE_ENV: production
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
