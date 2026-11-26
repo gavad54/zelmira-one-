@@ -70,6 +70,27 @@ These are repository checks only; they do not establish live hosting, production
 9. **Commercial readiness:** do not activate payments, customer onboarding or paid product entitlements until legal, payment-provider, webhook, reconciliation and support controls are tested.
 10. **Release:** exact-commit deployment evidence, health/readiness, rollback rehearsal, security review, Android artifact/device validation where required, UAT and explicit owner release approval.
 
+
+## Implementation delta — conversation/archive vertical slice
+
+The following source changes were added on the audit work branch after the baseline assessment:
+
+- First-class `Conversation`, `ConversationMessage` and `ConversationAttachment` metadata models and a tenant-scoped Prisma migration.
+- PostgreSQL RLS and FORCE RLS policies for the three new tables; composite tenant foreign keys bind messages and attachments to their parent records.
+- Append-only message and attachment grants; only selected conversation lifecycle columns can be updated by the tenant application role.
+- Database checks for message role, positive attachment size and SHA-256 hex digest shape.
+- Tenant-scoped create/list conversation APIs, message read/write APIs, archive/restore/soft-delete APIs, and bounded PostgreSQL full-text search.
+- Deterministic bounded cursor helpers, message input normalization, content digest generation and archive lifecycle helpers.
+- RLS isolation tests for tenant boundaries, creator-only member history, append-only message grants and full-text search visibility.
+- The tenant DB runtime-role ownership guard now includes the three conversation tables.
+
+## Exact-head verification update
+
+- Earlier exact-head baseline for the first implementation slice: CI run `45772563996` SUCCESS; CodeQL run `45772564068` SUCCESS.
+- A later migration validation failure was observed after adding digest constraints: the SQL text was truncated at a regular-expression anchor. The migration was corrected to use length plus `translate()` checks, avoiding the problematic regex expression.
+- Latest verification after the correction is pending at the time of this update; do not treat it as passed until GitHub reports completed/success on the exact PR head.
+- The search route currently returns bounded snippets only. No attachment upload/download, object storage, export jobs, retention/legal-hold engine, AI streaming/thread orchestration or user-facing archive UI is included in this vertical slice.
+
 ## Governance and execution boundary
 
 Development branches, source changes, tests, documentation and pull requests may proceed autonomously. Merge, production deployment, live database migration/DDL, production secrets/access changes, paid infrastructure, irreversible deletion, billing activation and public release remain approval-gated. This is a safety and ownership boundary, not a technical task to bypass.
