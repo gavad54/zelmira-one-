@@ -1,8 +1,10 @@
 export type AIJsonValue = string | number | boolean | null | AIJsonValue[] | { [key: string]: AIJsonValue };
+export type AIConversationHistoryMessage = { role: "user" | "assistant"; content: string };
 
 export interface TextGenerationInput {
   prompt: string;
   model?: string;
+  history?: AIConversationHistoryMessage[];
 }
 export interface TextGenerationResult {
   text: string;
