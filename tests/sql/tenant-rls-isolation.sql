@@ -41,6 +41,18 @@ VALUES
  ('rls-ai-a-member','rls-tenant-a','rls-user-b','DANA_TEXT','tenant A member prompt','{"text":"A member output"}'::jsonb,CURRENT_TIMESTAMP),
  ('rls-ai-b-owner','rls-tenant-b','rls-user-b','NEGAH_IMAGE','tenant B prompt','{"imageUrl":"https://images.example.invalid/b"}'::jsonb,CURRENT_TIMESTAMP);
 
+INSERT INTO public."Conversation" ("id","tenantId","createdByUserId","title","createdAt","updatedAt")
+VALUES
+ ('rls-conversation-a-owner','rls-tenant-a','rls-user-a','Tenant A owner',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP),
+ ('rls-conversation-a-member','rls-tenant-a','rls-user-b','Tenant A member',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP),
+ ('rls-conversation-b-owner','rls-tenant-b','rls-user-b','Tenant B owner',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+
+INSERT INTO public."ConversationMessage" ("id","tenantId","conversationId","senderUserId","role","content","contentSha256","createdAt")
+VALUES
+ ('rls-message-a-owner','rls-tenant-a','rls-conversation-a-owner','rls-user-a','USER','A owner message',repeat('a',64),CURRENT_TIMESTAMP),
+ ('rls-message-a-member','rls-tenant-a','rls-conversation-a-member','rls-user-b','USER','A member message',repeat('b',64),CURRENT_TIMESTAMP),
+ ('rls-message-b-owner','rls-tenant-b','rls-conversation-b-owner','rls-user-b','USER','B owner message',repeat('c',64),CURRENT_TIMESTAMP);
+
 INSERT INTO public."Session" ("id","tokenHash","userId","expiresAt","createdAt")
 VALUES
  ('rls-session-a','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','rls-user-a',CURRENT_TIMESTAMP + interval '1 hour',CURRENT_TIMESTAMP),
@@ -73,7 +85,8 @@ DO $vayro$
 DECLARE
   required_table text;
   protected_tables text[] := ARRAY[
-    'Tenant','Membership','License','Product','AuditEvent','User','Session','AiGeneration'
+    'Tenant','Membership','License','Product','AuditEvent','User','Session','AiGeneration',
+    'Conversation','ConversationMessage','ConversationAttachment'
   ];
 BEGIN
   IF EXISTS (
@@ -198,6 +211,16 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM public."Product" WHERE id='rls-product') THEN
     RAISE EXCEPTION 'Global product catalog must remain readable';
+  END IF;
+  SELECT count(*) INTO n FROM public."Conversation";
+  IF n <> 2 OR NOT EXISTS (SELECT 1 FROM public."Conversation" WHERE id='rls-conversation-a-owner')
+     OR NOT EXISTS (SELECT 1 FROM public."Conversation" WHERE id='rls-conversation-a-member') THEN
+    RAISE EXCEPTION 'Tenant A owner cannot see exactly its tenant conversations';
+  END IF;
+  SELECT count(*) INTO n FROM public."ConversationMessage";
+  IF n <> 2 OR NOT EXISTS (SELECT 1 FROM public."ConversationMessage" WHERE id='rls-message-a-owner')
+     OR NOT EXISTS (SELECT 1 FROM public."ConversationMessage" WHERE id='rls-message-a-member') THEN
+    RAISE EXCEPTION 'Tenant A owner cannot see exactly its tenant messages';
   END IF;
 END $$;
 
