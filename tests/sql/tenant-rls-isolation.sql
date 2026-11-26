@@ -99,6 +99,17 @@ BEGIN
   IF has_schema_privilege('vayro_app','public','CREATE') THEN
     RAISE EXCEPTION 'vayro_app must not have CREATE on public schema';
   END IF;
+  IF has_table_privilege('vayro_app','public."ConversationMessage"','UPDATE')
+     OR has_table_privilege('vayro_app','public."ConversationMessage"','DELETE')
+     OR has_table_privilege('vayro_app','public."ConversationAttachment"','UPDATE')
+     OR has_table_privilege('vayro_app','public."ConversationAttachment"','DELETE')
+     OR has_column_privilege('vayro_app','public."Conversation"','createdByUserId','UPDATE') THEN
+    RAISE EXCEPTION 'conversation history must remain append-only and creator identity immutable';
+  END IF;
+  IF NOT has_column_privilege('vayro_app','public."Conversation"','archivedAt','UPDATE')
+     OR NOT has_column_privilege('vayro_app','public."Conversation"','deletedAt','UPDATE') THEN
+    RAISE EXCEPTION 'conversation archive lifecycle columns must be selectively updatable';
+  END IF;
 
   IF pg_has_role('vayro_app','vayro_auth','MEMBER')
      OR pg_has_role('vayro_app','vayro_platform','MEMBER')
