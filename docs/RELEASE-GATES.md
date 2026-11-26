@@ -547,3 +547,41 @@ This addendum is based on fresh GitHub, Supabase and Railway reads. It supersede
 - PR #54 adds the first tenant-scoped conversation/archive source slice. Attachment upload/download, object storage, export jobs, retention/legal hold, full AI threading and archive UI are not complete.
 
 **Current disposition:** SOURCE CI GREEN ON THE INSPECTED HEAD; PRODUCTION DEPLOYMENT BLOCKED. Hosting, live DB migration/RLS/roles, independent backup/restore, email, payments/legal, product integrations, Android, UAT and owner release approval remain open. No production change or merge is authorized by this addendum.
+
+
+## Live release-gate verification — 2026-11-26 (main branch)
+
+This addendum supersedes earlier PR, commit, and infrastructure snapshots in this document where they conflict.
+
+### Repository state
+- Default branch `main` was read at commit `527db3a8051c3eef15c974c43ded4b6e755a75b3`. The commit updates `README.md`; it does not itself contain an application-code change.
+- PR #47 is **CLOSED / MERGED** (merge commit `20e65253e45cbd43a5e64967745d453a6262e743`).
+- PR #54 is **CLOSED / NOT MERGED**. Its conversation/archive changes must not be treated as part of `main` unless independently found in the main-branch tree.
+- The current main SHA returned no combined commit statuses, and the available commit-workflow lookup returned no runs for that SHA. Older successful CI on a different SHA is not current-main verification.
+- Therefore current-main CI, CodeQL, dependency audit, build and test status are **NOT VERIFIED** in this checkpoint.
+
+### Railway — fresh read-only production inventory
+- The connected workspace lists only **ARIA Web** and **LEADORA**. There is no independent VAYRO project.
+- ARIA Web production contains a VAYRO service on `main`; its latest deployment `6354aa02-a334-4457-a46d-5f41188845a5` is **FAILED**. It has no mounted volume.
+- ARIA Web has a pending staged-create service from `brand/vayro-name-only`. It is not live and must not be accepted as an independent VAYRO host.
+- LEADORA production contains a VAYRO service on `security/mfa-session-endpoint-gates`; its latest deployment `f2f67daf-5d15-4dc1-91e2-3596fe521d6d` is **FAILED** and it has no mounted volume.
+- LEADORA's own web service has no latest successful deployment in this inventory. Its `leadora-data` volume is mounted only on LEADORA's service.
+- No staged changes were accepted; no service, domain, variable, volume, deployment or project was modified.
+
+### VAYRO-CORE — fresh read-only database inspection
+- Supabase project `VAYRO-CORE` (`wdqhdnhpgxhmmfeyxwxr`) reports `ACTIVE_HEALTHY`, PostgreSQL 17.11, region `eu-central-1`.
+- The live `public` schema contains 11 tables; all 11 have RLS enabled, zero have FORCE RLS, and there are **zero public RLS policies**.
+- No `vayro%` database roles and no migration-history table/entries were found.
+- Security Advisor reports 11 `rls_enabled_no_policy` findings. RLS enabled without policies is fail-closed for roles subject to RLS; it is not proof of public read access. However, the migration baseline, runtime role and effective runtime privileges remain unverified.
+- No DDL, DML, migration, role, grant, policy or credential change was performed.
+
+### Required next sequence
+1. Verify the actual `main` tree and recover/reapply any required PR #54 functionality through a new reviewed PR if it is absent from main.
+2. Run CI, CodeQL, lockfile validation, dependency audit and production build on the exact current main SHA; repair failures before any release candidate is considered.
+3. Provision a dedicated VAYRO hosting project only when the account can support it; do not reuse ARIA or LEADORA services, databases, volumes or secrets.
+4. Select an independently controlled backup destination, complete an encrypted backup and checksum-verified isolated restore, and preserve RPO/RTO evidence.
+5. Reconcile the restored VAYRO-CORE catalog with Prisma and the complete migration set; design and test least-privilege runtime roles and tenant authorization in a non-production environment before any live migration.
+6. Complete endpoint authorization, MFA, email delivery, product APIs, DANA orchestration, archive object storage, Android signed build and real-device acceptance, UAT, monitoring and rollback.
+7. Publish only when the deployed commit matches the approved release commit and all release evidence and owner approval are recorded.
+
+**Current disposition: MAIN CI NOT VERIFIED — DEDICATED HOSTING BLOCKED — DATABASE BASELINE / RUNTIME AUTHORIZATION BLOCKED — BACKUP / RESTORE UNVERIFIED — NOT RELEASED.**
