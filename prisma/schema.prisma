@@ -269,3 +269,209 @@ model AiGeneration {
   @@index([userId, createdAt])
   @@map("AiGeneration")
 }
+
+enum EngineeringTaskStatus {
+  DRAFT
+  QUEUED
+  RUNNING
+  BLOCKED
+  WAITING_APPROVAL
+  WAITING_FOR_OWNER
+  RETRYING
+  SUCCEEDED
+  FAILED
+  DEAD_LETTER
+  CANCELLED
+  EXPIRED
+}
+
+model EngineeringTask {
+  id                String                @id @default(cuid())
+  projectKey        String                @db.VarChar(40)
+  taskType          String                @db.VarChar(80)
+  handlerKey        String                @db.VarChar(80)
+  title             String                @db.VarChar(160)
+  priority          Int                   @default(50)
+  status            EngineeringTaskStatus @default(DRAFT)
+  payload           Json?
+  idempotencyKey    String                @unique @db.VarChar(200)
+  scheduledAt       DateTime?
+  deadline          DateTime?
+  maxAttempts       Int                   @default(3)
+  attemptCount      Int                   @default(0)
+  availableAt       DateTime              @default(now())
+  approvalRequired  Boolean               @default(false)
+  leaseOwner        String?               @db.VarChar(100)
+  leaseToken        String?               @db.VarChar(80)
+  leaseExpiresAt    DateTime?
+  heartbeatAt       DateTime?
+  result            Json?
+  lastErrorCode     String?               @db.VarChar(80)
+  lastErrorMessage  String?               @db.VarChar(500)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  startedAt         DateTime?
+  completedAt       DateTime?
+  attempts          EngineeringTaskAttempt[]
+  dependencies      EngineeringTaskDependency[] @relation("TaskDependencies")
+  dependents        EngineeringTaskDependency[] @relation("TaskDependents")
+  goalFeature       GoalFeature?
+  reviews           TaskReview[]
+
+  @@index([status, availableAt, priority(sort: Desc), createdAt], map: "EngineeringTask_status_availableAt_priority_idx")
+  @@index([leaseExpiresAt])
+  @@index([projectKey, createdAt])
+  @@map("EngineeringTask")
+}
+
+model EngineeringTaskAttempt {
+  id            String          @id @default(uuid())
+  taskId        String
+  attemptNumber Int
+  workerId      String          @db.VarChar(100)
+  leaseToken    String          @db.VarChar(80)
+  status        String          @db.VarChar(24)
+  startedAt     DateTime        @default(now())
+  finishedAt    DateTime?
+  errorCode     String?         @db.VarChar(80)
+  errorMessage  String?         @db.VarChar(500)
+  result        Json?
+  task          EngineeringTask @relation(fields: [taskId], references: [id], onDelete: Restrict)
+
+  @@unique([taskId, attemptNumber])
+  @@index([workerId, status])
+  @@map("EngineeringTaskAttempt")
+}
+
+
+model EngineeringTaskDependency {
+  taskId          String
+  dependsOnTaskId String
+  createdAt       DateTime        @default(now())
+  task            EngineeringTask @relation("TaskDependencies", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOn       EngineeringTask @relation("TaskDependents", fields: [dependsOnTaskId], references: [id], onDelete: Restrict)
+
+  @@id([taskId, dependsOnTaskId])
+  @@index([dependsOnTaskId])
+  @@map("EngineeringTaskDependency")
+}
+
+
+model GoalRecord {
+  id               String      @id @default(cuid())
+  goalKey           String      @db.VarChar(100)
+  projectKey        String      @db.VarChar(40)
+  title             String      @db.VarChar(160)
+  version           Int         @default(1)
+  status            String      @default("PLANNED") @db.VarChar(24)
+  priority          Int         @default(50)
+  approvalRequired  Boolean     @default(true)
+  scheduledAt       DateTime?
+  deadline          DateTime?
+  createdByUserId   String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  epics             GoalEpic[]
+
+  @@unique([goalKey, version])
+  @@index([projectKey, status, createdAt])
+  @@map("GoalRecord")
+}
+
+model GoalEpic {
+  id          String        @id @default(cuid())
+  goalId      String
+  epicKey     String        @db.VarChar(100)
+  title       String        @db.VarChar(160)
+  status      String        @default("PLANNED") @db.VarChar(24)
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  goal        GoalRecord    @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  features    GoalFeature[]
+
+  @@unique([goalId, epicKey])
+  @@index([goalId, sortOrder])
+  @@map("GoalEpic")
+}
+
+model GoalFeature {
+  id                  String       @id @default(cuid())
+  epicId              String
+  featureKey          String       @db.VarChar(100)
+  title               String       @db.VarChar(160)
+  acceptanceCriteria  String       @db.VarChar(500)
+  handlerKey          String       @db.VarChar(80)
+  status              String       @default("PLANNED") @db.VarChar(24)
+  taskId              String?      @unique
+  sortOrder           Int          @default(0)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  epic                GoalEpic     @relation(fields: [epicId], references: [id], onDelete: Cascade)
+  task                EngineeringTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@unique([epicId, featureKey])
+  @@index([epicId, sortOrder])
+  @@index([status])
+  @@map("GoalFeature")
+}
+
+model RecurringSchedule {
+  id                String    @id @default(cuid())
+  scheduleKey       String    @unique @db.VarChar(100)
+  projectKey        String    @db.VarChar(40)
+  handlerKey        String    @db.VarChar(80)
+  title             String    @db.VarChar(160)
+  payload           Json?
+  interval          Int
+  unit              String    @db.VarChar(12)
+  missedRunPolicy   String    @default("SKIP") @db.VarChar(20)
+  startAt           DateTime
+  nextRunAt         DateTime
+  lastRunAt         DateTime?
+  endAt             DateTime?
+  maxRuns           Int?
+  runCount          Int       @default(0)
+  enabled           Boolean   @default(true)
+  createdByUserId   String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([enabled, nextRunAt])
+  @@index([projectKey, enabled])
+  @@map("RecurringSchedule")
+}
+
+model EngineeringAgent {
+  id           String       @id @default(cuid())
+  agentKey     String       @unique @db.VarChar(64)
+  version      Int
+  displayName  String       @db.VarChar(100)
+  capabilities Json
+  permissions  Json
+  projectKeys  Json
+  enabled      Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  reviews      TaskReview[]
+
+  @@map("EngineeringAgent")
+}
+
+model TaskReview {
+  id                String           @id @default(cuid())
+  taskId            String
+  executorAgentKey  String           @db.VarChar(64)
+  reviewerAgentId   String
+  reviewRound       Int              @default(1)
+  decision          String           @db.VarChar(24)
+  evidence          Json
+  createdAt         DateTime         @default(now())
+  task              EngineeringTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  reviewer          EngineeringAgent @relation(fields: [reviewerAgentId], references: [id], onDelete: Restrict)
+
+  @@unique([taskId, reviewRound])
+  @@index([reviewerAgentId, createdAt])
+  @@index([decision, createdAt])
+  @@map("TaskReview")
+}

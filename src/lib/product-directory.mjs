@@ -1,3 +1,5 @@
+import { assertProductFamilyContract } from "./product-family-contract.mjs";
+
 export const VAYRO_PRODUCTS = Object.freeze([
   { name: "ARVAND", fa: "اروند", detail: "تجارت بین‌الملل، صادرات و واردات", tag: "تجارت جهانی", status: "در صف توسعه", statusClass: "planned" },
   { name: "CHARSU", fa: "چهارسو", detail: "بازارگاه و شبکه خریدوفروش", tag: "بازارگاه", status: "در صف توسعه", statusClass: "planned" },
@@ -20,3 +22,5 @@ export const VAYRO_CAPABILITIES = Object.freeze([
 ]);
 
 export const ALL_PRODUCTS = Object.freeze([...VAYRO_PRODUCTS, ...INDEPENDENT_PRODUCTS]);
+
+assertProductFamilyContract({ VAYRO_PRODUCTS, INDEPENDENT_PRODUCTS, VAYRO_CAPABILITIES });

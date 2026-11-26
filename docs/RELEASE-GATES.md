@@ -475,3 +475,61 @@ This addendum supersedes earlier product-count and product-catalogue wording abo
 - [ ] Verify deployed commit parity and obtain explicit release approval.
 
 **Decision: EXACT-MAIN CI PASS + CODEQL EXECUTION PASS — LIVE DATABASE SECURITY/BASELINE AND HOSTING CONFIGURATION OPEN — DEPLOYMENT/COMMERCIAL RELEASE BLOCKED.**
+
+## Verification addendum — 2026-11-25 (current PR #47 head)
+
+This addendum supersedes older repository-head statements above where they conflict.
+
+- PR #47 remains **OPEN / DRAFT / UNMERGED**. Current head: `43d7071062fcf537fdf46fc2e26af163421a962b`.
+- VAYRO CI run [45540082141](https://github.com/gavad54/zelmira-one-/actions/runs/45540082141): **SUCCESS**.
+- CodeQL run [45540087469](https://github.com/gavad54/zelmira-one-/actions/runs/45540087469): **SUCCESS**.
+- Lockfile validation run [45540087560](https://github.com/gavad54/zelmira-one-/actions/runs/45540087560): **SUCCESS**.
+- Unit tests: **137 passed, 0 failed**.
+- PostgreSQL/production-HTTP integration tests: **30 passed, 0 failed**.
+- Isolated PostgreSQL CI applied the repository's **13 real Prisma migrations**, reconciled **18 Prisma tables**, and verified **8 protected RLS tables**. Dedicated auth, task-worker, platform and tenant DB role boundaries passed; task dependency claim, worker restart recovery/stale-lease fencing, and real-table tenant RLS isolation passed.
+- Prisma schema validation, locked dependency security audit, lint, typecheck, production build and Docker image build all passed. An unused crypto import warning was removed in this exact head.
+- These database results are from disposable isolated CI PostgreSQL only; they do not apply or prove the live VAYRO-CORE database has been repaired.
+
+### Live infrastructure blockers reconfirmed read-only
+
+1. VAYRO-CORE remains PostgreSQL 17.11 / ACTIVE_HEALTHY, but the live project still has the previously inspected 11 public tables with RLS enabled, no policies, no FORCE RLS, no migration ledger, zero initial rows and missing expected FK. The repository's 18-table/13-migration CI schema is not yet reconciled with this live 11-table state. **Do not run live migrations or grant changes.**
+2. The Railway service named VAYRO inside the ARIA Web project is connected to `main`, has no configured environment-variable names and no volume; its latest deployment remains FAILED with healthcheck 503. A second VAYRO service inside the LEADORA project is connected to an older security branch commit, has no variable names or public domain, and its latest deployment failed because `AUTH_DATABASE_URL` was missing during Next.js page-data collection. Neither is verified as an independently hosted production VAYRO environment.
+3. The current backup workflow is configured for Cloudflare R2. The prior R2 account request returned HTTP 403 / error 10042, so bucket/key setup and protected GitHub Environments remain unconfigured. No encrypted backup object, checksum evidence or isolated restore has been produced.
+4. No Android project, signed VAYRO release artifact, device test, email delivery proof, payment sandbox/E2E, UAT or approved production deployment is verified.
+
+**Current posture: REPOSITORY ENGINEERING CHECKS PASS — LIVE DATABASE / HOSTING / BACKUP-RESTORE / MOBILE / COMMERCIAL RELEASE GATES OPEN — NOT RELEASED.**
+
+No production deployment, production DB mutation, DNS change, secret modification, merge or release was performed.
+
+
+## Current authority and live release posture — 2026-11-25
+
+This addendum supersedes older PR-number, branch-head, CI and live-infrastructure statements in the historical notes above wherever they conflict. The dated historical records are retained for audit history and must not be treated as current state.
+
+- The active VAYRO change is **PR #47**, branch `upgrade/full-independent-product-family-modules-2026-11-20`, not the historical PR #2 references above.
+- The latest exact-head repository evidence and fresh read-only Railway / VAYRO-CORE findings are maintained in [the 2026-11-25 family engineering evidence snapshot](operations/FAMILY-ENGINEERING-EVIDENCE-2026-11-25.md). That file's latest live-verification addendum is the current operational reference.
+- The last fully verified source head before the documentation-only audit refresh was `2f973b3d23aa13469bb27f245f565c89852f88e0`. VAYRO CI, CodeQL and npm lockfile validation all completed successfully on that exact SHA (runs `45647054177`, `45647054199`, `45647054527`; duplicate CI run `45647045728` also succeeded).
+- A documentation-only audit update has since been committed on the same development branch. Its own exact-head checks must complete before that newer documentation SHA is called verified.
+- Fresh Railway inspection found no dedicated VAYRO project; both existing VAYRO-named services are offline and their latest deployments failed. Do not accept staged changes or repurpose ARIA/LEADORA infrastructure.
+- Fresh VAYRO-CORE inspection found 11 public tables with RLS enabled, zero policies, zero FORCE RLS, no `vayro%` roles, no grants to `anon`/`authenticated`/`service_role`, and no migration history. The Security Advisor reports 11 RLS-enabled/no-policy findings. No database changes were made.
+- Encrypted off-provider backup and a successful isolated restore remain unverified. Live database baseline, role provisioning and policy design remain blocked pending backup/restore and independent reconciliation.
+- No production deployment, production database write, migration, grant, policy, secret, DNS, paid-resource, PR merge or release was performed.
+
+**Current decision: REPOSITORY ENGINEERING CHECKS PASS ON THE LAST VERIFIED SOURCE HEAD — PRODUCTION / COMMERCIAL RELEASE BLOCKED — NOT RELEASED.**
+
+The owner must explicitly authorize external account setup and any production-affecting action. A green CI run does not authorize merge, deployment or database mutation.
+
+
+## Exact-head release posture — 2026-11-26
+
+This section supersedes older repository-head statements above.
+
+- PR #47: OPEN / DRAFT / UNMERGED. Exact head: `c1dc326d7dd483cafb67b5fc769ca90ee6e8a485`.
+- VAYRO CI `45691131869`: SUCCESS; duplicate CI `45691118417`: SUCCESS.
+- CodeQL `45691132030`: SUCCESS.
+- npm lockfile validation `45691131853`: SUCCESS.
+- Fresh Railway environment status: VAYRO service in ARIA Web OFFLINE; VAYRO service in LEADORA OFFLINE; LEADORA web OFFLINE. No independent VAYRO project exists in the connected Railway workspace.
+- Fresh read-only VAYRO-CORE catalog: 11 public tables, all 11 RLS-enabled, zero policies, zero FORCE RLS, zero `vayro%` roles, zero migration-history tables.
+- Encrypted off-provider backup and isolated restore remain unverified. No live migration, grant, policy, credential, DNS, service, deployment or merge change was made.
+
+**Decision: EXACT-HEAD SOURCE CI / CODEQL / LOCKFILE PASS — LIVE HOSTING AND DATABASE BASELINE BLOCKED — BACKUP/RESTORE UNVERIFIED — NOT RELEASED.**
