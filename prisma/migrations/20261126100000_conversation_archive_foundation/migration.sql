@@ -38,6 +38,7 @@ CREATE TABLE public."ConversationMessage" (
 );
 CREATE INDEX "ConversationMessage_tenantId_conversationId_createdAt_id_idx" ON public."ConversationMessage"("tenantId","conversationId","createdAt","id");
 CREATE INDEX "ConversationMessage_tenantId_senderUserId_createdAt_idx" ON public."ConversationMessage"("tenantId","senderUserId","createdAt");
+CREATE INDEX "ConversationMessage_content_fts_idx" ON public."ConversationMessage" USING GIN (to_tsvector('simple', "content"));
 
 CREATE TABLE public."ConversationAttachment" (
   "id" TEXT NOT NULL,
