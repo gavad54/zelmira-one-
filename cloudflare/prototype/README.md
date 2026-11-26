@@ -44,7 +44,7 @@ Do not add production secrets or connect this Worker to VAYRO-CORE.
 
 ## VAYRO application compatibility
 
-The current VAYRO application uses Next.js 15, React 19, Prisma 6, and standalone Node output. Cloudflare currently recommends evaluating Next.js through `vinext`; its compatibility check and feature-by-feature review are required before adopting it. This isolated Worker does not prove that the full VAYRO application, Prisma data access, background workers, or authentication stack can run on Cloudflare.
+The current VAYRO application uses Next.js 15.5.6, React 19, Prisma 6, PostgreSQL, and standalone Node output. Cloudflare's current framework guidance maps Next.js 15 and earlier to OpenNext; vinext is the newer path for Next.js 16 and later. A separate OpenNext build assessment is tracked in PR #61. This isolated Worker does not prove that the full VAYRO application, Prisma data access, background workers, or authentication stack can run on Cloudflare.
 
 References:
 - https://developers.cloudflare.com/workers/framework-guides/web-apps/nextjs/
