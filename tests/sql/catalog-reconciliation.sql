@@ -11,12 +11,14 @@ DECLARE
     'User','Tenant','Membership','Session','Product','License','AuditEvent',
     'EmailContact','EmailContactVerificationToken','AuthActionToken',
     'AuthRateLimit','UserMfa','MfaRecoveryCode','AuthChallenge','AiGeneration',
+    'Conversation','ConversationMessage','ConversationAttachment',
     'EngineeringTask','EngineeringTaskAttempt','EngineeringTaskDependency',
     'GoalRecord','GoalEpic','GoalFeature','RecurringSchedule','EngineeringAgent','TaskReview'
   ];
   protected_table text;
   protected_tables text[] := ARRAY[
-    'Tenant','Membership','License','Product','AuditEvent','User','Session','AiGeneration'
+    'Tenant','Membership','License','Product','AuditEvent','User','Session','AiGeneration',
+    'Conversation','ConversationMessage','ConversationAttachment'
   ];
   migration_count integer;
   failed_migration_count integer;

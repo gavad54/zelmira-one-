@@ -76,6 +76,9 @@ model User {
   recoveryCodes   MfaRecoveryCode[]
   authChallenges  AuthChallenge[]
   aiGenerations   AiGeneration[]
+  conversations   Conversation[] @relation("ConversationCreator")
+  conversationMessages ConversationMessage[] @relation("MessageSender")
+  conversationAttachments ConversationAttachment[]
 }
 
 model Tenant {
@@ -89,6 +92,9 @@ model Tenant {
   licenses    License[]
   auditEvents AuditEvent[]
   aiGenerations AiGeneration[]
+  conversations Conversation[]
+  conversationMessages ConversationMessage[]
+  conversationAttachments ConversationAttachment[]
 }
 
 model Membership {
@@ -474,4 +480,66 @@ model TaskReview {
   @@index([reviewerAgentId, createdAt])
   @@index([decision, createdAt])
   @@map("TaskReview")
+}
+
+
+model Conversation {
+  id              String   @id @default(cuid())
+  tenantId        String
+  createdByUserId String
+  title           String?  @db.VarChar(200)
+  archivedAt      DateTime?
+  deletedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy       User     @relation("ConversationCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  messages        ConversationMessage[]
+
+  @@unique([id, tenantId])
+  @@index([tenantId, archivedAt, updatedAt])
+  @@index([tenantId, createdByUserId, updatedAt])
+  @@map("Conversation")
+}
+
+model ConversationMessage {
+  id             String   @id @default(cuid())
+  tenantId       String
+  conversationId String
+  senderUserId   String?
+  role           String   @db.VarChar(16)
+  content        String   @db.Text
+  metadata       Json?
+  contentSha256  String   @db.Char(64)
+  createdAt      DateTime @default(now())
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation   Conversation @relation(fields: [conversationId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  sender         User?    @relation("MessageSender", fields: [senderUserId], references: [id], onDelete: SetNull)
+  attachments    ConversationAttachment[]
+
+  @@unique([id, tenantId])
+  @@index([tenantId, conversationId, createdAt, id])
+  @@index([tenantId, senderUserId, createdAt])
+  @@map("ConversationMessage")
+}
+
+model ConversationAttachment {
+  id               String   @id @default(cuid())
+  tenantId         String
+  messageId        String
+  uploadedByUserId String
+  objectKey        String   @unique @db.VarChar(512)
+  fileName         String   @db.VarChar(255)
+  contentType      String   @db.VarChar(160)
+  byteSize         BigInt
+  sha256           String   @db.Char(64)
+  createdAt        DateTime @default(now())
+  deletedAt        DateTime?
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  message          ConversationMessage @relation(fields: [messageId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  uploadedBy       User     @relation(fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, messageId, createdAt])
+  @@index([tenantId, deletedAt])
+  @@map("ConversationAttachment")
 }

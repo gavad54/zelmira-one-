@@ -41,6 +41,18 @@ VALUES
  ('rls-ai-a-member','rls-tenant-a','rls-user-b','DANA_TEXT','tenant A member prompt','{"text":"A member output"}'::jsonb,CURRENT_TIMESTAMP),
  ('rls-ai-b-owner','rls-tenant-b','rls-user-b','NEGAH_IMAGE','tenant B prompt','{"imageUrl":"https://images.example.invalid/b"}'::jsonb,CURRENT_TIMESTAMP);
 
+INSERT INTO public."Conversation" ("id","tenantId","createdByUserId","title","createdAt","updatedAt")
+VALUES
+ ('rls-conversation-a-owner','rls-tenant-a','rls-user-a','Tenant A owner',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP),
+ ('rls-conversation-a-member','rls-tenant-a','rls-user-b','Tenant A member',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP),
+ ('rls-conversation-b-owner','rls-tenant-b','rls-user-b','Tenant B owner',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+
+INSERT INTO public."ConversationMessage" ("id","tenantId","conversationId","senderUserId","role","content","contentSha256","createdAt")
+VALUES
+ ('rls-message-a-owner','rls-tenant-a','rls-conversation-a-owner','rls-user-a','USER','A owner message',repeat('a',64),CURRENT_TIMESTAMP),
+ ('rls-message-a-member','rls-tenant-a','rls-conversation-a-member','rls-user-b','USER','A member message',repeat('b',64),CURRENT_TIMESTAMP),
+ ('rls-message-b-owner','rls-tenant-b','rls-conversation-b-owner','rls-user-b','USER','B owner message',repeat('c',64),CURRENT_TIMESTAMP);
+
 INSERT INTO public."Session" ("id","tokenHash","userId","expiresAt","createdAt")
 VALUES
  ('rls-session-a','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','rls-user-a',CURRENT_TIMESTAMP + interval '1 hour',CURRENT_TIMESTAMP),
@@ -73,7 +85,8 @@ DO $vayro$
 DECLARE
   required_table text;
   protected_tables text[] := ARRAY[
-    'Tenant','Membership','License','Product','AuditEvent','User','Session','AiGeneration'
+    'Tenant','Membership','License','Product','AuditEvent','User','Session','AiGeneration',
+    'Conversation','ConversationMessage','ConversationAttachment'
   ];
 BEGIN
   IF EXISTS (
@@ -85,6 +98,17 @@ BEGIN
 
   IF has_schema_privilege('vayro_app','public','CREATE') THEN
     RAISE EXCEPTION 'vayro_app must not have CREATE on public schema';
+  END IF;
+  IF has_table_privilege('vayro_app','public."ConversationMessage"','UPDATE')
+     OR has_table_privilege('vayro_app','public."ConversationMessage"','DELETE')
+     OR has_table_privilege('vayro_app','public."ConversationAttachment"','UPDATE')
+     OR has_table_privilege('vayro_app','public."ConversationAttachment"','DELETE')
+     OR has_column_privilege('vayro_app','public."Conversation"','createdByUserId','UPDATE') THEN
+    RAISE EXCEPTION 'conversation history must remain append-only and creator identity immutable';
+  END IF;
+  IF NOT has_column_privilege('vayro_app','public."Conversation"','archivedAt','UPDATE')
+     OR NOT has_column_privilege('vayro_app','public."Conversation"','deletedAt','UPDATE') THEN
+    RAISE EXCEPTION 'conversation archive lifecycle columns must be selectively updatable';
   END IF;
 
   IF pg_has_role('vayro_app','vayro_auth','MEMBER')
@@ -199,6 +223,25 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM public."Product" WHERE id='rls-product') THEN
     RAISE EXCEPTION 'Global product catalog must remain readable';
   END IF;
+  SELECT count(*) INTO n FROM public."Conversation";
+  IF n <> 2 OR NOT EXISTS (SELECT 1 FROM public."Conversation" WHERE id='rls-conversation-a-owner')
+     OR NOT EXISTS (SELECT 1 FROM public."Conversation" WHERE id='rls-conversation-a-member') THEN
+    RAISE EXCEPTION 'Tenant A owner cannot see exactly its tenant conversations';
+  END IF;
+  SELECT count(*) INTO n FROM public."ConversationMessage";
+  IF n <> 2 OR NOT EXISTS (SELECT 1 FROM public."ConversationMessage" WHERE id='rls-message-a-owner')
+     OR NOT EXISTS (SELECT 1 FROM public."ConversationMessage" WHERE id='rls-message-a-member') THEN
+    RAISE EXCEPTION 'Tenant A owner cannot see exactly its tenant messages';
+  END IF;
+  SELECT count(*) INTO n FROM public."ConversationMessage"
+  WHERE to_tsvector('simple', "content") @@ websearch_to_tsquery('simple', 'owner');
+  IF n <> 1 OR NOT EXISTS (
+    SELECT 1 FROM public."ConversationMessage"
+    WHERE id='rls-message-a-owner'
+      AND to_tsvector('simple', "content") @@ websearch_to_tsquery('simple', 'owner')
+  ) THEN
+    RAISE EXCEPTION 'Full-text conversation search did not respect owner-visible message scope';
+  END IF;
 END $$;
 
 -- Cross-tenant update is filtered to zero rows; cross-tenant deletes are also no-ops.
@@ -249,6 +292,36 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN NULL;
   END;
 END $$;
+COMMIT;
+
+-- Conversation history is private to its creator for ordinary members.
+BEGIN;
+SET LOCAL app.user_id='rls-user-b';
+SET LOCAL app.tenant_id='rls-tenant-a';
+SET LOCAL app.session_token_hash='bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+SET LOCAL app.user_role='MEMBER';
+DO $vayro_member$
+DECLARE n integer;
+BEGIN
+  SELECT count(*) INTO n FROM public."Conversation";
+  IF n <> 1 OR NOT EXISTS (SELECT 1 FROM public."Conversation" WHERE id='rls-conversation-a-member') THEN
+    RAISE EXCEPTION 'MEMBER can see another member conversation';
+  END IF;
+  SELECT count(*) INTO n FROM public."ConversationMessage";
+  IF n <> 1 OR NOT EXISTS (SELECT 1 FROM public."ConversationMessage" WHERE id='rls-message-a-member') THEN
+    RAISE EXCEPTION 'MEMBER can see messages outside their own conversation';
+  END IF;
+  SELECT count(*) INTO n FROM public."ConversationMessage"
+  WHERE to_tsvector('simple', "content") @@ websearch_to_tsquery('simple', 'owner');
+  IF n <> 0 THEN
+    RAISE EXCEPTION 'Full-text search leaked another member conversation content';
+  END IF;
+  BEGIN
+    UPDATE public."ConversationMessage" SET content='tampered' WHERE id='rls-message-a-member';
+    RAISE EXCEPTION 'tenant application role unexpectedly updated immutable message content';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+END $vayro_member$;
 COMMIT;
 
 -- User-scoped tenant listing must expose only the caller's own memberships.
