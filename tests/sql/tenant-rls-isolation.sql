@@ -274,6 +274,31 @@ BEGIN
 END $$;
 COMMIT;
 
+-- Conversation history is private to its creator for ordinary members.
+BEGIN;
+SET LOCAL app.user_id='rls-user-b';
+SET LOCAL app.tenant_id='rls-tenant-a';
+SET LOCAL app.session_token_hash='bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+SET LOCAL app.user_role='MEMBER';
+DO $
+DECLARE n integer;
+BEGIN
+  SELECT count(*) INTO n FROM public."Conversation";
+  IF n <> 1 OR NOT EXISTS (SELECT 1 FROM public."Conversation" WHERE id='rls-conversation-a-member') THEN
+    RAISE EXCEPTION 'MEMBER can see another member conversation';
+  END IF;
+  SELECT count(*) INTO n FROM public."ConversationMessage";
+  IF n <> 1 OR NOT EXISTS (SELECT 1 FROM public."ConversationMessage" WHERE id='rls-message-a-member') THEN
+    RAISE EXCEPTION 'MEMBER can see messages outside their own conversation';
+  END IF;
+  BEGIN
+    UPDATE public."ConversationMessage" SET content='tampered' WHERE id='rls-message-a-member';
+    RAISE EXCEPTION 'tenant application role unexpectedly updated immutable message content';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+END $;
+COMMIT;
+
 -- User-scoped tenant listing must expose only the caller's own memberships.
 BEGIN;
 SET LOCAL app.user_id='rls-user-a';
