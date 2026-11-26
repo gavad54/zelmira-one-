@@ -27,7 +27,7 @@ export async function assertTenantRuntimeRole(tx) {
       FROM pg_class c
       JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE n.nspname = 'public'
-        AND c.relname IN ('Tenant','Membership','License','AuditEvent','User','Session','Product','AiGeneration')
+        AND c.relname IN ('Tenant','Membership','License','AuditEvent','User','Session','Product','AiGeneration','Conversation','ConversationMessage','ConversationAttachment')
         AND (c.relowner = r.oid OR pg_has_role(current_user, c.relowner, 'MEMBER'))
     ) AS owns_protected_tables
   FROM pg_roles r
