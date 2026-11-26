@@ -300,7 +300,7 @@ SET LOCAL app.user_id='rls-user-b';
 SET LOCAL app.tenant_id='rls-tenant-a';
 SET LOCAL app.session_token_hash='bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 SET LOCAL app.user_role='MEMBER';
-DO $
+DO $vayro_member$
 DECLARE n integer;
 BEGIN
   SELECT count(*) INTO n FROM public."Conversation";
@@ -321,7 +321,7 @@ BEGIN
     RAISE EXCEPTION 'tenant application role unexpectedly updated immutable message content';
   EXCEPTION WHEN insufficient_privilege THEN NULL;
   END;
-END $;
+END $vayro_member$;
 COMMIT;
 
 -- User-scoped tenant listing must expose only the caller's own memberships.
