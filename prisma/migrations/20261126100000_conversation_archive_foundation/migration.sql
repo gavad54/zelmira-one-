@@ -31,7 +31,7 @@ CREATE TABLE public."ConversationMessage" (
   CONSTRAINT "ConversationMessage_pkey" PRIMARY KEY ("id"),
   CONSTRAINT "ConversationMessage_id_tenantId_key" UNIQUE ("id","tenantId"),
   CONSTRAINT "ConversationMessage_role_check" CHECK ("role" IN ('USER','ASSISTANT','SYSTEM','TOOL')),
-  CONSTRAINT "ConversationMessage_contentSha256_check" CHECK ("contentSha256" ~ '^[0-9a-f]{64}
+  CONSTRAINT "ConversationMessage_contentSha256_check" CHECK (length("contentSha256") = 64 AND translate("contentSha256", '0123456789abcdef', '') = ''),
   CONSTRAINT "ConversationMessage_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES public."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT "ConversationMessage_conversation_tenant_fkey" FOREIGN KEY ("conversationId","tenantId") REFERENCES public."Conversation"("id","tenantId") ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT "ConversationMessage_senderUserId_fkey" FOREIGN KEY ("senderUserId") REFERENCES public."User"("id") ON DELETE SET NULL ON UPDATE CASCADE
@@ -55,7 +55,7 @@ CREATE TABLE public."ConversationAttachment" (
   CONSTRAINT "ConversationAttachment_pkey" PRIMARY KEY ("id"),
   CONSTRAINT "ConversationAttachment_objectKey_key" UNIQUE ("objectKey"),
   CONSTRAINT "ConversationAttachment_byteSize_check" CHECK ("byteSize" > 0),
-  CONSTRAINT "ConversationAttachment_sha256_check" CHECK ("sha256" ~ '^[0-9a-f]{64}
+  CONSTRAINT "ConversationAttachment_sha256_check" CHECK (length("sha256") = 64 AND translate("sha256", '0123456789abcdef', '') = ''),
   CONSTRAINT "ConversationAttachment_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES public."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT "ConversationAttachment_message_tenant_fkey" FOREIGN KEY ("messageId","tenantId") REFERENCES public."ConversationMessage"("id","tenantId") ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT "ConversationAttachment_uploadedByUserId_fkey" FOREIGN KEY ("uploadedByUserId") REFERENCES public."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE
