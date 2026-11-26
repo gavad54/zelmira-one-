@@ -33,14 +33,14 @@ The first compatibility route to test is **OpenNext for the current Next.js 15.5
 
 ## Cost and runtime guardrails
 
-Cloudflare's published Workers Free limits currently include 100,000 requests/day, 10 ms CPU time per invocation, 128 MB memory, and 50 external subrequests per invocation. The Workers Paid plan has a $5/month minimum. R2 has a free allowance but becomes usage-billed beyond included limits. These limits and pricing must be rechecked before any resource creation or public use.
+Cloudflare's published Workers Free limits currently include 100,000 requests/day, 10 ms CPU time per invocation, 128 MB memory, and 50 external subrequests per invocation. Its published Standard usage model includes 10 million requests/month and 30 million CPU milliseconds/month, with additional usage billed separately. The live account setting `default_usage_model: standard` is not, by itself, proof of the account's selected billing plan or available free allowance. R2 and other add-ons can incur usage charges beyond included allowances. Confirm plan, spending limits, and billing terms in the dashboard before any remote deployment.
 
 No paid plan, paid resource, top-up, R2 bucket, database, or domain may be enabled without separate explicit approval.
 
 ## Recommended isolated test sequence
 
 1. The account owner opens the Cloudflare dashboard's **Workers & Pages** section and selects/creates a `workers.dev` subdomain for preview use. No custom domain is required for the first test.
-2. Add an isolated Cloudflare build/test path for the existing Next.js 15 application using OpenNext; keep the existing Next.js build and Docker deployment untouched.
+2. Keep the dependency-free edge Worker prototype in PR #60 separate from the full Next.js assessment. Add an isolated Cloudflare build/test path for the existing Next.js 15 application using OpenNext; keep the existing Next.js build and Docker deployment untouched.
 3. Run compatibility/build tests without production secrets or production database access.
 4. If the build succeeds, deploy only a minimal preview with synthetic data and no production bindings.
 5. Validate health route, Persian RTL rendering, static assets, cookies/session behavior, security headers, route handlers, and cold-start/runtime behavior.
@@ -63,4 +63,4 @@ Stop the Cloudflare migration if the current Next.js/OpenNext build has unresolv
 
 ## Current status
 
-**Assessment prepared; deployment not yet enabled.** The next owner-side prerequisite is creating the account's `workers.dev` subdomain in the dashboard. After that, an isolated build and preview can be attempted without changing VAYRO production.
+**Assessment and isolated build configuration prepared; remote deployment not enabled.** PR #60 contains a separate minimal edge Worker for basic runtime verification. PR #61 contains the Next.js/OpenNext compatibility build. The first OpenNext CI attempt exposed a Wrangler peer-version mismatch; the workflow was corrected to Wrangler 4.148.0, which satisfies OpenNext 1.20.19's declared peer range. The next owner-side prerequisite for remote preview is creating the account's `workers.dev` subdomain in the dashboard. Production remains untouched.
