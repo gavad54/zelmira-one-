@@ -78,6 +78,7 @@ model User {
   aiGenerations   AiGeneration[]
   conversations   Conversation[] @relation("ConversationCreator")
   conversationMessages ConversationMessage[] @relation("MessageSender")
+  conversationAttachments ConversationAttachment[]
 }
 
 model Tenant {
