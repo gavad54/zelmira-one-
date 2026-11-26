@@ -8,7 +8,7 @@ const permissions = Object.freeze({
   ai_read: Object.freeze(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
   conversation_read: Object.freeze(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
   conversation_write: Object.freeze(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  conversation_archive: Object.freeze(["OWNER", "ADMIN", "MANAGER"])
+  conversation_archive: Object.freeze(["OWNER", "ADMIN", "MANAGER", "MEMBER"])
 });
 
 const membershipRoles = new Set(["OWNER", "ADMIN", "MANAGER", "MEMBER", "VIEWER"]);
