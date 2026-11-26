@@ -127,3 +127,18 @@ No production migration, deployment, role grant, secret change, merge or public 
 - The exact-head checks establish repository CI only. The platform remains NOT DEPLOYED; independent backup/restore, live schema reconciliation, runtime credentials, worker/scheduler deployment, product E2E and UAT remain open.
 
 **Current classification: SOURCE ENGINEERING CHECKS PASS — PRODUCTION / COMMERCIAL RELEASE BLOCKED — NOT RELEASED.**
+
+
+## Live verification addendum — 2026-11-26
+
+This addendum supersedes the older reviewed-head and deployment snapshots above.
+
+- The current PR #47 head is `479f144962ce16c98ce22d44b84bc5005d964652`; PR #47 remains OPEN/DRAFT/UNMERGED against main `f0d31804e695cd3d73b452c7507affdca9573740`.
+- PR #54 is the additive conversation/archive slice on head `6801d32110ec54d1f45d32008c6f3cbb1493f739`, based on PR #47. PR #54 remains OPEN/DRAFT/UNMERGED.
+- Exact-head CI [45775706143](https://github.com/gavad54/zelmira-one-/actions/runs/45775706143) and CodeQL [45775705952](https://github.com/gavad54/zelmira-one-/actions/runs/45775705952) both completed successfully on `6801d32110ec54d1f45d32008c6f3cbb1493f739`. These validate the configured isolated CI scope only.
+- Fresh live VAYRO-CORE inspection found 11 public tables, zero applied migrations, zero public RLS policies, zero FORCE-RLS tables, zero expected VAYRO runtime roles and 0/16 checked application-domain tables. The database has not been reconciled with the current Prisma/migration set. No live DDL, role grant or RLS mutation was performed.
+- Fresh Railway inspection found no independent VAYRO project. The only projects are ARIA Web and LEADORA; each has a VAYRO-named service whose latest deployment is FAILED. These projects and their databases/volumes/secrets must not be repurposed for VAYRO.
+- PR #54 implements conversation/message/attachment metadata and tenant-scoped archive APIs, but does not complete file upload/download, object storage, export, retention/legal hold, AI streaming/thread orchestration or archive UI.
+- The approved product family contains 11 products; DANA remains an internal VAYRO capability. ARIA remains outside accounting/ERP; ARIANA remains the accounting/ERP product.
+
+**Updated release classification:** repository source CI is green on the inspected PR #54 head; live infrastructure and production readiness remain BLOCKED. Independent encrypted backup and verified isolated restore must precede live DB reconciliation. Dedicated hosting, operational services, product contracts, Android acceptance, UAT and explicit release approval remain outstanding.
