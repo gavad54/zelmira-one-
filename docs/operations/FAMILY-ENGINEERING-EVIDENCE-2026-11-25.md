@@ -131,3 +131,23 @@ This addendum supersedes earlier VAYRO PR-head and live-infrastructure observati
 **REPOSITORY CI / CODEQL / LOCKFILE: PASS ON EXACT SHA — PRODUCTION HOSTING: BLOCKED — LIVE DATABASE BASELINE / ROLES / POLICIES: BLOCKED — BACKUP / RESTORE: UNVERIFIED — NOT RELEASED.**
 
 The next safe sequence is: obtain an owner-approved independent backup destination, complete a checksum-verified encrypted backup and isolated restore, reconcile the restored live catalog against the repository migrations, then prepare a reviewed role/policy/migration plan. Do not apply live migrations or reuse ARIA/LEADORA infrastructure.
+
+
+## Live verification addendum — 2026-11-26 05:15 UTC
+
+### VAYRO repository
+- PR #47 remains OPEN / DRAFT / UNMERGED at exact head `c1dc326d7dd483cafb67b5fc769ca90ee6e8a485`.
+- VAYRO CI [45691131869](https://github.com/gavad54/zelmira-one-/actions/runs/45691131869): SUCCESS; duplicate CI [45691118417](https://github.com/gavad54/zelmira-one-/actions/runs/45691118417): SUCCESS.
+- CodeQL [45691132030](https://github.com/gavad54/zelmira-one-/actions/runs/45691132030): SUCCESS.
+- npm lockfile validation [45691131853](https://github.com/gavad54/zelmira-one-/actions/runs/45691131853): SUCCESS.
+
+### Fresh Railway status
+- Connected workspace lists only ARIA Web and LEADORA; there is no independent VAYRO project.
+- ARIA Web production VAYRO service is OFFLINE and has no attached volume. A staged environment patch remains pending and was not accepted.
+- LEADORA production VAYRO service is OFFLINE and has no attached volume. LEADORA web is also OFFLINE; its existing data volume remains attached only to that service.
+- No service was restarted, deployed, reconfigured or repurposed.
+
+### Fresh VAYRO-CORE catalog status
+Read-only catalog query returned: 11 public tables; 11 RLS-enabled; 0 FORCE RLS; 0 policies; 0 `vayro%` roles; 0 migration-history tables. Supabase project status remains ACTIVE_HEALTHY. No DDL, DML, grants, policies, roles or migration changes were made.
+
+**Current decision: SOURCE CI / CODEQL / LOCKFILE PASS ON EXACT SHA — RAILWAY HOSTING OFFLINE — LIVE DATABASE BASELINE / SECURITY CONFIGURATION BLOCKED — BACKUP / RESTORE UNVERIFIED — NOT RELEASED.**
