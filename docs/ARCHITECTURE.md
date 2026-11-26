@@ -142,3 +142,14 @@ This addendum supersedes the older reviewed-head and deployment snapshots above.
 - The approved product family contains 11 products; DANA remains an internal VAYRO capability. ARIA remains outside accounting/ERP; ARIANA remains the accounting/ERP product.
 
 **Updated release classification:** repository source CI is green on the inspected PR #54 head; live infrastructure and production readiness remain BLOCKED. Independent encrypted backup and verified isolated restore must precede live DB reconciliation. Dedicated hosting, operational services, product contracts, Android acceptance, UAT and explicit release approval remain outstanding.
+
+
+## Live verification addendum — 2026-11-26 13:40 Asia/Tehran
+
+This addendum supersedes earlier statements in this file that PR #47 is OPEN/DRAFT/UNMERGED. GitHub now records PR #47 as merged by gavad54 at 2026-11-26 08:15:28 UTC, merge commit 20e65253e45cbd43a5e64967745d453a6262e743. Current main head is 527db3a8051c3eef15c974c43ded4b6e755a75b3; exact-main VAYRO CI and CodeQL passed.
+
+The merged source includes tenant-scoped conversation/archive UI and bounded JSON export, plus DANA conversation-turn persistence. These remain source-level capabilities: no dedicated Railway worker/scheduler runtime, production DB migration, verified encrypted backup, isolated restore, or process-level restart drill was evidenced.
+
+Fresh read-only VAYRO-CORE inspection found 16 repository migration directories but zero live migration records; 27 Prisma models versus 11 live public tables, with 16 model tables absent; all 11 live public tables have RLS enabled but zero policies and zero dedicated vayro_* roles. Fresh Railway inspection found no independent VAYRO project and all three inspected services OFFLINE. The full exact-SHA and infrastructure record is in [the 2026-11-26 family engineering evidence snapshot](operations/FAMILY-ENGINEERING-EVIDENCE_2026-11-26.md).
+
+**Current classification:** source engineering checks PASS on the exact recorded SHAs; autonomous production operation and commercial release remain NOT READY / BLOCKED. No production migration, role grant, policy change, secret, deployment, merge or release was performed by this audit.
