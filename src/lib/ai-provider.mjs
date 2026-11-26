@@ -1,5 +1,7 @@
 const DEFAULT_TIMEOUT_MS = 45_000;
 const MAX_TEXT_LENGTH = 12_000;
+const MAX_HISTORY_MESSAGES = 20;
+const MAX_HISTORY_MESSAGE_CHARS = 4_000;
 
 function providerConfig(env = process.env) {
   const base = env.VAYRO_AI_BASE_URL;
@@ -11,6 +13,24 @@ function providerConfig(env = process.env) {
     throw new Error("AI_PROVIDER_CONFIGURATION_INVALID");
   }
   return { base: url.toString().replace(/\/$/, ""), apiKey };
+}
+
+function normalizeHistory(history) {
+  if (history === undefined) return [];
+  if (!Array.isArray(history) || history.length > MAX_HISTORY_MESSAGES) {
+    throw new Error("AI_HISTORY_INVALID");
+  }
+  return history.map(item => {
+    if (!item || typeof item !== "object" || Array.isArray(item) ||
+        !["user", "assistant"].includes(item.role) ||
+        typeof item.content !== "string" ||
+        item.content.trim().length < 1 ||
+        item.content.length > MAX_HISTORY_MESSAGE_CHARS ||
+        Object.keys(item).some(key => key !== "role" && key !== "content")) {
+      throw new Error("AI_HISTORY_INVALID");
+    }
+    return { role: item.role, content: item.content.trim() };
+  });
 }
 
 async function providerRequest(path, body, env = process.env, fetchImpl = fetch) {
@@ -30,18 +50,20 @@ async function providerRequest(path, body, env = process.env, fetchImpl = fetch)
   return response.json();
 }
 
-export async function generateText({ prompt, model }, env = process.env, fetchImpl = fetch) {
+export async function generateText({ prompt, model, history }, env = process.env, fetchImpl = fetch) {
   if (typeof prompt !== "string" || prompt.trim().length < 2 || prompt.length > MAX_TEXT_LENGTH) {
     throw new Error("AI_INPUT_INVALID");
   }
-  // Validate provider credentials first so a wholly unconfigured provider fails
-  // closed consistently instead of leaking a secondary missing-model condition.
   providerConfig(env);
   const selectedModel = model || env.VAYRO_AI_TEXT_MODEL;
   if (!selectedModel) throw new Error("AI_TEXT_MODEL_NOT_CONFIGURED");
+  const messages = [
+    ...normalizeHistory(history),
+    { role: "user", content: prompt.trim() }
+  ];
   const data = await providerRequest("/v1/chat/completions", {
     model: selectedModel,
-    messages: [{ role: "user", content: prompt.trim() }],
+    messages,
     temperature: 0.4
   }, env, fetchImpl);
   const text = data?.choices?.[0]?.message?.content;
@@ -53,7 +75,6 @@ export async function generateImage({ prompt, size = "1024x1024" }, env = proces
   if (typeof prompt !== "string" || prompt.trim().length < 3 || prompt.length > 4000) {
     throw new Error("AI_INPUT_INVALID");
   }
-  // Fail closed consistently when provider credentials are absent.
   providerConfig(env);
   const model = env.VAYRO_AI_IMAGE_MODEL;
   if (!model) throw new Error("AI_IMAGE_MODEL_NOT_CONFIGURED");

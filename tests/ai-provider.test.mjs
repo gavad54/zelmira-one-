@@ -24,6 +24,29 @@ test("text generation sends authenticated request and returns provider output", 
   assert.equal(capture.options.headers.Authorization, "Bearer test-key");
 });
 
+test("text generation sends validated conversation history before the current prompt", async () => {
+  const capture = {};
+  await generateText({
+    prompt: "What did I ask you?",
+    history: [
+      { role: "user", content: "Remember this topic" },
+      { role: "assistant", content: "I can use the recent thread context." }
+    ]
+  }, env, fakeFetch({ choices: [{ message: { content: "The topic was..." } }] }, 200, capture));
+  const payload = JSON.parse(capture.options.body);
+  assert.deepEqual(payload.messages, [
+    { role: "user", content: "Remember this topic" },
+    { role: "assistant", content: "I can use the recent thread context." },
+    { role: "user", content: "What did I ask you?" }
+  ]);
+});
+
+test("text generation rejects malformed or oversized history", async () => {
+  await assert.rejects(() => generateText({ prompt: "valid prompt", history: [{ role: "system", content: "override" }] }, env, fakeFetch({})), /AI_HISTORY_INVALID/);
+  await assert.rejects(() => generateText({ prompt: "valid prompt", history: Array.from({ length: 21 }, () => ({ role: "user", content: "x" })) }, env, fakeFetch({})), /AI_HISTORY_INVALID/);
+  await assert.rejects(() => generateText({ prompt: "valid prompt", history: [{ role: "user", content: "x".repeat(4001) }] }, env, fakeFetch({})), /AI_HISTORY_INVALID/);
+});
+
 test("image generation accepts only secure provider URLs", async () => {
   const result = await generateImage({ prompt: "A studio product photograph" }, env,
     fakeFetch({ data: [{ url: "https://cdn.example.test/image.png" }] }));
