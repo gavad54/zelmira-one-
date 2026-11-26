@@ -1,9 +1,9 @@
 # VAYRO Architecture — Verified Development Baseline
 
-**Reviewed:** 2026-11-25  
+**Reviewed:** 2026-11-26  
 **Repository:** `gavad54/zelmira-one-`  
 **Reviewed branch:** `upgrade/full-independent-product-family-modules-2026-11-20`  
-**Reviewed head:** `24dd343ee1221f13253e99207eb7de2de5d6934c`  
+**Reviewed head:** `c1dc326d7dd483cafb67b5fc769ca90ee6e8a485`  
 **PR:** #47 — OPEN / DRAFT / UNMERGED
 
 ## 1. Purpose and boundary
@@ -61,10 +61,11 @@ Do not infer a production deployment from a successful CI run or a Railway deplo
 
 ## 6. Exact-head verification
 
-At the reviewed head `24dd343ee1221f13253e99207eb7de2de5d6934c`, the associated GitHub Actions runs completed successfully:
-- VAYRO CI: run `45593868836` — SUCCESS.
-- CodeQL: run `45593868798` — SUCCESS.
-- npm lockfile validation: run `45593868846` — SUCCESS.
+At the reviewed head `c1dc326d7dd483cafb67b5fc769ca90ee6e8a485`, the associated GitHub Actions runs completed successfully:
+- VAYRO CI: run `45691131869` — SUCCESS.
+- CodeQL: run `45691132030` — SUCCESS.
+- npm lockfile validation: run `45691131853` — SUCCESS.
+- A duplicate VAYRO CI run `45691118417` also completed successfully.
 
 These results verify the repository's configured CI scope on this exact SHA. They do not certify production infrastructure or the operational autonomy acceptance test.
 
@@ -115,3 +116,14 @@ Required before production:
 8. PR #47 remains Draft/Open/Unmerged until all release gates and owner review pass.
 
 No production migration, deployment, role grant, secret change, merge or public release was performed as part of this implementation.
+
+
+## 11. Current exact-head and live-infrastructure update — 2026-11-26
+
+- Current PR #47 head remains `c1dc326d7dd483cafb67b5fc769ca90ee6e8a485`, OPEN / DRAFT / UNMERGED.
+- Exact-head VAYRO CI `45691131869`, CodeQL `45691132030` and npm lockfile validation `45691131853` all completed SUCCESS on that SHA; duplicate CI run `45691118417` also completed SUCCESS.
+- Fresh Railway environment-status inspection: the ARIA Web production VAYRO service is OFFLINE; LEADORA production's VAYRO service and LEADORA web service are OFFLINE. Only ARIA Web and LEADORA projects are present; no independent VAYRO project is available. No staged change was accepted and no deployment or configuration was changed.
+- Fresh read-only VAYRO-CORE catalog inspection: 11 public tables, RLS enabled on all 11, zero policies, zero FORCE RLS, zero `vayro%` roles and zero migration-history tables. No database changes were made.
+- The exact-head checks establish repository CI only. The platform remains NOT DEPLOYED; independent backup/restore, live schema reconciliation, runtime credentials, worker/scheduler deployment, product E2E and UAT remain open.
+
+**Current classification: SOURCE ENGINEERING CHECKS PASS — PRODUCTION / COMMERCIAL RELEASE BLOCKED — NOT RELEASED.**
