@@ -45,7 +45,7 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
       - name: Install isolated Cloudflare build tools without changing manifests
-        run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund @opennextjs/cloudflare@1.20.19 wrangler@4.118.0
+        run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund @opennextjs/cloudflare@1.20.19 wrangler@4.148.0
       - name: Build Next.js application for Cloudflare
         run: npx opennextjs-cloudflare build
       - name: Validate Worker bundle without deploying
