@@ -32,3 +32,34 @@ test("enforces result byte limits and valid configured bounds", () => {
   assert.throws(() => serializeTaskResult("ok", 65_537), /TASK_RESULT_LIMIT_INVALID/);
   assert.throws(() => serializeTaskResult("ok", 0), /TASK_RESULT_LIMIT_INVALID/);
 });
+
+test("rejects symbol, hidden, accessor and custom array properties without invoking getters", () => {
+  const symbolKeyed = { ok: true };
+  symbolKeyed[Symbol("hidden")] = "value";
+  assert.throws(() => serializeTaskResult(symbolKeyed), /TASK_RESULT_NOT_JSON/);
+
+  let getterInvoked = false;
+  const accessor = {};
+  Object.defineProperty(accessor, "value", {
+    enumerable: true,
+    get() { getterInvoked = true; return "unsafe"; }
+  });
+  assert.throws(() => serializeTaskResult(accessor), /TASK_RESULT_NOT_JSON/);
+  assert.equal(getterInvoked, false);
+
+  const hidden = {};
+  Object.defineProperty(hidden, "secret", { value: "hidden", enumerable: false });
+  assert.throws(() => serializeTaskResult(hidden), /TASK_RESULT_NOT_JSON/);
+
+  const sparse = [];
+  sparse.length = 1;
+  assert.throws(() => serializeTaskResult(sparse), /TASK_RESULT_NOT_JSON/);
+
+  const extended = [1];
+  extended.extra = true;
+  assert.throws(() => serializeTaskResult(extended), /TASK_RESULT_NOT_JSON/);
+
+  const symbolArray = [1];
+  symbolArray[Symbol("extra")] = true;
+  assert.throws(() => serializeTaskResult(symbolArray), /TASK_RESULT_NOT_JSON/);
+});
