@@ -556,7 +556,7 @@ This addendum supersedes earlier PR, commit, and infrastructure snapshots in thi
 ### Repository state
 - Default branch `main` was read at commit `527db3a8051c3eef15c974c43ded4b6e755a75b3`. The commit updates `README.md`; it does not itself contain an application-code change.
 - PR #47 is **CLOSED / MERGED** (merge commit `20e65253e45cbd43a5e64967745d453a6262e743`).
-- PR #54 is **CLOSED / NOT MERGED**. Its conversation/archive changes must not be treated as part of `main` unless independently found in the main-branch tree.
+- PR #54 is CLOSED / NOT MERGED, but a complete 20-file comparison was performed between its head `71da880633d5d009eb8d1abe01ed6f42e76bca60` and `main`: all 20 paths exist on `main` and all 20 Git blob SHAs are identical. The conversation/archive source slice from PR #54 is therefore present byte-for-byte in the inspected main tree; PR merge status alone must not be used to infer that these files are absent.
 - The current main SHA returned no combined commit statuses, and the available commit-workflow lookup returned no runs for that SHA. Older successful CI on a different SHA is not current-main verification.
 - Therefore current-main CI, CodeQL, dependency audit, build and test status are **NOT VERIFIED** in this checkpoint.
 
@@ -576,7 +576,7 @@ This addendum supersedes earlier PR, commit, and infrastructure snapshots in thi
 - No DDL, DML, migration, role, grant, policy or credential change was performed.
 
 ### Required next sequence
-1. Verify the actual `main` tree and recover/reapply any required PR #54 functionality through a new reviewed PR if it is absent from main.
+1. Run the complete PR #54 archive/conversation tests against the exact current `main` commit; all 20 source files are present and byte-identical to the inspected PR #54 head.
 2. Run CI, CodeQL, lockfile validation, dependency audit and production build on the exact current main SHA; repair failures before any release candidate is considered.
 3. Provision a dedicated VAYRO hosting project only when the account can support it; do not reuse ARIA or LEADORA services, databases, volumes or secrets.
 4. Select an independently controlled backup destination, complete an encrypted backup and checksum-verified isolated restore, and preserve RPO/RTO evidence.
