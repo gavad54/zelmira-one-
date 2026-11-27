@@ -631,3 +631,12 @@ This addendum supersedes the 2026-11-26 current-main verification statements abo
 - In this repository's App Router API tree, product-specific namespaces currently present are `/api/negah` (creative brief and generation) and `/api/dana` (internal AI workspace and prompt studio). `/api/ai-business-suite/capabilities` is a capability-registry endpoint, not eleven independently implemented product APIs.
 - The other VAYRO-family product APIs, service adapters, tenant-scoped contract tests and product-specific E2E acceptance are not demonstrated by this repository inventory. The independent products ARIA, ARIANA, LEADORA and ARMIN MARKET must be assessed in their own repositories and retain their data/deployment boundaries.
 - Accordingly, the 11-product family is a catalog/architecture baseline, not 11 operational products. Do not activate licensing or claim readiness based on the catalog alone.
+
+
+### Android source and build evidence — 2026-11-27
+
+- Correction to older historical notes: the repository does contain a native Android WebView shell under `android/app`, plus `.github/workflows/android-debug-apk.yml`.
+- Android workflow run [45782951645](https://github.com/gavad54/zelmira-one-/actions/runs/45782951645) completed SUCCESS on integration branch commit `2f92fa9805fd48434bad22eb29daf0b369422ad5`; Java 17, Android SDK 35, Gradle 8.9 and debug APK compilation all passed.
+- That run used the compile-only `https://vayro.invalid` sentinel on a branch push. The workflow intentionally skipped artifact upload; its artifact list is empty. It did **not** produce an installable APK.
+- An installable debug APK requires a real deployed VAYRO HTTPS origin via manual workflow dispatch. No independent VAYRO production origin currently exists. No signed release APK/AAB, protected signing key, Play/App Bazaar submission or real-device acceptance has been verified.
+- The Android project currently has no Gradle wrapper files in the repository root and the app Gradle file has no release signing configuration. These remain reproducibility/release-engineering tasks; do not describe the debug compile as a published Android app.
