@@ -173,3 +173,14 @@ This addendum supersedes earlier statements in this document that PR #47 or PR #
 ## 13. Backup automation source status — 2026-11-27
 
 The repository's main branch already contains the encrypted S3 backup workflow, isolated restore-drill workflow, setup runbook, design specification, implementation plan and contract tests. Their workflow source is byte-identical to the corresponding PR #53 backup/restore paths. CI tests their configuration contract, but this is not a real provider integration test. No active bucket/credentials, encrypted remote backup object, remote checksum verification or successful isolated restore has been evidenced. The backup/restore implementation is therefore **present in source, not operationally activated or proven**.
+
+
+## 14. Product API implementation inventory — 2026-11-27
+
+A source-tree inventory of `src/app/api` found these product-related namespaces in the VAYRO repository:
+
+- `/api/negah`: creative-brief and generate routes.
+- `/api/dana`: generate and prompt-studio routes; DANA is an internal capability, not a product.
+- `/api/ai-business-suite/capabilities`: shared capability registry, not a separate API implementation for each product.
+
+The UI/catalogue lists eleven products, but this inventory does not show eleven independently implemented product API surfaces. ARVAND, CHARSU, GANJINEH, SEPEHR and NAMA, PAYAM need their own scoped service/API contracts and acceptance tests; LEADORA, ARIANA, ARIA and ARMIN MARKET must be validated in their respective independent repositories. This is a real implementation gap, not a CI failure.
