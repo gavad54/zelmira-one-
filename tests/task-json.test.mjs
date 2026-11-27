@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { serializeTaskResult, serializeTaskResultForDatabase } from "../src/lib/task-json.mjs";
+import { safeFailure } from "../src/worker/task-worker.mjs";
 
 test("preserves SQL NULL for a null task result while serializing JSON values", () => {
   assert.equal(serializeTaskResultForDatabase(null), null);
@@ -36,6 +37,17 @@ test("enforces result byte limits and valid configured bounds", () => {
   assert.throws(() => serializeTaskResult("x".repeat(65_536)), /TASK_RESULT_TOO_LARGE/);
   assert.throws(() => serializeTaskResult("ok", 65_537), /TASK_RESULT_LIMIT_INVALID/);
   assert.throws(() => serializeTaskResult("ok", 0), /TASK_RESULT_LIMIT_INVALID/);
+});
+
+test("preserves structured serializer error codes for worker failure reporting", () => {
+  const invalid = assert.throws(() => serializeTaskResult({ value: undefined }), /TASK_RESULT_NOT_JSON/);
+  const oversized = assert.throws(() => serializeTaskResult("x".repeat(65_536)), /TASK_RESULT_TOO_LARGE/);
+  const invalidLimit = assert.throws(() => serializeTaskResult("ok", 0), /TASK_RESULT_LIMIT_INVALID/);
+  assert.equal(invalid.code, "TASK_RESULT_NOT_JSON");
+  assert.equal(oversized.code, "TASK_RESULT_TOO_LARGE");
+  assert.equal(invalidLimit.code, "TASK_RESULT_LIMIT_INVALID");
+  assert.equal(safeFailure(invalid).code, "TASK_RESULT_NOT_JSON");
+  assert.equal(safeFailure(oversized).code, "TASK_RESULT_TOO_LARGE");
 });
 
 test("rejects symbol, hidden, accessor and custom array properties without invoking getters", () => {
