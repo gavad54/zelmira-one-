@@ -1,0 +1,34 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { serializeTaskResult } from "../src/lib/task-json.mjs";
+
+test("serializes JSON values without changing their meaning", () => {
+  assert.equal(serializeTaskResult({ ok: true, count: 2, values: [null, "x"] }),
+    '{"ok":true,"count":2,"values":[null,"x"]}');
+  assert.equal(serializeTaskResult(null), "null");
+});
+
+test("rejects values JSON.stringify would silently omit or coerce", () => {
+  assert.throws(() => serializeTaskResult(undefined), /TASK_RESULT_NOT_JSON/);
+  assert.throws(() => serializeTaskResult({ value: undefined }), /TASK_RESULT_NOT_JSON/);
+  assert.throws(() => serializeTaskResult({ value: () => "hidden" }), /TASK_RESULT_NOT_JSON/);
+  assert.throws(() => serializeTaskResult({ value: Symbol("hidden") }), /TASK_RESULT_NOT_JSON/);
+  assert.throws(() => serializeTaskResult({ value: Number.NaN }), /TASK_RESULT_NOT_JSON/);
+  assert.throws(() => serializeTaskResult({ value: Infinity }), /TASK_RESULT_NOT_JSON/);
+  assert.throws(() => serializeTaskResult(1n), /TASK_RESULT_NOT_JSON/);
+});
+
+test("rejects cycles, non-plain objects, unsafe keys and excessive nesting", () => {
+  const cyclic = {}; cyclic.self = cyclic;
+  assert.throws(() => serializeTaskResult(cyclic), /TASK_RESULT_NOT_JSON/);
+  assert.throws(() => serializeTaskResult(new Date()), /TASK_RESULT_NOT_JSON/);
+  assert.throws(() => serializeTaskResult(JSON.parse('{"constructor":true}')), /TASK_RESULT_NOT_JSON/);
+  let deep = {}; for (let i = 0; i < 10; i++) deep = { child: deep };
+  assert.throws(() => serializeTaskResult(deep), /TASK_RESULT_NOT_JSON/);
+});
+
+test("enforces result byte limits and valid configured bounds", () => {
+  assert.throws(() => serializeTaskResult("x".repeat(65_536)), /TASK_RESULT_TOO_LARGE/);
+  assert.throws(() => serializeTaskResult("ok", 65_537), /TASK_RESULT_LIMIT_INVALID/);
+  assert.throws(() => serializeTaskResult("ok", 0), /TASK_RESULT_LIMIT_INVALID/);
+});
