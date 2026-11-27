@@ -1,9 +1,9 @@
 import { createHash, randomUUID } from "node:crypto";
 import { redactErrorMessage } from "../lib/redact-error-message.mjs";
+import { serializeTaskResult } from "../lib/task-json.mjs";
 import { assertAgentCanHandle, assertAgentCanReview, evaluateTaskResult } from "../engine/agent-registry.mjs";
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-const MAX_RESULT_BYTES = 65_536;
 const WORKER_ID = process.env.TASK_WORKER_ID ?? `vayro-worker-${randomUUID()}`;
 const LEASE_SECONDS = Number(process.env.TASK_WORKER_LEASE_SECONDS ?? 60);
 const POLL_MS = Number(process.env.TASK_WORKER_POLL_MS ?? 2_000);
@@ -197,8 +197,7 @@ async function executeTask(db, task, shutdownSignal) {
         reviewDecision: review.decision, reviewedAt: new Date().toISOString()
       }
     };
-    const serialized = JSON.stringify(result ?? null);
-    if (Buffer.byteLength(serialized, "utf8") > MAX_RESULT_BYTES) throw taskError("TASK_RESULT_TOO_LARGE", "Result exceeded 64 KiB");
+    const serialized = serializeTaskResult(result);
     const rows = await db.$queryRaw`
       SELECT public.vayro_complete_engineering_task(${task.task_id}, ${WORKER_ID}, ${task.lease_token}, ${serialized}::jsonb) AS accepted
     `;
