@@ -615,3 +615,11 @@ This addendum supersedes the 2026-11-26 current-main verification statements abo
 ### Release decision
 
 **EXACT-HEAD CI + CODEQL PASS — LIVE DATABASE BASELINE/RLS/ROLES BLOCKED — DEDICATED HOSTING BLOCKED BY EXPIRED RAILWAY TRIAL — INDEPENDENT BACKUP/RESTORE UNPROVEN — NOT RELEASED.**
+
+
+### Backup automation source reconciliation — 2026-11-27
+
+- The encrypted S3 backup workflow, isolated restore-drill workflow, setup runbook, design specification, implementation plan and workflow contract tests are present on `main`.
+- A seven-path comparison against PR #53 head `2792478edc5e64effa4a7b440598f0f9e8dd0641` found six paths byte-identical on `main`; only `.github/workflows/ci.yml` differs. The backup and restore workflow files themselves are byte-identical.
+- The backup workflows are source-level automation only. The runbook explicitly records that no provider bucket/account, protected GitHub Environment credentials/variables, actual encrypted upload, checksum verification against a real remote object, or isolated restore has been activated/proven.
+- Therefore the existence of these workflows does not close the backup/restore gate. Do not run them against production until the owner has configured a private S3-compatible destination and protected credentials, and the first successful backup plus restore drill has been reviewed.
