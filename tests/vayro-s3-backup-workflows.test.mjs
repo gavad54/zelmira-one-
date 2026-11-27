@@ -7,11 +7,11 @@ const restore = readFileSync(new URL("../.github/workflows/vayro-db-restore-dril
 
 test("backup workflow uses provider-neutral S3 credentials and configuration", () => {
   for (const name of [
-    "VAYRO_S3_ACCESS_KEY_ID",
-    "VAYRO_S3_SECRET_ACCESS_KEY",
-    "VAYRO_S3_BUCKET",
-    "VAYRO_S3_ENDPOINT",
-    "VAYRO_S3_REGION",
+    "VAYRO_R2_ACCESS_KEY_ID",
+    "VAYRO_R2_SECRET_ACCESS_KEY",
+    "VAYRO_R2_BUCKET",
+    "VAYRO_R2_S3_ENDPOINT",
+    "VAYRO_R2_REGION",
   ]) assert.ok(backup.includes(name), `backup workflow is missing ${name}`);
   assert.doesNotMatch(backup, /VAYRO_B2_|B2_BUCKET|B2_S3_ENDPOINT|B2_REGION/);
   assert.match(backup, /addressing_style\s*=\s*path/);
@@ -24,16 +24,18 @@ test("backup workflow validates HTTPS endpoint and keeps encrypted upload", () =
   assert.match(backup, /age --recipient/);
   assert.match(backup, /sha256sum/);
   assert.match(backup, /s3api head-object/);
+  assert.match(backup, /readback-vayro\\.dump\\.age/);
+  assert.match(backup, /verify-encrypted-backup-readback\\.sh/);
   assert.match(backup, /github\.ref == 'refs\/heads\/main'/);
 });
 
 test("restore workflow uses provider-neutral S3 configuration and verifies target separation", () => {
   for (const name of [
-    "VAYRO_S3_ACCESS_KEY_ID",
-    "VAYRO_S3_SECRET_ACCESS_KEY",
-    "VAYRO_S3_BUCKET",
-    "VAYRO_S3_ENDPOINT",
-    "VAYRO_S3_REGION",
+    "VAYRO_R2_ACCESS_KEY_ID",
+    "VAYRO_R2_SECRET_ACCESS_KEY",
+    "VAYRO_R2_BUCKET",
+    "VAYRO_R2_S3_ENDPOINT",
+    "VAYRO_R2_REGION",
   ]) assert.ok(restore.includes(name), `restore workflow is missing ${name}`);
   assert.doesNotMatch(restore, /VAYRO_B2_|B2_BUCKET|B2_S3_ENDPOINT|B2_REGION/);
   assert.match(restore, /addressing_style\s*=\s*path/);
