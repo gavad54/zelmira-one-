@@ -157,3 +157,14 @@ This addendum supersedes earlier statements in this document that PR #47 or PR #
 - No Railway changes, deployments, database mutations, secret changes or public release were performed in this verification.
 
 **Current classification: SOURCE TREE PRESENT — CURRENT-MAIN CHECKS UNVERIFIED — HOSTING / DATABASE / BACKUP GATES BLOCKED — NOT RELEASED.**
+
+
+## 12. Live verification update — 2026-11-27
+
+- PR #62 documentation head `dd30b7f0239d9fcaf6e7969d25d6c1cb5347e153` passed VAYRO CI [45946632157](https://github.com/gavad54/zelmira-one-/actions/runs/45946632157) and CodeQL [45946632187](https://github.com/gavad54/zelmira-one-/actions/runs/45946632187). CI included locked dependency audit, unit tests, complete Prisma migration execution and RLS/role tests on disposable PostgreSQL, lint, typecheck, production build, Docker build and PostgreSQL/HTTP integration tests.
+- All 20 files in the inspected PR #54 source change set were verified present on main with identical Git blob SHAs.
+- VAYRO-CORE remains ACTIVE_HEALTHY, but its live catalog is not reconciled: 11 public tables, all RLS-enabled, zero FORCE RLS, zero policies, zero VAYRO roles and empty migration history. All 11 tables currently report zero rows. No production SQL mutation was made.
+- Railway workspace inventory still shows only ARIA Web and LEADORA. Both VAYRO-named services are OFFLINE. Creating a dedicated VAYRO project was blocked by Railway's response that the trial has expired and a plan must be selected. No paid plan was selected and no infrastructure was changed.
+- The old LEADORA-hosted VAYRO deployment log confirms its historical build failed because `AUTH_DATABASE_URL` was required during page-data collection. Current source uses lazy auth/platform clients and the exact PR #62 CI build passes; the old deployment is still offline and must not be reused.
+
+**Classification: REPOSITORY ENGINEERING CHECKS PASS — LIVE DATABASE AND INDEPENDENT HOSTING NOT READY — BACKUP/RESTORE NOT PROVEN — PRODUCTION DEPLOYMENT BLOCKED.**
