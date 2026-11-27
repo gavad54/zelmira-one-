@@ -623,3 +623,11 @@ This addendum supersedes the 2026-11-26 current-main verification statements abo
 - A seven-path comparison against PR #53 head `2792478edc5e64effa4a7b440598f0f9e8dd0641` found six paths byte-identical on `main`; only `.github/workflows/ci.yml` differs. The backup and restore workflow files themselves are byte-identical.
 - The backup workflows are source-level automation only. The runbook explicitly records that no provider bucket/account, protected GitHub Environment credentials/variables, actual encrypted upload, checksum verification against a real remote object, or isolated restore has been activated/proven.
 - Therefore the existence of these workflows does not close the backup/restore gate. Do not run them against production until the owner has configured a private S3-compatible destination and protected credentials, and the first successful backup plus restore drill has been reviewed.
+
+
+### Product API inventory — source-tree check 2026-11-27
+
+- The VAYRO UI and product directory register the approved 11 products and explicitly label most as planned, prototype or independently gated; registry presence is not an implementation claim.
+- In this repository's App Router API tree, product-specific namespaces currently present are `/api/negah` (creative brief and generation) and `/api/dana` (internal AI workspace and prompt studio). `/api/ai-business-suite/capabilities` is a capability-registry endpoint, not eleven independently implemented product APIs.
+- The other VAYRO-family product APIs, service adapters, tenant-scoped contract tests and product-specific E2E acceptance are not demonstrated by this repository inventory. The independent products ARIA, ARIANA, LEADORA and ARMIN MARKET must be assessed in their own repositories and retain their data/deployment boundaries.
+- Accordingly, the 11-product family is a catalog/architecture baseline, not 11 operational products. Do not activate licensing or claim readiness based on the catalog alone.
