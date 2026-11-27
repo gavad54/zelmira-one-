@@ -1,19 +1,23 @@
 const MAX_DEPTH = 8;
 const MAX_ARRAY_ITEMS = 500;
 const MAX_OBJECT_KEYS = 100;
+const MAX_NODES = 10_000;
 const MAX_BYTES = 65_536;
 const UNSAFE_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 
-function assertDataProperty(value, key, depth, ancestors) {
+function assertDataProperty(value, key, depth, ancestors, budget) {
   const descriptor = Object.getOwnPropertyDescriptor(value, key);
   if (!descriptor || !descriptor.enumerable || !Object.hasOwn(descriptor, "value")) {
     throw new Error("TASK_RESULT_NOT_JSON");
   }
-  assertJson(descriptor.value, depth + 1, ancestors);
+  assertJson(descriptor.value, depth + 1, ancestors, budget);
 }
 
-function assertJson(value, depth = 0, ancestors = new WeakSet()) {
-  if (depth > MAX_DEPTH) throw new Error("TASK_RESULT_NOT_JSON");
+function assertJson(value, depth = 0, ancestors = new WeakSet(), budget = { visited: 0 }) {
+  budget.visited += 1;
+  if (budget.visited > MAX_NODES || depth > MAX_DEPTH) {
+    throw new Error("TASK_RESULT_NOT_JSON");
+  }
   if (value === null || typeof value === "string" || typeof value === "boolean") return;
   if (typeof value === "number") {
     if (!Number.isFinite(value)) throw new Error("TASK_RESULT_NOT_JSON");
@@ -33,7 +37,7 @@ function assertJson(value, depth = 0, ancestors = new WeakSet()) {
       for (let index = 0; index < value.length; index += 1) {
         const key = String(index);
         if (!keys.includes(key)) throw new Error("TASK_RESULT_NOT_JSON");
-        assertDataProperty(value, key, depth, ancestors);
+        assertDataProperty(value, key, depth, ancestors, budget);
       }
       return;
     }
@@ -45,7 +49,7 @@ function assertJson(value, depth = 0, ancestors = new WeakSet()) {
     }
     for (const key of keys) {
       if (UNSAFE_KEYS.has(key)) throw new Error("TASK_RESULT_NOT_JSON");
-      assertDataProperty(value, key, depth, ancestors);
+      assertDataProperty(value, key, depth, ancestors, budget);
     }
   } finally {
     ancestors.delete(value);
