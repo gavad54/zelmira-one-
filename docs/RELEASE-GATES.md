@@ -585,3 +585,33 @@ This addendum supersedes earlier PR, commit, and infrastructure snapshots in thi
 7. Publish only when the deployed commit matches the approved release commit and all release evidence and owner approval are recorded.
 
 **Current disposition: MAIN CI NOT VERIFIED — DEDICATED HOSTING BLOCKED — DATABASE BASELINE / RUNTIME AUTHORIZATION BLOCKED — BACKUP / RESTORE UNVERIFIED — NOT RELEASED.**
+
+
+## Live verification addendum — 2026-11-27
+
+This addendum supersedes the 2026-11-26 current-main verification statements above where they conflict.
+
+### Exact-head repository checks
+
+- Documentation PR #62 head: `dd30b7f0239d9fcaf6e7969d25d6c1cb5347e153`.
+- VAYRO CI [45946632157](https://github.com/gavad54/zelmira-one-/actions/runs/45946632157): **SUCCESS**. Locked dependency install/audit, unit tests, Prisma generation and validation, full migration chain on isolated PostgreSQL, catalog reconciliation, RLS/FORCE-RLS coverage, auth/platform/task-worker/scheduler/tenant role-boundary checks, lint, TypeScript, production build, Docker image build and PostgreSQL/production HTTP integration tests all completed successfully.
+- CodeQL [45946632187](https://github.com/gavad54/zelmira-one-/actions/runs/45946632187): **SUCCESS**.
+- These are exact-head repository/isolated-CI results. They do not verify production secrets, live DB migration, runtime health, backup/restore or a release.
+- The 20 changed paths from PR #54 were compared with main; all 20 exist and all 20 Git blob SHAs are identical. PR #54's inspected source slice is present in main despite PR #54 being closed unmerged.
+
+### Fresh VAYRO-CORE read-only catalog
+
+- Project `wdqhdnhpgxhmmfeyxwxr`: ACTIVE_HEALTHY, PostgreSQL 17.11.
+- 11 public tables; all 11 have RLS enabled; zero have FORCE RLS; zero public policies; zero `vayro%` roles; migration history empty.
+- Supabase Security Advisor reports 11 `rls_enabled_no_policy` findings. Table inventory reports zero rows for all 11 tables.
+- No DDL, DML, migration, role, grant, policy or credential changes were performed. Do not apply the migration chain or baseline this live database until an independent encrypted backup, isolated restore and object-by-object schema reconciliation have passed.
+
+### Fresh Railway status and provisioning blocker
+
+- The connected workspace still contains only `ARIA Web` and `LEADORA`; neither is an independent VAYRO project. Their VAYRO-named services are OFFLINE and have no VAYRO volume.
+- The ARIA-hosted VAYRO deployment failed at its configured `/api/health` healthcheck. The LEADORA-hosted VAYRO deployment failed during image build because the older branch build attempted to require `AUTH_DATABASE_URL` during Next.js page-data collection. The current repository uses lazy runtime client initialization and passed the current CI production build; this does not repair the stale Railway services.
+- An attempt to create a separate private Railway project named VAYRO was rejected by Railway with: **trial expired; select a plan to continue**. No project or service was created and no paid plan was selected. Do not repurpose ARIA or LEADORA infrastructure.
+
+### Release decision
+
+**EXACT-HEAD CI + CODEQL PASS — LIVE DATABASE BASELINE/RLS/ROLES BLOCKED — DEDICATED HOSTING BLOCKED BY EXPIRED RAILWAY TRIAL — INDEPENDENT BACKUP/RESTORE UNPROVEN — NOT RELEASED.**
