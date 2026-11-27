@@ -68,3 +68,10 @@ test("rejects symbol, hidden, accessor and custom array properties without invok
   symbolArray[Symbol("extra")] = true;
   assert.throws(() => serializeTaskResult(symbolArray), /TASK_RESULT_NOT_JSON/);
 });
+
+test("bounds traversal of repeated shared references before serialization", () => {
+  let amplified = 0;
+  for (let depth = 0; depth < 4; depth += 1) amplified = Array(11).fill(amplified);
+  assert.ok(Buffer.byteLength(JSON.stringify(amplified), "utf8") < 65_536);
+  assert.throws(() => serializeTaskResult(amplified), /TASK_RESULT_NOT_JSON/);
+});
