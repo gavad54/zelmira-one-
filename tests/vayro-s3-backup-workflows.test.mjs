@@ -54,10 +54,14 @@ test("restore workflow rejects the production database name as well as its host"
   assert.match(restore, /production_database\s*==\s*target\.path\.lstrip\(["']\/["']\)/);
 });
 
-test("restore workflow validates restored data and security posture", () => {
+test("restore drill reports RLS posture without blocking recovery on existing policy gaps", () => {
   assert.match(restore, /row_count|row-count/i);
   assert.match(restore, /pg_extension/);
   assert.match(restore, /relrowsecurity/);
   assert.match(restore, /relforcerowsecurity/);
   assert.match(restore, /pg_policies/);
+  assert.match(restore, /rls_tables_without_policy/);
+  assert.match(restore, /SECURITY RELEASE GATE: BLOCKED/);
+  assert.doesNotMatch(restore, /if ! grep -Eq 'policies=\[1-9\]\[0-9\]\*'/);
+  assert.doesNotMatch(restore, /if ! grep -Eq 'rls_tables_without_policy=0'/);
 });
