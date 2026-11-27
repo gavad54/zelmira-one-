@@ -24,8 +24,8 @@ test("backup workflow validates HTTPS endpoint and keeps encrypted upload", () =
   assert.match(backup, /age --recipient/);
   assert.match(backup, /sha256sum/);
   assert.match(backup, /s3api head-object/);
-  assert.match(backup, /readback-vayro\\.dump\\.age/);
-  assert.match(backup, /verify-encrypted-backup-readback\\.sh/);
+  assert.match(backup, /readback-vayro\.dump\.age/);
+  assert.match(backup, /verify-encrypted-backup-readback\.sh/);
   assert.match(backup, /github\.ref == 'refs\/heads\/main'/);
 });
 
