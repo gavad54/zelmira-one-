@@ -149,7 +149,7 @@ This addendum supersedes the older reviewed-head and deployment snapshots above.
 This addendum supersedes earlier statements in this document that PR #47 or PR #54 remain open.
 
 - Main branch was read at `527db3a8051c3eef15c974c43ded4b6e755a75b3`. Its latest commit changes `README.md` only.
-- PR #47 is CLOSED / MERGED. PR #54 is CLOSED / NOT MERGED. Do not infer that PR #54's archive/conversation code is part of main without checking the actual main tree.
+- PR #47 is CLOSED / MERGED. PR #54 is CLOSED / NOT MERGED. A complete 20-file comparison between PR #54 head `71da880633d5d009eb8d1abe01ed6f42e76bca60` and `main` found all 20 paths present with identical Git blob SHAs. Its conversation/archive source slice is therefore byte-identical in the inspected main tree.
 - Combined commit status and the available workflow-run lookup returned no current-main checks for `527db3a8051c3eef15c974c43ded4b6e755a75b3`. Exact-main CI, CodeQL, dependency audit and build are therefore unverified; successful runs on older development heads do not establish current-main health.
 - Railway currently exposes only ARIA Web and LEADORA projects in the connected workspace. The VAYRO-named service in each has a latest FAILED deployment; neither has a mounted VAYRO data volume. ARIA Web also has an unaccepted staged-create service. None is an independent VAYRO production environment.
 - Supabase VAYRO-CORE is ACTIVE_HEALTHY on PostgreSQL 17.11. A fresh read-only catalog query found 11 public tables, all RLS-enabled, zero FORCE RLS, zero public policies, zero `vayro%` roles and no migration ledger. No database changes were made.
