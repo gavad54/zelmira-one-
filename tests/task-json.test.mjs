@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { serializeTaskResult } from "../src/lib/task-json.mjs";
+import { serializeTaskResult, serializeTaskResultForDatabase } from "../src/lib/task-json.mjs";
+
+test("preserves SQL NULL for a null task result while serializing JSON values", () => {
+  assert.equal(serializeTaskResultForDatabase(null), null);
+  assert.equal(serializeTaskResultForDatabase({ ok: true }), '{"ok":true}');
+});
 
 test("serializes JSON values without changing their meaning", () => {
   assert.equal(serializeTaskResult({ ok: true, count: 2, values: [null, "x"] }),
