@@ -184,3 +184,8 @@ A source-tree inventory of `src/app/api` found these product-related namespaces 
 - `/api/ai-business-suite/capabilities`: shared capability registry, not a separate API implementation for each product.
 
 The UI/catalogue lists eleven products, but this inventory does not show eleven independently implemented product API surfaces. ARVAND, CHARSU, GANJINEH, SEPEHR and NAMA, PAYAM need their own scoped service/API contracts and acceptance tests; LEADORA, ARIANA, ARIA and ARMIN MARKET must be validated in their respective independent repositories. This is a real implementation gap, not a CI failure.
+
+
+## 15. Android delivery status — 2026-11-27
+
+The repository includes a native Android WebView wrapper (`android/app`) and an Android build workflow. Run [45782951645](https://github.com/gavad54/zelmira-one-/actions/runs/45782951645) succeeded on integration branch commit `2f92fa9805fd48434bad22eb29daf0b369422ad5`, compiling a debug APK with Java 17, Android SDK 35 and Gradle 8.9. The run used the compile-only `https://vayro.invalid` URL; artifact upload was intentionally skipped and no APK artifact was produced. A manually dispatched build requires the real deployed VAYRO HTTPS origin. No signed release artifact or real-device acceptance is verified. The repository also lacks a Gradle wrapper and release signing configuration in the inspected app Gradle file.
