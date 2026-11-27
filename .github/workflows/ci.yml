@@ -52,6 +52,8 @@ jobs:
         run: npm audit --audit-level=moderate
       - name: Run unit tests
         run: npm test
+      - name: Verify offsite backup read-back integrity with synthetic fixtures
+        run: bash tests/verify-encrypted-backup-readback.sh
       - name: Generate Prisma client
         run: npx prisma generate
       - name: Validate Prisma schema
