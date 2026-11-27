@@ -37,7 +37,6 @@ function assertJson(value, depth = 0, ancestors = new WeakSet()) {
       }
       return;
     }
-
     const prototype = Object.getPrototypeOf(value);
     if (prototype !== Object.prototype && prototype !== null) throw new Error("TASK_RESULT_NOT_JSON");
     const keys = Reflect.ownKeys(value);
@@ -67,4 +66,9 @@ export function serializeTaskResult(value, maxBytes = MAX_BYTES) {
     if (error instanceof Error && error.message === "TASK_RESULT_TOO_LARGE") throw error;
     throw new Error("TASK_RESULT_NOT_JSON");
   }
+}
+
+// Preserve the database SQL NULL contract; JSONB null is a distinct value.
+export function serializeTaskResultForDatabase(value, maxBytes = MAX_BYTES) {
+  return value === null ? null : serializeTaskResult(value, maxBytes);
 }
