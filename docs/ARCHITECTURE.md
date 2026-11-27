@@ -168,3 +168,8 @@ This addendum supersedes earlier statements in this document that PR #47 or PR #
 - The old LEADORA-hosted VAYRO deployment log confirms its historical build failed because `AUTH_DATABASE_URL` was required during page-data collection. Current source uses lazy auth/platform clients and the exact PR #62 CI build passes; the old deployment is still offline and must not be reused.
 
 **Classification: REPOSITORY ENGINEERING CHECKS PASS — LIVE DATABASE AND INDEPENDENT HOSTING NOT READY — BACKUP/RESTORE NOT PROVEN — PRODUCTION DEPLOYMENT BLOCKED.**
+
+
+## 13. Backup automation source status — 2026-11-27
+
+The repository's main branch already contains the encrypted S3 backup workflow, isolated restore-drill workflow, setup runbook, design specification, implementation plan and contract tests. Their workflow source is byte-identical to the corresponding PR #53 backup/restore paths. CI tests their configuration contract, but this is not a real provider integration test. No active bucket/credentials, encrypted remote backup object, remote checksum verification or successful isolated restore has been evidenced. The backup/restore implementation is therefore **present in source, not operationally activated or proven**.
