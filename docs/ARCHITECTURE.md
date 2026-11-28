@@ -142,3 +142,71 @@ This addendum supersedes the older reviewed-head and deployment snapshots above.
 - The approved product family contains 11 products; DANA remains an internal VAYRO capability. ARIA remains outside accounting/ERP; ARIANA remains the accounting/ERP product.
 
 **Updated release classification:** repository source CI is green on the inspected PR #54 head; live infrastructure and production readiness remain BLOCKED. Independent encrypted backup and verified isolated restore must precede live DB reconciliation. Dedicated hosting, operational services, product contracts, Android acceptance, UAT and explicit release approval remain outstanding.
+
+
+## 12. Live main-branch and infrastructure verification — 2026-11-26
+
+This addendum supersedes earlier statements in this document that PR #47 or PR #54 remain open.
+
+- Main branch was read at `527db3a8051c3eef15c974c43ded4b6e755a75b3`. Its latest commit changes `README.md` only.
+- PR #47 is CLOSED / MERGED. PR #54 is CLOSED / NOT MERGED. A complete 20-file comparison between PR #54 head `71da880633d5d009eb8d1abe01ed6f42e76bca60` and `main` found all 20 paths present with identical Git blob SHAs. Its conversation/archive source slice is therefore byte-identical in the inspected main tree.
+- Combined commit status and the available workflow-run lookup returned no current-main checks for `527db3a8051c3eef15c974c43ded4b6e755a75b3`. Exact-main CI, CodeQL, dependency audit and build are therefore unverified; successful runs on older development heads do not establish current-main health.
+- Railway currently exposes only ARIA Web and LEADORA projects in the connected workspace. The VAYRO-named service in each has a latest FAILED deployment; neither has a mounted VAYRO data volume. ARIA Web also has an unaccepted staged-create service. None is an independent VAYRO production environment.
+- Supabase VAYRO-CORE is ACTIVE_HEALTHY on PostgreSQL 17.11. A fresh read-only catalog query found 11 public tables, all RLS-enabled, zero FORCE RLS, zero public policies, zero `vayro%` roles and no migration ledger. No database changes were made.
+- The database is not production-ready merely because the Supabase project is healthy. Runtime identity/privileges, migration reconciliation, policies/authorization and independent backup/restore must be proven before production use.
+- No Railway changes, deployments, database mutations, secret changes or public release were performed in this verification.
+
+**Current classification: SOURCE TREE PRESENT — CURRENT-MAIN CHECKS UNVERIFIED — HOSTING / DATABASE / BACKUP GATES BLOCKED — NOT RELEASED.**
+
+
+## 12. Live verification update — 2026-11-27
+
+- PR #62 documentation head `dd30b7f0239d9fcaf6e7969d25d6c1cb5347e153` passed VAYRO CI [45946632157](https://github.com/gavad54/zelmira-one-/actions/runs/45946632157) and CodeQL [45946632187](https://github.com/gavad54/zelmira-one-/actions/runs/45946632187). CI included locked dependency audit, unit tests, complete Prisma migration execution and RLS/role tests on disposable PostgreSQL, lint, typecheck, production build, Docker build and PostgreSQL/HTTP integration tests.
+- All 20 files in the inspected PR #54 source change set were verified present on main with identical Git blob SHAs.
+- VAYRO-CORE remains ACTIVE_HEALTHY, but its live catalog is not reconciled: 11 public tables, all RLS-enabled, zero FORCE RLS, zero policies, zero VAYRO roles and empty migration history. All 11 tables currently report zero rows. No production SQL mutation was made.
+- Railway workspace inventory still shows only ARIA Web and LEADORA. Both VAYRO-named services are OFFLINE. Creating a dedicated VAYRO project was blocked by Railway's response that the trial has expired and a plan must be selected. No paid plan was selected and no infrastructure was changed.
+- The old LEADORA-hosted VAYRO deployment log confirms its historical build failed because `AUTH_DATABASE_URL` was required during page-data collection. Current source uses lazy auth/platform clients and the exact PR #62 CI build passes; the old deployment is still offline and must not be reused.
+
+**Classification: REPOSITORY ENGINEERING CHECKS PASS — LIVE DATABASE AND INDEPENDENT HOSTING NOT READY — BACKUP/RESTORE NOT PROVEN — PRODUCTION DEPLOYMENT BLOCKED.**
+
+
+## 13. Backup automation source status — 2026-11-27
+
+The repository's main branch already contains the encrypted S3 backup workflow, isolated restore-drill workflow, setup runbook, design specification, implementation plan and contract tests. Their workflow source is byte-identical to the corresponding PR #53 backup/restore paths. CI tests their configuration contract, but this is not a real provider integration test. No active bucket/credentials, encrypted remote backup object, remote checksum verification or successful isolated restore has been evidenced. The backup/restore implementation is therefore **present in source, not operationally activated or proven**.
+
+
+## 14. Product API implementation inventory — 2026-11-27
+
+A source-tree inventory of `src/app/api` found these product-related namespaces in the VAYRO repository:
+
+- `/api/negah`: creative-brief and generate routes.
+- `/api/dana`: generate and prompt-studio routes; DANA is an internal capability, not a product.
+- `/api/ai-business-suite/capabilities`: shared capability registry, not a separate API implementation for each product.
+
+The UI/catalogue lists eleven products, but this inventory does not show eleven independently implemented product API surfaces. ARVAND, CHARSU, GANJINEH, SEPEHR and NAMA, PAYAM need their own scoped service/API contracts and acceptance tests; LEADORA, ARIANA, ARIA and ARMIN MARKET must be validated in their respective independent repositories. This is a real implementation gap, not a CI failure.
+
+
+## 15. Android delivery status — 2026-11-27
+
+The repository includes a native Android WebView wrapper (`android/app`) and an Android build workflow. Run [45782951645](https://github.com/gavad54/zelmira-one-/actions/runs/45782951645) succeeded on integration branch commit `2f92fa9805fd48434bad22eb29daf0b369422ad5`, compiling a debug APK with Java 17, Android SDK 35 and Gradle 8.9. The run used the compile-only `https://vayro.invalid` URL; artifact upload was intentionally skipped and no APK artifact was produced. A manually dispatched build requires the real deployed VAYRO HTTPS origin. No signed release artifact or real-device acceptance is verified. The repository also lacks a Gradle wrapper and release signing configuration in the inspected app Gradle file.
+
+
+## 16. Approved VAYRO product-family correction — 2026-11-28
+
+This section supersedes the older 11-product/DANA-internal statements above. It records the owner's approved product boundary; it does not claim that the draft architecture PR has been merged or that every product is operational.
+
+The canonical VAYRO family contains **five independent sub-applications**:
+
+1. **DANA** — independent command center and orchestration product.
+2. **ARIA** — services, communication, social and business capabilities. It does not own accounting, finance, tax or ERP.
+3. **ARIANA** — accounting, finance, tax, budgeting and ERP.
+4. **LEADORA** — distribution, sales and distribution-network operations.
+5. **ARMIN MARKET** — independent marketplace.
+
+The following historical capabilities remain mapped into ARIA and must not be silently deleted: **ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM**. Preserve their contracts, data ownership, migration history and crosswalks during consolidation. A historical name is not an additional independent VAYRO sub-application.
+
+DANA must not be folded into ARIA. ARIANA, LEADORA and ARMIN MARKET remain independent products with their own service/data boundaries. No accounting or ERP modules may be added to ARIA.
+
+PR #65 is the draft implementation of this five-sub-application / seven-legacy-module mapping. Its source head is not the same as `main`; until reviewed and merged, distinguish the approved product decision from the code currently present on `main`. Catalogue entries and capability registries do not prove operational completion.
+
+**Corrected architecture disposition:** five-product family approved; implementation parity and independent product acceptance remain open. **Production remains DEPLOYMENT BLOCKED — NOT RELEASED.**

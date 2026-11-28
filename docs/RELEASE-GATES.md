@@ -547,3 +547,115 @@ This addendum is based on fresh GitHub, Supabase and Railway reads. It supersede
 - PR #54 adds the first tenant-scoped conversation/archive source slice. Attachment upload/download, object storage, export jobs, retention/legal hold, full AI threading and archive UI are not complete.
 
 **Current disposition:** SOURCE CI GREEN ON THE INSPECTED HEAD; PRODUCTION DEPLOYMENT BLOCKED. Hosting, live DB migration/RLS/roles, independent backup/restore, email, payments/legal, product integrations, Android, UAT and owner release approval remain open. No production change or merge is authorized by this addendum.
+
+
+## Live release-gate verification — 2026-11-26 (main branch)
+
+This addendum supersedes earlier PR, commit, and infrastructure snapshots in this document where they conflict.
+
+### Repository state
+- Default branch `main` was read at commit `527db3a8051c3eef15c974c43ded4b6e755a75b3`. The commit updates `README.md`; it does not itself contain an application-code change.
+- PR #47 is **CLOSED / MERGED** (merge commit `20e65253e45cbd43a5e64967745d453a6262e743`).
+- PR #54 is CLOSED / NOT MERGED, but a complete 20-file comparison was performed between its head `71da880633d5d009eb8d1abe01ed6f42e76bca60` and `main`: all 20 paths exist on `main` and all 20 Git blob SHAs are identical. The conversation/archive source slice from PR #54 is therefore present byte-for-byte in the inspected main tree; PR merge status alone must not be used to infer that these files are absent.
+- The current main SHA returned no combined commit statuses, and the available commit-workflow lookup returned no runs for that SHA. Older successful CI on a different SHA is not current-main verification.
+- Therefore current-main CI, CodeQL, dependency audit, build and test status are **NOT VERIFIED** in this checkpoint.
+
+### Railway — fresh read-only production inventory
+- The connected workspace lists only **ARIA Web** and **LEADORA**. There is no independent VAYRO project.
+- ARIA Web production contains a VAYRO service on `main`; its latest deployment `6354aa02-a334-4457-a46d-5f41188845a5` is **FAILED**. It has no mounted volume.
+- ARIA Web has a pending staged-create service from `brand/vayro-name-only`. It is not live and must not be accepted as an independent VAYRO host.
+- LEADORA production contains a VAYRO service on `security/mfa-session-endpoint-gates`; its latest deployment `f2f67daf-5d15-4dc1-91e2-3596fe521d6d` is **FAILED** and it has no mounted volume.
+- LEADORA's own web service has no latest successful deployment in this inventory. Its `leadora-data` volume is mounted only on LEADORA's service.
+- No staged changes were accepted; no service, domain, variable, volume, deployment or project was modified.
+
+### VAYRO-CORE — fresh read-only database inspection
+- Supabase project `VAYRO-CORE` (`wdqhdnhpgxhmmfeyxwxr`) reports `ACTIVE_HEALTHY`, PostgreSQL 17.11, region `eu-central-1`.
+- The live `public` schema contains 11 tables; all 11 have RLS enabled, zero have FORCE RLS, and there are **zero public RLS policies**.
+- No `vayro%` database roles and no migration-history table/entries were found.
+- Security Advisor reports 11 `rls_enabled_no_policy` findings. RLS enabled without policies is fail-closed for roles subject to RLS; it is not proof of public read access. However, the migration baseline, runtime role and effective runtime privileges remain unverified.
+- No DDL, DML, migration, role, grant, policy or credential change was performed.
+
+### Required next sequence
+1. Run the complete PR #54 archive/conversation tests against the exact current `main` commit; all 20 source files are present and byte-identical to the inspected PR #54 head.
+2. Run CI, CodeQL, lockfile validation, dependency audit and production build on the exact current main SHA; repair failures before any release candidate is considered.
+3. Provision a dedicated VAYRO hosting project only when the account can support it; do not reuse ARIA or LEADORA services, databases, volumes or secrets.
+4. Select an independently controlled backup destination, complete an encrypted backup and checksum-verified isolated restore, and preserve RPO/RTO evidence.
+5. Reconcile the restored VAYRO-CORE catalog with Prisma and the complete migration set; design and test least-privilege runtime roles and tenant authorization in a non-production environment before any live migration.
+6. Complete endpoint authorization, MFA, email delivery, product APIs, DANA orchestration, archive object storage, Android signed build and real-device acceptance, UAT, monitoring and rollback.
+7. Publish only when the deployed commit matches the approved release commit and all release evidence and owner approval are recorded.
+
+**Current disposition: MAIN CI NOT VERIFIED — DEDICATED HOSTING BLOCKED — DATABASE BASELINE / RUNTIME AUTHORIZATION BLOCKED — BACKUP / RESTORE UNVERIFIED — NOT RELEASED.**
+
+
+## Live verification addendum — 2026-11-27
+
+This addendum supersedes the 2026-11-26 current-main verification statements above where they conflict.
+
+### Exact-head repository checks
+
+- Documentation PR #62 head: `dd30b7f0239d9fcaf6e7969d25d6c1cb5347e153`.
+- VAYRO CI [45946632157](https://github.com/gavad54/zelmira-one-/actions/runs/45946632157): **SUCCESS**. Locked dependency install/audit, unit tests, Prisma generation and validation, full migration chain on isolated PostgreSQL, catalog reconciliation, RLS/FORCE-RLS coverage, auth/platform/task-worker/scheduler/tenant role-boundary checks, lint, TypeScript, production build, Docker image build and PostgreSQL/production HTTP integration tests all completed successfully.
+- CodeQL [45946632187](https://github.com/gavad54/zelmira-one-/actions/runs/45946632187): **SUCCESS**.
+- These are exact-head repository/isolated-CI results. They do not verify production secrets, live DB migration, runtime health, backup/restore or a release.
+- The 20 changed paths from PR #54 were compared with main; all 20 exist and all 20 Git blob SHAs are identical. PR #54's inspected source slice is present in main despite PR #54 being closed unmerged.
+
+### Fresh VAYRO-CORE read-only catalog
+
+- Project `wdqhdnhpgxhmmfeyxwxr`: ACTIVE_HEALTHY, PostgreSQL 17.11.
+- 11 public tables; all 11 have RLS enabled; zero have FORCE RLS; zero public policies; zero `vayro%` roles; migration history empty.
+- Supabase Security Advisor reports 11 `rls_enabled_no_policy` findings. Table inventory reports zero rows for all 11 tables.
+- No DDL, DML, migration, role, grant, policy or credential changes were performed. Do not apply the migration chain or baseline this live database until an independent encrypted backup, isolated restore and object-by-object schema reconciliation have passed.
+
+### Fresh Railway status and provisioning blocker
+
+- The connected workspace still contains only `ARIA Web` and `LEADORA`; neither is an independent VAYRO project. Their VAYRO-named services are OFFLINE and have no VAYRO volume.
+- The ARIA-hosted VAYRO deployment failed at its configured `/api/health` healthcheck. The LEADORA-hosted VAYRO deployment failed during image build because the older branch build attempted to require `AUTH_DATABASE_URL` during Next.js page-data collection. The current repository uses lazy runtime client initialization and passed the current CI production build; this does not repair the stale Railway services.
+- An attempt to create a separate private Railway project named VAYRO was rejected by Railway with: **trial expired; select a plan to continue**. No project or service was created and no paid plan was selected. Do not repurpose ARIA or LEADORA infrastructure.
+
+### Release decision
+
+**EXACT-HEAD CI + CODEQL PASS — LIVE DATABASE BASELINE/RLS/ROLES BLOCKED — DEDICATED HOSTING BLOCKED BY EXPIRED RAILWAY TRIAL — INDEPENDENT BACKUP/RESTORE UNPROVEN — NOT RELEASED.**
+
+
+### Backup automation source reconciliation — 2026-11-27
+
+- The encrypted S3 backup workflow, isolated restore-drill workflow, setup runbook, design specification, implementation plan and workflow contract tests are present on `main`.
+- A seven-path comparison against PR #53 head `2792478edc5e64effa4a7b440598f0f9e8dd0641` found six paths byte-identical on `main`; only `.github/workflows/ci.yml` differs. The backup and restore workflow files themselves are byte-identical.
+- The backup workflows are source-level automation only. The runbook explicitly records that no provider bucket/account, protected GitHub Environment credentials/variables, actual encrypted upload, checksum verification against a real remote object, or isolated restore has been activated/proven.
+- Therefore the existence of these workflows does not close the backup/restore gate. Do not run them against production until the owner has configured a private S3-compatible destination and protected credentials, and the first successful backup plus restore drill has been reviewed.
+
+
+### Product API inventory — source-tree check 2026-11-27
+
+- The VAYRO UI and product directory register the approved 11 products and explicitly label most as planned, prototype or independently gated; registry presence is not an implementation claim.
+- In this repository's App Router API tree, product-specific namespaces currently present are `/api/negah` (creative brief and generation) and `/api/dana` (internal AI workspace and prompt studio). `/api/ai-business-suite/capabilities` is a capability-registry endpoint, not eleven independently implemented product APIs.
+- The other VAYRO-family product APIs, service adapters, tenant-scoped contract tests and product-specific E2E acceptance are not demonstrated by this repository inventory. The independent products ARIA, ARIANA, LEADORA and ARMIN MARKET must be assessed in their own repositories and retain their data/deployment boundaries.
+- Accordingly, the 11-product family is a catalog/architecture baseline, not 11 operational products. Do not activate licensing or claim readiness based on the catalog alone.
+
+
+### Android source and build evidence — 2026-11-27
+
+- Correction to older historical notes: the repository does contain a native Android WebView shell under `android/app`, plus `.github/workflows/android-debug-apk.yml`.
+- Android workflow run [45782951645](https://github.com/gavad54/zelmira-one-/actions/runs/45782951645) completed SUCCESS on integration branch commit `2f92fa9805fd48434bad22eb29daf0b369422ad5`; Java 17, Android SDK 35, Gradle 8.9 and debug APK compilation all passed.
+- That run used the compile-only `https://vayro.invalid` sentinel on a branch push. The workflow intentionally skipped artifact upload; its artifact list is empty. It did **not** produce an installable APK.
+- An installable debug APK requires a real deployed VAYRO HTTPS origin via manual workflow dispatch. No independent VAYRO production origin currently exists. No signed release APK/AAB, protected signing key, Play/App Bazaar submission or real-device acceptance has been verified.
+- The Android project currently has no Gradle wrapper files in the repository root and the app Gradle file has no release signing configuration. These remain reproducibility/release-engineering tasks; do not describe the debug compile as a published Android app.
+
+
+## Owner-approved product-family boundary correction — 2026-11-28
+
+This section supersedes all older statements in this document that describe an 11-product portfolio or classify DANA as an internal capability.
+
+The approved VAYRO family is five independent sub-applications: **DANA, ARIA, ARIANA, LEADORA and ARMIN MARKET**. DANA is the independent command center. ARIA owns services, communication, social and business capabilities only; it must not contain accounting or ERP. ARIANA owns accounting, finance, tax, budgeting and ERP. LEADORA owns distribution and sales operations. ARMIN MARKET remains an independent marketplace.
+
+The historical modules **ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM** are retained under ARIA with explicit contracts, data ownership and migration/crosswalk records. They are not additional independent apps and must not be deleted merely because their historical names are consolidated.
+
+### Release-gate interpretation
+- Product-family approval is an architecture decision, not proof of implementation.
+- PR #65 is a draft implementation proposal and remains separate from the current `main` baseline until independently reviewed and merged.
+- Verify each of the five products in its own runtime, API, authorization, data boundary and acceptance tests.
+- Verify all seven ARIA legacy modules through retained functional contracts and migration/crosswalk evidence.
+- Do not mark a product complete because it appears in a catalogue, dashboard or capability registry.
+- Do not merge PRs, run production migrations, deploy, or release as a side effect of this documentation correction.
+
+**Current release decision remains DEPLOYMENT BLOCKED — NOT RELEASED.**
