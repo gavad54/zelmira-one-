@@ -1,3 +1,7 @@
+# Legacy module inventory and functional expansion — 2026-11-20
+
+> **Architecture update (2026-11-28):** This document is retained as a functional inventory. ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM are now modules owned by ARIA, not separate direct VAYRO sub-applications. Preserve the requirements and capabilities listed here; use `docs/PRODUCT-BOUNDARIES.md` for canonical ownership and API compatibility rules.
+
 # نقشه جامع توسعه خانواده مستقل محصولات VAYRO
 تاریخ: 2026-11-20  
 وضعیت: طراحی اجرایی و قرارداد دامنه؛ **پیاده‌سازی/استقرار محسوب نمی‌شود**
