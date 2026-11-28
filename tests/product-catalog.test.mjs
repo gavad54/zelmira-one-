@@ -8,24 +8,31 @@ import {
   validateProductConfiguration
 } from "../src/lib/product-catalog.mjs";
 
-test("the mother-platform registry contains seven platform-family and four independent products", () => {
-  assert.deepEqual(PRODUCT_FAMILY_CATALOG.map(product => product.key), [
+test("the direct VAYRO registry contains exactly the five approved sub-applications", () => {
+  assert.deepEqual(INDEPENDENT_PRODUCT_CATALOG.map(product => product.key), [
+    "DANA", "ARIANA", "LEADORA", "ARMIN_MARKET", "ARIA"
+  ]);
+  assert.equal(PRODUCT_CATALOG.length, 5);
+  assert.deepEqual(PRODUCT_CATALOG.map(product => product.key), [
+    "DANA", "ARIANA", "LEADORA", "ARMIN_MARKET", "ARIA"
+  ]);
+  assert.equal(new Set(PRODUCT_CATALOG.map(product => product.key)).size, 5);
+  assert.ok(PRODUCT_CATALOG.every(product => product.name && product.description));
+  assert.equal(VAYRO_CAPABILITIES.some(capability => capability.key === "DANA"), false);
+});
+
+test("all seven legacy product identities remain represented as ARIA modules", () => {
+  assert.deepEqual(PRODUCT_FAMILY_CATALOG.map(module => module.key), [
     "ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM"
   ]);
-  assert.deepEqual(INDEPENDENT_PRODUCT_CATALOG.map(product => product.key), [
-    "LEADORA", "ARIANA", "ARIA", "ARMIN_MARKET"
-  ]);
-  assert.equal(PRODUCT_CATALOG.length, 11);
-  assert.deepEqual(PRODUCT_CATALOG.map(product => product.key), [
-    "ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM",
-    "LEADORA", "ARIANA", "ARIA", "ARMIN_MARKET"
-  ]);
-  assert.equal(new Set(PRODUCT_CATALOG.map(product => product.key)).size, 11);
-  assert.ok(PRODUCT_CATALOG.every(product => product.name && product.description));
-  assert.equal(VAYRO_CAPABILITIES.length, 1);
-  assert.equal(VAYRO_CAPABILITIES[0].key, "DANA");
+  assert.equal(PRODUCT_FAMILY_CATALOG.length, 7);
+  assert.equal(new Set(PRODUCT_FAMILY_CATALOG.map(module => module.key)).size, 7);
+  assert.ok(PRODUCT_FAMILY_CATALOG.every(module => module.name && module.description));
+});
+
+test("ARIA and ARIANA retain a strict accounting boundary", () => {
   assert.match(PRODUCT_CATALOG.find(product => product.key === "ARIA").description, /بدون حسابداری و ERP/);
-  assert.match(PRODUCT_CATALOG.find(product => product.key === "ARIANA").description, /مستقل از ARIA/);
+  assert.match(PRODUCT_CATALOG.find(product => product.key === "ARIANA").description, /حسابداری/);
 });
 
 test("a product cannot be marked active without a secure HTTPS destination", () => {
