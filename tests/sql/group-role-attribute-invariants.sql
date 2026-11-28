@@ -49,6 +49,21 @@ BEGIN
     END IF;
 
     IF EXISTS (
+      SELECT 1 FROM pg_namespace
+      WHERE nspname = 'public' AND nspowner = v_role_oid
+    ) THEN
+      RAISE EXCEPTION 'VAYRO_GROUP_ROLE_SCHEMA_OWNERSHIP_TEST_FAILED: %', r.role_name;
+    END IF;
+
+    IF EXISTS (
+      SELECT 1 FROM pg_type t
+      JOIN pg_namespace n ON n.oid = t.typnamespace
+      WHERE n.nspname = 'public' AND t.typowner = v_role_oid
+    ) THEN
+      RAISE EXCEPTION 'VAYRO_GROUP_ROLE_TYPE_OWNERSHIP_TEST_FAILED: %', r.role_name;
+    END IF;
+
+    IF EXISTS (
       SELECT 1 FROM pg_class c
       JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE n.nspname = 'public'
