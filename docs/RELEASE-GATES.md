@@ -640,3 +640,22 @@ This addendum supersedes the 2026-11-26 current-main verification statements abo
 - That run used the compile-only `https://vayro.invalid` sentinel on a branch push. The workflow intentionally skipped artifact upload; its artifact list is empty. It did **not** produce an installable APK.
 - An installable debug APK requires a real deployed VAYRO HTTPS origin via manual workflow dispatch. No independent VAYRO production origin currently exists. No signed release APK/AAB, protected signing key, Play/App Bazaar submission or real-device acceptance has been verified.
 - The Android project currently has no Gradle wrapper files in the repository root and the app Gradle file has no release signing configuration. These remain reproducibility/release-engineering tasks; do not describe the debug compile as a published Android app.
+
+
+## Owner-approved product-family boundary correction — 2026-11-28
+
+This section supersedes all older statements in this document that describe an 11-product portfolio or classify DANA as an internal capability.
+
+The approved VAYRO family is five independent sub-applications: **DANA, ARIA, ARIANA, LEADORA and ARMIN MARKET**. DANA is the independent command center. ARIA owns services, communication, social and business capabilities only; it must not contain accounting or ERP. ARIANA owns accounting, finance, tax, budgeting and ERP. LEADORA owns distribution and sales operations. ARMIN MARKET remains an independent marketplace.
+
+The historical modules **ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM** are retained under ARIA with explicit contracts, data ownership and migration/crosswalk records. They are not additional independent apps and must not be deleted merely because their historical names are consolidated.
+
+### Release-gate interpretation
+- Product-family approval is an architecture decision, not proof of implementation.
+- PR #65 is a draft implementation proposal and remains separate from the current `main` baseline until independently reviewed and merged.
+- Verify each of the five products in its own runtime, API, authorization, data boundary and acceptance tests.
+- Verify all seven ARIA legacy modules through retained functional contracts and migration/crosswalk evidence.
+- Do not mark a product complete because it appears in a catalogue, dashboard or capability registry.
+- Do not merge PRs, run production migrations, deploy, or release as a side effect of this documentation correction.
+
+**Current release decision remains DEPLOYMENT BLOCKED — NOT RELEASED.**
