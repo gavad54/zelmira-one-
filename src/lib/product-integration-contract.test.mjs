@@ -93,10 +93,10 @@ test("allows every canonical VAYRO sub-application as an event producer", () => 
 });
 
 test("accepts each legacy ARIA module key as a backward-compatible event producer", () => {
-  for (const module of ARIA_MODULES) {
+  for (const ariaModule of ARIA_MODULES) {
     const event = validEnvelope();
-    event.producer.product = module.name;
-    assert.equal(assertProductIntegrationEnvelope(event), true, module.name);
+    event.producer.product = ariaModule.name;
+    assert.equal(assertProductIntegrationEnvelope(event), true, ariaModule.name);
   }
 });
 
