@@ -104,7 +104,9 @@ test("rejects oversized raw strings before invoking JSON.stringify", () => {
     return originalStringify(...args);
   };
   try {
-    assert.throws(() => serializeTaskResult("x".repeat(9), 8), /TASK_RESULT_TOO_LARGE/);
+    for (const value of ["x".repeat(9), { payload: "x".repeat(9) }]) {
+      assert.throws(() => serializeTaskResult(value, 8), /TASK_RESULT_TOO_LARGE/);
+    }
     assert.equal(stringifyCalls, 0);
   } finally {
     JSON.stringify = originalStringify;
