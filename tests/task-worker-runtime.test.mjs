@@ -62,7 +62,6 @@ test("worker failure messages redact authorization headers and inline credential
     "authorization=[REDACTED] Bearer [REDACTED] api_key=[REDACTED]");
 });
 
-
 test("repository audit and CI handlers reject malformed repository references before network access", async () => {
   for (const repo of [null, 123, {}, "", "../secrets", "./repo", "owner/..", "owner/.", "owner/repo/extra", "https://github.com/owner/repo", "owner/repo?redirect=1"]) {
     await assert.rejects(
@@ -89,7 +88,6 @@ test("worker handlers are immutable and expose only the reviewed read-only regis
   ]);
 });
 
-
 test("worker failure messages redact URL username and password credentials", () => {
   const failure = safeFailure(new Error(
     "upstream failed at https://service-user:supersecret@provider.example/v1/tasks?mode=read"
@@ -98,4 +96,94 @@ test("worker failure messages redact URL username and password credentials", () 
     "upstream failed at https://[REDACTED]@provider.example/v1/tasks?mode=read");
   assert.equal(failure.message.includes("service-user"), false);
   assert.equal(failure.message.includes("supersecret"), false);
+});
+
+test("repo.audit performs bounded read-only GitHub metadata and latest-commit requests", async t => {
+  const calls = [];
+  t.mock.method(globalThis, "fetch", async (url, init) => {
+    const value = String(url);
+    calls.push({ url: value, init });
+    if (value.endsWith("/repos/openai/example")) {
+      return new Response(JSON.stringify({
+        owner: { login: "openai" }, name: "example", private: false,
+        default_branch: "main", archived: false, pushed_at: "2026-11-28T08:00:00Z"
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (value.endsWith("/repos/openai/example/commits?per_page=1")) {
+      return new Response(JSON.stringify([{ sha: "a".repeat(40) }]), {
+        status: 200, headers: { "content-type": "application/json" }
+      });
+    }
+    throw new Error("UNEXPECTED_GITHUB_REQUEST");
+  });
+
+  const result = await taskWorkerHandlers["repo.audit"]({
+    task_id: "task-audit", project_key: "VAYRO", title: "Audit repository",
+    payload: { repo: "openai/example" }
+  }, { signal: new AbortController().signal });
+
+  assert.equal(result.repository, "openai/example");
+  assert.equal(result.visibility, "public");
+  assert.equal(result.defaultBranch, "main");
+  assert.equal(result.latestCommitSha, "a".repeat(40));
+  assert.equal(result.source, "GitHub REST read-only API");
+  assert.equal(calls.length, 2);
+  for (const call of calls) {
+    assert.equal(call.init.method, "GET");
+    assert.equal(call.init.redirect, "error");
+    assert.equal(call.init.headers.accept, "application/vnd.github+json");
+  }
+});
+
+test("repo.test observes at most ten existing workflow runs without triggering CI", async t => {
+  let requestCount = 0;
+  t.mock.method(globalThis, "fetch", async (url, init) => {
+    requestCount += 1;
+    assert.equal(String(url), "https://api.github.com/repos/openai/example/actions/runs?per_page=10");
+    assert.equal(init.method, "GET");
+    assert.equal(init.redirect, "error");
+    return new Response(JSON.stringify({
+      workflow_runs: Array.from({ length: 12 }, (_, index) => ({
+        name: `workflow-${index}`, status: index === 0 ? "completed" : "queued",
+        conclusion: index === 0 ? "success" : null, head_sha: `${index}`.repeat(40),
+        event: "push", updated_at: "2026-11-28T08:00:00Z"
+      }))
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  });
+
+  const result = await taskWorkerHandlers["repo.test"]({
+    task_id: "task-ci", project_key: "VAYRO", title: "Inspect CI",
+    payload: { repo: "openai/example" }
+  }, { signal: new AbortController().signal });
+
+  assert.equal(requestCount, 1);
+  assert.equal(result.mode, "read-only-existing-ci-observation");
+  assert.equal(result.runs.length, 10);
+  assert.equal(result.runs[0].name, "workflow-0");
+  assert.equal(result.runs[0].conclusion, "success");
+});
+
+test("repo handlers classify missing repositories as non-retryable and rate limits as retryable", async t => {
+  t.mock.method(globalThis, "fetch", async () =>
+    new Response(JSON.stringify({ message: "Not Found" }), { status: 404 })
+  );
+  await assert.rejects(
+    taskWorkerHandlers["repo.audit"]({
+      task_id: "task-404", project_key: "VAYRO", title: "Audit missing repository",
+      payload: { repo: "openai/missing" }
+    }, { signal: new AbortController().signal }),
+    error => error?.code === "REPOSITORY_NOT_FOUND" && error.retryable === false
+  );
+
+  t.mock.restoreAll();
+  t.mock.method(globalThis, "fetch", async () =>
+    new Response(JSON.stringify({ message: "API rate limit exceeded" }), { status: 429 })
+  );
+  await assert.rejects(
+    taskWorkerHandlers["repo.test"]({
+      task_id: "task-429", project_key: "VAYRO", title: "Inspect rate-limited CI",
+      payload: { repo: "openai/example" }
+    }, { signal: new AbortController().signal }),
+    error => error?.code === "GITHUB_API_ERROR" && error.retryable === true
+  );
 });
