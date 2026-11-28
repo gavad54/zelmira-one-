@@ -78,3 +78,11 @@ No statement of “fully secure” is permitted. Release requires a scoped secur
 - Never treat client-supplied `X-Forwarded-For` as authoritative without a verified trusted-proxy hop count.
 - Configure `TRUSTED_PROXY_HOPS` only after the selected host ingress behavior is verified.
 - Until then, account/email/token rate limits remain active and IP-only rate limits are skipped.
+
+### Database runtime trust boundary
+- The `app.user_id`, `app.tenant_id`, `app.session_token_hash`, `app.user_role` and `app.platform_*` PostgreSQL settings are trusted server-side request context, not credentials or proof of identity by themselves.
+- A PostgreSQL custom setting can be changed by a session that has a database connection. Therefore, no tenant, browser, mobile or third-party client may receive a VAYRO runtime database connection string or the credentials of `vayro_app`, `vayro_auth`, `vayro_platform`, worker or scheduler roles.
+- The backend must authenticate the application session, verify current tenant membership and role, then set transaction-local context on a dedicated least-privilege connection. Use transaction pooling safely: set context and perform the protected query in the same transaction.
+- Runtime LOGIN users are separate from NOLOGIN capability roles, inherit only the one capability they need, and must not own tables, create roles, inherit other capability roles, become superusers or have BYPASSRLS.
+- Supabase `anon`, `authenticated` and `service_role` must not be granted direct privileges on VAYRO application tables or sequences. Access is server-only and uses the dedicated VAYRO runtime roles.
+- The disposable PostgreSQL CI suite checks the above catalog grants and role memberships in addition to positive and negative tenant RLS behavior. These tests do not prove that production credentials are correctly stored or withheld; that requires a separate deployment configuration audit.
