@@ -1,0 +1,55 @@
+name: Cloudflare Preview Compatibility (No Deploy)
+
+on:
+  push:
+    branches:
+      - spike/cloudflare-hosting-assessment-2026-11-26
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "src/**"
+      - "prisma/**"
+      - "next.config.ts"
+      - "open-next.config.ts"
+      - "wrangler.jsonc"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/cloudflare-preview-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-preview-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/vayro_ci?schema=public
+      MIGRATION_DATABASE_URL: postgresql://ci:ci@localhost:5432/vayro_ci?schema=public
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked application dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Generate Prisma client
+        run: npx prisma generate
+      - name: Install isolated Cloudflare build tools without changing manifests
+        run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund @opennextjs/cloudflare@1.20.19 wrangler@4.148.0
+      - name: Build Next.js application for Cloudflare
+        run: npx opennextjs-cloudflare build
+      - name: Validate Worker bundle without deploying
+        run: npx wrangler deploy --dry-run --outdir .cloudflare-dry-run
+      - name: Report generated artifact sizes
+        run: |
+          du -sh .open-next
+          find .open-next -maxdepth 2 -type f | sort | head -80
