@@ -164,6 +164,10 @@ jobs:
           $$;
           SQL
           DATABASE_URL="$UPGRADE_DATABASE_URL" MIGRATION_DATABASE_URL="$UPGRADE_DATABASE_URL" npx prisma migrate deploy
+      - name: Verify synthetic fixture values and upgraded schema after PostgreSQL 17 rehearsal
+        env:
+          UPGRADE_DATABASE_URL: postgresql://ci:ci@localhost:5432/vayro_upgrade_ci
+        run: psql "$UPGRADE_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/synthetic-upgrade-preservation.sql
       - name: Lint
         run: npm run lint
       - name: Typecheck
