@@ -41,6 +41,29 @@ The exact ordered migration directory list in the checked-out repository is auth
 - Tenant context settings (`app.tenant_id`, `app.user_id`, `app.user_role`, `app.session_token_hash`) are trusted-server context only. Never accept them directly from client input.
 - Do not grant table ownership, migration privileges, or BYPASSRLS to application runtime roles.
 
+## 3A. Exact migration inventory on the inspected main baseline
+
+The recursive Git tree for main `527db3a8051c3eef15c974c43ded4b6e755a75b3` was complete (not truncated) and contained these 16 timestamp-ordered migration directories:
+
+1. `20261106055500_init_vayro_core`
+2. `20261108000000_mfa_session_foundation`
+3. `20261108170000_tenant_rls_runtime_boundary`
+4. `20261109120000_auth_database_role_boundary`
+5. `20261109130000_platform_control_plane_role_boundary`
+6. `20261109150000_tenant_ai_generation_history`
+7. `20261109160000_platform_bootstrap_least_privilege`
+8. `20261109170000_platform_product_catalog_insert_privileges`
+9. `20261111150000_platform_owner_license_lifecycle`
+10. `20261121130000_durable_task_engine`
+11. `20261121140000_task_owner_api_boundary`
+12. `20261122100000_task_dependency_graph`
+13. `20261122110000_block_failed_task_dependents`
+14. `20261125120000_durable_goals_schedules_agents_reviews`
+15. `20261125130000_recurring_schedule_materializer`
+16. `20261126100000_conversation_archive_foundation`
+
+The same inspected baseline contains 27 Prisma models and nine Prisma enums. The live catalog snapshot contains 11 public tables and six initial enums. The arithmetic difference of 16 model tables is a reconciliation indicator only; it is not proof that every model maps one-to-one to a missing table. The rehearsal must compare actual tables, columns, indexes, constraints, enum labels, functions, triggers, ownership, grants and policies object by object.
+
 ## 4. No-cost rehearsal route
 
 Use only a disposable PostgreSQL 17 instance in CI or another already-available no-cost isolated environment. Do not create a paid Supabase branch without explicit cost approval.
