@@ -92,6 +92,39 @@ jobs:
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE vayro_tenant_ci LOGIN PASSWORD 'ci-only' IN ROLE vayro_app"
       - name: Prove tenant RLS isolation using the dedicated runtime login (isolated PostgreSQL only)
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/tenant-rls-isolation.sql
+      - name: Rehearse synthetic initial-schema upgrade in isolated PostgreSQL 17
+        env:
+          UPGRADE_DATABASE_URL: postgresql://ci:ci@localhost:5432/vayro_upgrade_ci
+        run: |
+          PGPASSWORD=ci createdb -h localhost -p 5432 -U ci vayro_upgrade_ci
+          psql "$UPGRADE_DATABASE_URL" -v ON_ERROR_STOP=1 -f prisma/migrations/20261106055500_init_vayro_core/migration.sql
+          psql "$UPGRADE_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO public."User" ("id","email","passwordHash","displayName","updatedAt")
+          VALUES ('upgrade-user','upgrade@example.invalid','synthetic-hash','Synthetic Upgrade User',CURRENT_TIMESTAMP);
+          INSERT INTO public."Tenant" ("id","name","slug","updatedAt")
+          VALUES ('upgrade-tenant','Synthetic Upgrade Tenant','synthetic-upgrade-tenant',CURRENT_TIMESTAMP);
+          INSERT INTO public."Membership" ("id","userId","tenantId","role")
+          VALUES ('upgrade-membership','upgrade-user','upgrade-tenant','MEMBER');
+          INSERT INTO public."Session" ("id","tokenHash","userId","expiresAt")
+          VALUES ('upgrade-session','synthetic-session-token-hash','upgrade-user',CURRENT_TIMESTAMP + INTERVAL '1 day');
+          INSERT INTO public."Product" ("id","key","name","description","updatedAt")
+          VALUES ('upgrade-product','UPGRADE_FIXTURE','Synthetic Upgrade Product','Synthetic migration fixture',CURRENT_TIMESTAMP);
+          INSERT INTO public."License" ("id","tenantId","productId","startsAt")
+          VALUES ('upgrade-license','upgrade-tenant','upgrade-product',CURRENT_TIMESTAMP);
+          INSERT INTO public."AuditEvent" ("id","actorUserId","tenantId","action","resource")
+          VALUES ('upgrade-audit','upgrade-user','upgrade-tenant','synthetic.upgrade.fixture','SyntheticFixture');
+          INSERT INTO public."EmailContact" ("id","email","label","purposes","updatedAt")
+          VALUES ('upgrade-email-contact','upgrade-contact@example.invalid','Synthetic contact',ARRAY['OWNER']::public."EmailPurpose"[],CURRENT_TIMESTAMP);
+          INSERT INTO public."EmailContactVerificationToken" ("id","tokenHash","contactId","expiresAt")
+          VALUES ('upgrade-email-token','synthetic-email-token-hash','upgrade-email-contact',CURRENT_TIMESTAMP + INTERVAL '1 day');
+          INSERT INTO public."AuthActionToken" ("id","tokenHash","userId","purpose","expiresAt")
+          VALUES ('upgrade-auth-token','synthetic-auth-token-hash','upgrade-user','EMAIL_VERIFY',CURRENT_TIMESTAMP + INTERVAL '1 day');
+          INSERT INTO public."AuthRateLimit" ("keyHash","windowStartedAt","count","expiresAt")
+          VALUES ('synthetic-rate-limit-key',CURRENT_TIMESTAMP,1,CURRENT_TIMESTAMP + INTERVAL '1 day');
+          SQL
+          DATABASE_URL="$UPGRADE_DATABASE_URL" MIGRATION_DATABASE_URL="$UPGRADE_DATABASE_URL" npx prisma migrate resolve --applied 20261106055500_init_vayro_core
+          DATABASE_URL="$UPGRADE_DATABASE_URL" MIGRATION_DATABASE_URL="$UPGRADE_DATABASE_URL" npx prisma migrate deploy
+          psql "$UPGRADE_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/synthetic-upgrade-preservation.sql
       - name: Lint
         run: npm run lint
       - name: Typecheck
