@@ -189,3 +189,24 @@ The UI/catalogue lists eleven products, but this inventory does not show eleven 
 ## 15. Android delivery status — 2026-11-27
 
 The repository includes a native Android WebView wrapper (`android/app`) and an Android build workflow. Run [45782951645](https://github.com/gavad54/zelmira-one-/actions/runs/45782951645) succeeded on integration branch commit `2f92fa9805fd48434bad22eb29daf0b369422ad5`, compiling a debug APK with Java 17, Android SDK 35 and Gradle 8.9. The run used the compile-only `https://vayro.invalid` URL; artifact upload was intentionally skipped and no APK artifact was produced. A manually dispatched build requires the real deployed VAYRO HTTPS origin. No signed release artifact or real-device acceptance is verified. The repository also lacks a Gradle wrapper and release signing configuration in the inspected app Gradle file.
+
+
+## 16. Approved VAYRO product-family correction — 2026-11-28
+
+This section supersedes the older 11-product/DANA-internal statements above. It records the owner's approved product boundary; it does not claim that the draft architecture PR has been merged or that every product is operational.
+
+The canonical VAYRO family contains **five independent sub-applications**:
+
+1. **DANA** — independent command center and orchestration product.
+2. **ARIA** — services, communication, social and business capabilities. It does not own accounting, finance, tax or ERP.
+3. **ARIANA** — accounting, finance, tax, budgeting and ERP.
+4. **LEADORA** — distribution, sales and distribution-network operations.
+5. **ARMIN MARKET** — independent marketplace.
+
+The following historical capabilities remain mapped into ARIA and must not be silently deleted: **ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM**. Preserve their contracts, data ownership, migration history and crosswalks during consolidation. A historical name is not an additional independent VAYRO sub-application.
+
+DANA must not be folded into ARIA. ARIANA, LEADORA and ARMIN MARKET remain independent products with their own service/data boundaries. No accounting or ERP modules may be added to ARIA.
+
+PR #65 is the draft implementation of this five-sub-application / seven-legacy-module mapping. Its source head is not the same as `main`; until reviewed and merged, distinguish the approved product decision from the code currently present on `main`. Catalogue entries and capability registries do not prove operational completion.
+
+**Corrected architecture disposition:** five-product family approved; implementation parity and independent product acceptance remain open. **Production remains DEPLOYMENT BLOCKED — NOT RELEASED.**
