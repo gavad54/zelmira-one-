@@ -50,6 +50,21 @@ BEGIN
     END IF;
 
     IF EXISTS (
+      SELECT 1 FROM pg_namespace
+      WHERE nspname = 'public' AND nspowner = v_role_oid
+    ) THEN
+      RAISE EXCEPTION 'GROUP_ROLE_OWNS_PUBLIC_SCHEMA: %', r.role_name;
+    END IF;
+
+    IF EXISTS (
+      SELECT 1 FROM pg_type t
+      JOIN pg_namespace n ON n.oid = t.typnamespace
+      WHERE n.nspname = 'public' AND t.typowner = v_role_oid
+    ) THEN
+      RAISE EXCEPTION 'GROUP_ROLE_OWNS_PUBLIC_TYPE: %', r.role_name;
+    END IF;
+
+    IF EXISTS (
       SELECT 1
       FROM pg_class c
       JOIN pg_namespace n ON n.oid = c.relnamespace
