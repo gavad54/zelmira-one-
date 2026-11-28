@@ -97,3 +97,23 @@ PR #2 روی همان شاخه توسعه به‌روزرسانی شد:
 - وضعیت انتشار VAYRO و محصولات مستقل همچنان BLOCKED است.
 - هیچ Merge، Production Deploy، DNS، Migration زنده، تغییر دسترسی/Secret، خرید یا تغییر پلن انجام نشد.
 - اجرای دائمی Worker/Scheduler و بازیابی پس از Restart در Runtime مستقر اثبات نشده است.
+
+
+## 7) تکمیل شواهد پس از ممیزی تکمیلی
+
+### ARIANA — بازیابی سورس قدیمی‌تر از کاتالوگ مخزن
+- آرشیو `ARIYANA_v0.45_COMMERCIAL_HARDENED.zip` از Library بازیابی شد.
+- SHA-256 مورد انتظار و محاسبه‌شده برابر است: `5505e312312d4518d08c4b1bdac06746db5ee3c8c7f4b0b7b14b27fc2eb18516`.
+- ZIP سالم؛ 246 فایل و 757,293 بایت سورس استخراج‌شده.
+- آزمون آرشیو اصلی: 121 passed, 1 skipped؛ compileall و JavaScript syntax PASS.
+- فایل امنیتی آرشیو دارای fallback ثابت Development است؛ نسخه سخت‌شده JWT در PR #1 حفظ می‌شود و نباید با آن جایگزین شود.
+- PR #1 با سند ممیزی افزوده شد؛ Head جدید `f1983d9e03dbd9925789c0dd642e2183ec7de7fb`، CI PASS، CodeQL در حال اجرا هنگام ثبت نتیجه.
+- سورس کامل هنوز به مخزن canonical وارد نشده است؛ هیچ Migration اجرا نشده است.
+- [سند ممیزی آرشیو در PR #1](https://github.com/gavad54/ARIANA/blob/engineering/ariana-v0.38-standalone-bootstrap/docs/ARIANA_SOURCE_ARCHIVE_V045_AUDIT_2026-11-28.md)
+
+### نتیجه نهایی آزمون‌های این نوبت
+- VAYRO PR #59 روی Head `436626f510122654e2c1288d942e1bee99307a5e`: CI و CodeQL PASS.
+- VAYRO PR #63 روی Head `a45da05755e08c7cf0817b3159b68a9a4ace88fa`: CI و CodeQL PASS؛ Backup/Restore واقعی همچنان اثبات نشده.
+- ARMIN MARKET PR #2 روی Head `0aec0115b09a7c04559117f60c7f5cb3ab15b160`: Android Build PASS و CodeQL PR PASS؛ Dependency Review به‌علت غیرفعال بودن Dependency Graph شکست خورد؛ CodeQL Push هنوز در حال اجرا بود.
+- ARIANA PR #1 روی Head `f1983d9e03dbd9925789c0dd642e2183ec7de7fb`: CI PASS؛ CodeQL هنوز در حال اجرا بود.
+
