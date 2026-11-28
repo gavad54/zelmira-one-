@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { assertTaskWorkerRuntimeRole, taskWorkerPrisma } from "@/lib/task-worker-prisma";
 import { redactErrorMessage } from "@/lib/redact-error-message.mjs";
+import { serializeTaskResultForDatabase } from "@/lib/task-json.mjs";
 
 export type ClaimedEngineeringTask = {
   task_id: string;
@@ -26,7 +27,6 @@ function assertLease(taskId: string, workerId: string, leaseToken: string): void
   assertWorkerId(workerId);
   if (!LEASE_TOKEN.test(leaseToken)) throw new Error("TASK_LEASE_TOKEN_INVALID");
 }
-
 
 export async function claimNextEngineeringTask({
   workerId, leaseSeconds = 60
@@ -62,10 +62,7 @@ export async function completeEngineeringTask({
   taskId: string; workerId: string; leaseToken: string; result?: unknown;
 }): Promise<boolean> {
   assertLease(taskId, workerId, leaseToken);
-  let serialized: string | null;
-  try { serialized = result === null ? null : JSON.stringify(result) ?? null; }
-  catch { throw new Error("TASK_RESULT_NOT_JSON"); }
-  if (serialized !== null && Buffer.byteLength(serialized, "utf8") > 65_536) throw new Error("TASK_RESULT_TOO_LARGE");
+  const serialized = serializeTaskResultForDatabase(result);
   await assertTaskWorkerRuntimeRole();
   const rows = await taskWorkerPrisma.$queryRaw<Array<{ accepted: boolean }>>`
     SELECT public.vayro_complete_engineering_task(${taskId}, ${workerId}, ${leaseToken}, ${serialized}::jsonb) AS accepted
