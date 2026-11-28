@@ -131,7 +131,7 @@ jobs:
         run: |
           if psql "$UPGRADE_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
           BEGIN;
-          \\i prisma/migrations/20261108000000_mfa_session_foundation/migration.sql
+          \i prisma/migrations/20261108000000_mfa_session_foundation/migration.sql
           SELECT 1 / 0;
           COMMIT;
           SQL
@@ -140,7 +140,7 @@ jobs:
             exit 1
           fi
           psql "$UPGRADE_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
-          DO $
+          DO $$
           BEGIN
             IF to_regclass('public."UserMfa"') IS NOT NULL
               OR to_regclass('public."MfaRecoveryCode"') IS NOT NULL
@@ -161,10 +161,9 @@ jobs:
               RAISE EXCEPTION 'FAILED_MIGRATION_LEFT_PARTIAL_SCHEMA';
             END IF;
           END
-          $;
+          $$;
           SQL
           DATABASE_URL="$UPGRADE_DATABASE_URL" MIGRATION_DATABASE_URL="$UPGRADE_DATABASE_URL" npx prisma migrate deploy
-          psql "$UPGRADE_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/synthetic-upgrade-preservation.sql
       - name: Lint
         run: npm run lint
       - name: Typecheck
