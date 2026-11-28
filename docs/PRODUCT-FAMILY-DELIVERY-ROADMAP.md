@@ -1,4 +1,6 @@
-# VAYRO Product Family — Delivery and Acceptance Roadmap
+# VAYRO Product Family — Historical Delivery and Acceptance Roadmap
+
+> **Superseded architecture notice (2026-11-28):** This document preserves the former eleven-product planning model as historical context. Do not use its product count or independence assumptions as the current catalog. The current canonical structure is five direct VAYRO sub-applications (DANA, ARIANA, LEADORA, ARMIN MARKET, ARIA) plus seven preserved ARIA modules (ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA, PAYAM). See `docs/PRODUCT-BOUNDARIES.md` for the active contract. The functional scope and acceptance ideas in this roadmap remain reference material unless they conflict with that boundary.
 
 **Status:** Execution baseline; not a completion certificate  
 **Parent:** VAYRO  
