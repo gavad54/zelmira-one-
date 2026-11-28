@@ -37,6 +37,11 @@ export function safeFailure(error) {
   };
 }
 
+// Validate and clone handler output before any reviewer reads properties or result metadata is assembled.
+export function normalizeTaskHandlerResult(value) {
+  return JSON.parse(serializeTaskResult(value));
+}
+
 function assertRepo(value) {
   if (typeof value !== "string" || !/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/.test(value) ||
       value.split("/").some(segment => segment === "." || segment === "..")) {
@@ -179,7 +184,8 @@ async function executeTask(db, task, shutdownSignal) {
       if (controller.signal.aborted) reject(controller.signal.reason);
       else controller.signal.addEventListener("abort", () => reject(controller.signal.reason), { once: true });
     });
-    const handlerResult = await Promise.race([handler(task, { signal: controller.signal }), aborted]);
+    const rawHandlerResult = await Promise.race([handler(task, { signal: controller.signal }), aborted]);
+    const handlerResult = normalizeTaskHandlerResult(rawHandlerResult);
     const review = evaluateTaskResult(task, handlerResult);
     const reviewRows = await db.$queryRaw`
       SELECT public.vayro_record_engineering_task_review(
