@@ -37,6 +37,19 @@ Read-only inspection observed:
 
 The repository contains Prisma migration files and dedicated-role code, but the live project does not yet show the corresponding migration ledger, application roles, or policies. The database schema must be reconciled object-by-object against the full migration chain before any production migration is attempted. Do not apply migrations or create broad policies as a shortcut.
 
+
+### Exact schema drift against the repository's current Prisma model
+
+A second read-only catalog comparison confirms that the live database is at the initial-schema stage, not at the current repository schema:
+
+- The current Prisma schema declares 27 models. The live database contains only the 11 tables from `20261106055500_init_vayro_core`.
+- The following 16 current Prisma models have no corresponding live table: `UserMfa`, `MfaRecoveryCode`, `AuthChallenge`, `AiGeneration`, `EngineeringTask`, `EngineeringTaskAttempt`, `EngineeringTaskDependency`, `GoalRecord`, `GoalEpic`, `GoalFeature`, `RecurringSchedule`, `EngineeringAgent`, `TaskReview`, `Conversation`, `ConversationMessage`, and `ConversationAttachment`.
+- The live `Session` table has only the five initial columns (`id`, `tokenHash`, `userId`, `expiresAt`, `createdAt`). The current Prisma model and the later MFA/session migration also require `revokedAt`, `lastSeenAt`, `assurance`, and `mfaAuthenticatedAt`; these four columns are absent.
+- The live enum catalog contains only the six enums from the initial migration. Later schema enums such as `SessionAssurance`, `AuthChallengePurpose`, and `EngineeringTaskStatus` are absent.
+- The live 11-table set and the six-enum set align with the initial migration file, while later repository migrations are not represented in the live migration ledger or catalog.
+
+This is not a harmless empty migration-history table: it is a material schema-version gap. Do not mark existing migrations as applied, run `prisma migrate resolve`, use `db push`, or apply the entire chain to production until an isolated restore and a full diff have established the exact baseline. First capture a protected backup, restore it to an isolated target, compare the complete catalog and data constraints, and only then design a reviewed forward-only migration sequence. The missing tables include authentication/MFA secrets and tenant-scoped user data; they must not be reconstructed by an unreviewed blanket migration.
+
 ## Railway hosting
 
 The connected workspace currently contains two projects: `ARIA Web` and `LEADORA`. There is no independent Railway project named VAYRO.
