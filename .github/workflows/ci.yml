@@ -133,6 +133,8 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_APP_URL: http://localhost:3000
+      - name: Verify production build without runtime database credentials
+        run: env -u AUTH_DATABASE_URL -u PLATFORM_DATABASE_URL -u TENANT_DATABASE_URL NEXT_PUBLIC_APP_URL=https://vayro.invalid npm run build
       - name: Build production Docker image
         run: docker build --pull --tag vayro-ci:local .
       - name: Run PostgreSQL and production HTTP integration tests
