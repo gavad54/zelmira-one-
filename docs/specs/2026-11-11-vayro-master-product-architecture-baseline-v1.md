@@ -1,4 +1,6 @@
-# VAYRO Master Product & Architecture Baseline
+# VAYRO Master Product & Architecture Baseline — Historical v1.0
+
+> **Superseded architecture notice (2026-11-28):** This document records the earlier eleven-independent-product proposal. It is retained as a historical decision record and functional source inventory, not as the current product catalog. The current approved structure is five direct VAYRO sub-applications (DANA, ARIANA, LEADORA, ARMIN MARKET and ARIA) plus seven preserved ARIA modules (ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM). Use `docs/PRODUCT-BOUNDARIES.md` as the active ownership contract. Preserve all relevant functional requirements from this document unless they conflict with the current five-plus-seven ownership model.
 **Document ID:** VAYRO-MPAB-001  
 **Version:** 1.0  
 **Status:** Proposed baseline — owner-approved for repository registration; pending owner document review  
