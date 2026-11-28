@@ -95,3 +95,18 @@ test("bounds traversal of repeated shared references before serialization", () =
   assert.ok(Buffer.byteLength(JSON.stringify(amplified), "utf8") < 65_536);
   assert.throws(() => serializeTaskResult(amplified), /TASK_RESULT_NOT_JSON/);
 });
+
+test("rejects oversized raw strings before invoking JSON.stringify", () => {
+  const originalStringify = JSON.stringify;
+  let stringifyCalls = 0;
+  JSON.stringify = (...args) => {
+    stringifyCalls += 1;
+    return originalStringify(...args);
+  };
+  try {
+    assert.throws(() => serializeTaskResult("x".repeat(9), 8), /TASK_RESULT_TOO_LARGE/);
+    assert.equal(stringifyCalls, 0);
+  } finally {
+    JSON.stringify = originalStringify;
+  }
+});
