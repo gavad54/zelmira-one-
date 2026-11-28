@@ -454,7 +454,12 @@ export const AI_BUSINESS_CAPABILITIES = Object.freeze([
     "revenue": "per_execution_plus_subscription",
     "availability": "PLANNED"
   }
-].map(item => Object.freeze(item)));
+].map(item => Object.freeze({
+  ...item,
+  ownerProduct: item.product === "DANA" ? "DANA" : "ARIA",
+  moduleKey: item.product === "DANA" ? "DANA" : item.product,
+  legacyProduct: item.product === "DANA" ? null : item.product
+})));
 
 export const AI_ENGINE_KEYS = Object.freeze([
   "image", "video", "audio", "media", "writing", "document", "translation",
@@ -462,7 +467,9 @@ export const AI_ENGINE_KEYS = Object.freeze([
   "learning", "data", "builder", "marketing"
 ]);
 
-const PRODUCTS = new Set(["ARVAND","CHARSU","GANJINEH","NEGAH","SEPEHR","NAMA","PAYAM","DANA"]);
+const CANONICAL_PRODUCTS = new Set(["DANA", "ARIANA", "LEADORA", "ARMIN_MARKET", "ARIA"]);
+const LEGACY_MODULES = new Set(["ARVAND", "CHARSU", "GANJINEH", "NEGAH", "SEPEHR", "NAMA", "PAYAM"]);
+const PRODUCTS = new Set([...CANONICAL_PRODUCTS, ...LEGACY_MODULES]);
 const REVENUE_MODELS = new Set([
   "asset_credit","per_image_credit","package_sale","design_package","studio_subscription",
   "per_video_credit","per_minute","project_sale","brand_package","catalog_subscription",
@@ -475,14 +482,20 @@ const REVENUE_MODELS = new Set([
   "per_execution_plus_subscription"
 ]);
 
-export function listAiBusinessCapabilities({ product, engine, includePlanned = true } = {}) {
+export function listAiBusinessCapabilities({ product, module, engine, includePlanned = true } = {}) {
   if (product !== undefined && !PRODUCTS.has(product)) return [];
+  if (module !== undefined && !LEGACY_MODULES.has(module)) return [];
   if (engine !== undefined && !AI_ENGINE_KEYS.includes(engine)) return [];
-  return AI_BUSINESS_CAPABILITIES.filter(item =>
-    (!product || item.product === product) &&
-    (!engine || item.engine === engine) &&
-    (includePlanned || item.availability !== "PLANNED")
-  );
+  return AI_BUSINESS_CAPABILITIES.filter(item => {
+    const productMatches = !product ||
+      (product === "ARIA" ? item.ownerProduct === "ARIA" :
+        LEGACY_MODULES.has(product) ? item.legacyProduct === product :
+          item.ownerProduct === product);
+    return productMatches &&
+      (!module || item.moduleKey === module) &&
+      (!engine || item.engine === engine) &&
+      (includePlanned || item.availability !== "PLANNED");
+  });
 }
 
 export function validateAiBusinessCapabilityRegistry(items = AI_BUSINESS_CAPABILITIES) {
@@ -496,7 +509,11 @@ export function validateAiBusinessCapabilityRegistry(items = AI_BUSINESS_CAPABIL
     if (typeof item.key !== "string" || !/^[a-z0-9-]{3,64}$/.test(item.key) || keys.has(item.key)) {
       return { valid: false, error: "invalid_or_duplicate_key" };
     }
+    const ownershipValid = item.product === "DANA"
+      ? item.ownerProduct === "DANA" && item.moduleKey === "DANA" && item.legacyProduct === null
+      : item.ownerProduct === "ARIA" && item.moduleKey === item.product && item.legacyProduct === item.product;
     if (typeof item.title !== "string" || !item.title.trim() || !PRODUCTS.has(item.product) ||
+        !CANONICAL_PRODUCTS.has(item.ownerProduct) || !ownershipValid ||
         !AI_ENGINE_KEYS.includes(item.engine) || !REVENUE_MODELS.has(item.revenue) ||
         item.availability !== "PLANNED") {
       return { valid: false, error: "invalid_capability_definition" };
