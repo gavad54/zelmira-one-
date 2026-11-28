@@ -60,6 +60,8 @@ jobs:
         run: psql "postgresql://ci:ci@localhost:5432/vayro_ci" -v ON_ERROR_STOP=1 -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN;'
       - name: Apply real Prisma migration history
         run: npx prisma migrate deploy
+      - name: Verify repeated Prisma migrate deploy is a no-op
+        run: npx prisma migrate deploy
       - name: Reconcile Prisma models, migration ledger, and protected RLS catalog (isolated PostgreSQL only)
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/catalog-reconciliation.sql
       - name: Verify complete core RLS policy and FORCE-RLS coverage (isolated PostgreSQL only)
@@ -92,6 +94,80 @@ jobs:
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE vayro_tenant_ci LOGIN PASSWORD 'ci-only' IN ROLE vayro_app"
       - name: Prove tenant RLS isolation using the dedicated runtime login (isolated PostgreSQL only)
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/tenant-rls-isolation.sql
+      - name: Rehearse synthetic initial-schema upgrade in isolated PostgreSQL 17
+        env:
+          UPGRADE_DATABASE_URL: postgresql://ci:ci@localhost:5432/vayro_upgrade_ci
+        run: |
+          PGPASSWORD=ci createdb -h localhost -p 5432 -U ci vayro_upgrade_ci
+          psql "$UPGRADE_DATABASE_URL" -v ON_ERROR_STOP=1 -f prisma/migrations/20261106055500_init_vayro_core/migration.sql
+          psql "$UPGRADE_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO public."User" ("id","email","passwordHash","displayName","updatedAt")
+          VALUES ('upgrade-user','upgrade@example.invalid','synthetic-hash','Synthetic Upgrade User',CURRENT_TIMESTAMP);
+          INSERT INTO public."Tenant" ("id","name","slug","updatedAt")
+          VALUES ('upgrade-tenant','Synthetic Upgrade Tenant','synthetic-upgrade-tenant',CURRENT_TIMESTAMP);
+          INSERT INTO public."Membership" ("id","userId","tenantId","role")
+          VALUES ('upgrade-membership','upgrade-user','upgrade-tenant','MEMBER');
+          INSERT INTO public."Session" ("id","tokenHash","userId","expiresAt")
+          VALUES ('upgrade-session','synthetic-session-token-hash','upgrade-user',CURRENT_TIMESTAMP + INTERVAL '1 day');
+          INSERT INTO public."Product" ("id","key","name","description","updatedAt")
+          VALUES ('upgrade-product','UPGRADE_FIXTURE','Synthetic Upgrade Product','Synthetic migration fixture',CURRENT_TIMESTAMP);
+          INSERT INTO public."License" ("id","tenantId","productId","startsAt")
+          VALUES ('upgrade-license','upgrade-tenant','upgrade-product',CURRENT_TIMESTAMP);
+          INSERT INTO public."AuditEvent" ("id","actorUserId","tenantId","action","resource")
+          VALUES ('upgrade-audit','upgrade-user','upgrade-tenant','synthetic.upgrade.fixture','SyntheticFixture');
+          INSERT INTO public."EmailContact" ("id","email","label","purposes","updatedAt")
+          VALUES ('upgrade-email-contact','upgrade-contact@example.invalid','Synthetic contact',ARRAY['OWNER']::public."EmailPurpose"[],CURRENT_TIMESTAMP);
+          INSERT INTO public."EmailContactVerificationToken" ("id","tokenHash","contactId","expiresAt")
+          VALUES ('upgrade-email-token','synthetic-email-token-hash','upgrade-email-contact',CURRENT_TIMESTAMP + INTERVAL '1 day');
+          INSERT INTO public."AuthActionToken" ("id","tokenHash","userId","purpose","expiresAt")
+          VALUES ('upgrade-auth-token','synthetic-auth-token-hash','upgrade-user','EMAIL_VERIFY',CURRENT_TIMESTAMP + INTERVAL '1 day');
+          INSERT INTO public."AuthRateLimit" ("keyHash","windowStartedAt","count","expiresAt")
+          VALUES ('synthetic-rate-limit-key',CURRENT_TIMESTAMP,1,CURRENT_TIMESTAMP + INTERVAL '1 day');
+          SQL
+          DATABASE_URL="$UPGRADE_DATABASE_URL" MIGRATION_DATABASE_URL="$UPGRADE_DATABASE_URL" npx prisma migrate resolve --applied 20261106055500_init_vayro_core
+      - name: Inject a controlled PostgreSQL migration failure and verify rollback recovery
+        env:
+          UPGRADE_DATABASE_URL: postgresql://ci:ci@localhost:5432/vayro_upgrade_ci
+        run: |
+          if psql "$UPGRADE_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          BEGIN;
+          \i prisma/migrations/20261108000000_mfa_session_foundation/migration.sql
+          SELECT 1 / 0;
+          COMMIT;
+          SQL
+          then
+            echo "::error::Injected migration failure unexpectedly succeeded"
+            exit 1
+          fi
+          psql "$UPGRADE_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          BEGIN
+            IF to_regclass('public."UserMfa"') IS NOT NULL
+              OR to_regclass('public."MfaRecoveryCode"') IS NOT NULL
+              OR to_regclass('public."AuthChallenge"') IS NOT NULL
+              OR EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON n.oid = t.typnamespace
+                WHERE n.nspname = 'public'
+                  AND t.typname IN ('SessionAssurance', 'AuthChallengePurpose')
+              )
+              OR (
+                SELECT count(*) FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'Session'
+                  AND column_name IN ('revokedAt', 'lastSeenAt', 'assurance', 'mfaAuthenticatedAt')
+              ) <> 0
+            THEN
+              RAISE EXCEPTION 'FAILED_MIGRATION_LEFT_PARTIAL_SCHEMA';
+            END IF;
+          END
+          $$;
+          SQL
+          DATABASE_URL="$UPGRADE_DATABASE_URL" MIGRATION_DATABASE_URL="$UPGRADE_DATABASE_URL" npx prisma migrate deploy
+      - name: Verify synthetic fixture values and upgraded schema after PostgreSQL 17 rehearsal
+        env:
+          UPGRADE_DATABASE_URL: postgresql://ci:ci@localhost:5432/vayro_upgrade_ci
+        run: psql "$UPGRADE_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/synthetic-upgrade-preservation.sql
       - name: Lint
         run: npm run lint
       - name: Typecheck
@@ -100,6 +176,8 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_APP_URL: http://localhost:3000
+      - name: Verify production build without runtime database credentials
+        run: env -u AUTH_DATABASE_URL -u PLATFORM_DATABASE_URL -u TENANT_DATABASE_URL NEXT_PUBLIC_APP_URL=https://vayro.invalid npm run build
       - name: Build production Docker image
         run: docker build --pull --tag vayro-ci:local .
       - name: Run PostgreSQL and production HTTP integration tests
