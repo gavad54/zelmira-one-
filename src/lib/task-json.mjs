@@ -11,6 +11,14 @@ function taskResultError(code) {
   return error;
 }
 
+function accountStringBytes(value, budget) {
+  const bytes = Buffer.byteLength(value, "utf8");
+  if (bytes > budget.maxBytes - budget.stringBytes) {
+    throw taskResultError("TASK_RESULT_TOO_LARGE");
+  }
+  budget.stringBytes += bytes;
+}
+
 function assertDataProperty(value, key, depth, ancestors, budget) {
   const descriptor = Object.getOwnPropertyDescriptor(value, key);
   if (!descriptor || !descriptor.enumerable || !Object.hasOwn(descriptor, "value")) {
@@ -19,12 +27,16 @@ function assertDataProperty(value, key, depth, ancestors, budget) {
   assertJson(descriptor.value, depth + 1, ancestors, budget);
 }
 
-function assertJson(value, depth = 0, ancestors = new WeakSet(), budget = { visited: 0 }) {
+function assertJson(value, depth, ancestors, budget) {
   budget.visited += 1;
   if (budget.visited > MAX_NODES || depth > MAX_DEPTH) {
     throw taskResultError("TASK_RESULT_NOT_JSON");
   }
-  if (value === null || typeof value === "string" || typeof value === "boolean") return;
+  if (value === null || typeof value === "boolean") return;
+  if (typeof value === "string") {
+    accountStringBytes(value, budget);
+    return;
+  }
   if (typeof value === "number") {
     if (!Number.isFinite(value)) throw taskResultError("TASK_RESULT_NOT_JSON");
     return;
@@ -55,6 +67,7 @@ function assertJson(value, depth = 0, ancestors = new WeakSet(), budget = { visi
     }
     for (const key of keys) {
       if (UNSAFE_KEYS.has(key)) throw taskResultError("TASK_RESULT_NOT_JSON");
+      accountStringBytes(key, budget);
       assertDataProperty(value, key, depth, ancestors, budget);
     }
   } finally {
@@ -67,7 +80,8 @@ export function serializeTaskResult(value, maxBytes = MAX_BYTES) {
     throw taskResultError("TASK_RESULT_LIMIT_INVALID");
   }
   try {
-    assertJson(value);
+    const budget = { visited: 0, stringBytes: 0, maxBytes };
+    assertJson(value, 0, new WeakSet(), budget);
     const serialized = JSON.stringify(value);
     if (typeof serialized !== "string") throw taskResultError("TASK_RESULT_NOT_JSON");
     if (Buffer.byteLength(serialized, "utf8") > maxBytes) throw taskResultError("TASK_RESULT_TOO_LARGE");
