@@ -18,7 +18,7 @@ BEGIN
       RAISE EXCEPTION 'Required Data API role % is missing from isolated CI', client_role;
     END IF;
 
-    FOREACH relation_record IN
+    FOR relation_record IN
       SELECT n.nspname, c.relname
       FROM pg_class c
       JOIN pg_namespace n ON n.oid = c.relnamespace
@@ -80,6 +80,7 @@ BEGIN
       AND (
         has_function_privilege('anon', p.oid, 'EXECUTE')
         OR has_function_privilege('authenticated', p.oid, 'EXECUTE')
+        OR has_function_privilege('service_role', p.oid, 'EXECUTE')
       )
   ) THEN
     RAISE EXCEPTION 'A public SECURITY DEFINER function is executable by a Data API role';
@@ -94,6 +95,7 @@ BEGIN
         'public'::name = ANY(p.roles)
         OR 'anon'::name = ANY(p.roles)
         OR 'authenticated'::name = ANY(p.roles)
+        OR 'service_role'::name = ANY(p.roles)
       )
   ) THEN
     RAISE EXCEPTION 'A public or Data API role has an application RLS policy';
