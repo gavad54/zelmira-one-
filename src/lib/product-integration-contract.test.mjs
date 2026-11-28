@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { assertProductIntegrationEnvelope } from "./product-integration-contract.mjs";
-import { ALL_PRODUCTS } from "./product-directory.mjs";
+import { ALL_PRODUCTS, ARIA_MODULES } from "./product-directory.mjs";
 
 const validEnvelope = () => ({
   eventId: "evt_01JTEST000000000000000001",
@@ -84,7 +84,7 @@ test("rejects malformed timestamps and non-object event data", () => {
   );
 });
 
-test("allows every catalogued independent and platform product as a producer", () => {
+test("allows every canonical VAYRO sub-application as an event producer", () => {
   for (const product of ALL_PRODUCTS) {
     const event = validEnvelope();
     event.producer.product = product.name;
@@ -92,13 +92,12 @@ test("allows every catalogued independent and platform product as a producer", (
   }
 });
 
-test("keeps DANA as a VAYRO capability rather than a standalone product producer", () => {
-  const event = validEnvelope();
-  event.producer.product = "DANA";
-  assert.throws(
-    () => assertProductIntegrationEnvelope(event),
-    /INTEGRATION_PRODUCER_UNKNOWN/
-  );
+test("accepts each legacy ARIA module key as a backward-compatible event producer", () => {
+  for (const ariaModule of ARIA_MODULES) {
+    const event = validEnvelope();
+    event.producer.product = ariaModule.name;
+    assert.equal(assertProductIntegrationEnvelope(event), true, ariaModule.name);
+  }
 });
 
 test("rejects oversized, deeply nested, or structurally excessive event data", () => {

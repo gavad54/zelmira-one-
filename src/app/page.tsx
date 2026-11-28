@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { VAYRO_PRODUCTS, INDEPENDENT_PRODUCTS } from "@/lib/product-directory.mjs";
+import { VAYRO_PRODUCTS, ARIA_MODULES } from "@/lib/product-directory.mjs";
 
 export default function HomePage() {
   return (
@@ -36,8 +36,8 @@ export default function HomePage() {
 
       <section className="section" id="products">
         <div className="section-heading">
-          <div><span className="eyebrow">VAYRO PRODUCT FAMILY</span><h2>۱۱ اپلیکیشن تخصصی، یک اکوسیستم</h2></div>
-          <p>هر محصول برای یک نیاز مشخص طراحی شده است؛ دسترسی و خرید محصولات مستقل خواهد بود.</p>
+          <div><span className="eyebrow">VAYRO PRODUCT FAMILY</span><h2>۵ زیرمحصول مستقل، یک اکوسیستم</h2></div>
+          <p>هر زیرمحصول مرز دسترسی و کارکرد مستقل دارد؛ هفت حوزهٔ قدیمی نیز به‌صورت ماژول در ARIA حفظ شده‌اند.</p>
         </div>
         <div className="product-grid">
           {VAYRO_PRODUCTS.map((product) => (
@@ -57,8 +57,8 @@ export default function HomePage() {
         <div className="capability-card">
           <div>
             <span className="eyebrow">VAYRO CENTRAL INTELLIGENCE</span>
-            <h2 id="dana-capability-title">DANA · هوش مصنوعی مرکزی وایرو</h2>
-            <p>دانا قابلیت داخلی تحلیل و هماهنگی مرکز فرماندهی است؛ محصول مستقل دوازدهم نیست و دسترسی آن به اطلاعات و عملیات هر محصول محدود، مجاز و قابل ممیزی خواهد بود.</p>
+            <h2 id="dana-capability-title">DANA · مرکز فرماندهی مستقل وایرو</h2>
+            <p>دانا یکی از پنج زیرمحصول مستقل وایرو است و فرماندهی، تحلیل و هماهنگی کنترل‌شده را بر عهده دارد. دسترسی آن به داده‌ها و عملیات هر محصول فقط با مجوز مشخص و ثبت رویداد انجام می‌شود.</p>
           </div>
           <Link className="secondary-action" href="/dana/ai-workspace">ورود به فضای هوشمند دانا</Link>
         </div>
@@ -66,13 +66,13 @@ export default function HomePage() {
 
       <section className="section independent-section">
         <div className="section-heading">
-          <div><span className="eyebrow">INDEPENDENT PRODUCTS</span><h2>محصولات مستقل و متصل</h2></div>
-          <p>محصولات تخصصی موجود، هویت و مرز داده‌ای مستقل خود را حفظ می‌کنند.</p>
+          <div><span className="eyebrow">ARIA MODULES</span><h2>هفت ماژول قدیمی، حفظ‌شده در ARIA</h2></div>
+          <p>نام‌ها و حوزه‌های عملکردی قبلی حذف نشده‌اند؛ مالکیت محصولی آن‌ها اکنون ARIA است.</p>
         </div>
         <div className="independent-grid">
-          {INDEPENDENT_PRODUCTS.map((product) => (
-            <article className="independent-card" key={product.name}>
-              <h3>{product.name}</h3><p>{product.detail}</p><span className={`product-status ${product.statusClass}`}>{product.status}</span>
+          {ARIA_MODULES.map((module) => (
+            <article className="independent-card" key={module.name}>
+              <h3>{module.name}</h3><p>{module.detail}</p><span className="product-status blocked">ماژول ARIA</span>
             </article>
           ))}
         </div>

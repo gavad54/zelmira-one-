@@ -2,25 +2,23 @@
 
 **INTELLIGENCE. WITHOUT LIMITS.**
 
-VAYRO is the Persian-first, mobile-first mother application and platform for eleven independently governed specialist products. The application name shown to users is **VAYRO / وایرو** only.
+VAYRO is the Persian-first, mobile-first mother application. Its five direct sub-applications are DANA, ARIANA, LEADORA, ARMIN MARKET and ARIA. The application name shown to users is **VAYRO / وایرو** only.
 
 ## Approved product family
 
-| Product | Domain |
+| Direct VAYRO sub-app | Domain |
 |---|---|
-| ARVAND | International trade, import and export |
-| CHARSU | Marketplace and commerce network |
-| GANJINEH | Digital stores and e-commerce |
-| NEGAH | Creative studio and content production |
-| SEPEHR | Cloud and digital infrastructure |
-| NAMA | Website and landing-page builder |
-| PAYAM | Marketing and customer growth |
-| LEADORA | Distribution, sales, inventory and commercial operations |
-| ARIANA | Accounting, finance and ERP |
-| ARIA | Social, communications, services and listings — no accounting/ERP |
-| ARMIN MARKET | Buyer requests, supplier quotations and sourcing |
+| DANA | Independent command center, AI analysis and controlled orchestration |
+| ARIANA | Accounting, finance, tax, budgeting and ERP |
+| LEADORA | Distribution, sales and commercial operations |
+| ARMIN MARKET | Buyer requests, supplier quotations and sourcing marketplace |
+| ARIA | Social, services and business modules; no accounting/ERP |
 
-**DANA is VAYRO's internal AI intelligence and orchestration capability, not a twelfth product.** Product data, authorization and release boundaries remain independent. ARIA must not contain accounting/ERP; ARIANA owns that domain.
+### Preserved ARIA modules
+
+ARVAND (international trade), CHARSU (marketplace), GANJINEH (digital stores), NEGAH (creative studio), SEPEHR (cloud capabilities), NAMA (website builder) and PAYAM (marketing) remain fully represented as ARIA modules. Their legacy keys and compatible API filters are retained.
+
+DANA is an independent VAYRO sub-application, not an internal ARIA capability. ARIANA alone owns accounting/finance/ERP; ARIA must not contain those domains. LEADORA and ARMIN MARKET remain separate products.
 
 ## Engineering status — 2026-11-26
 
@@ -42,7 +40,7 @@ Exact-head CI and CodeQL passed for the conversation/archive + backup integratio
 - Android WebView source and compile CI exist. An installable APK requires the exact dedicated VAYRO HTTPS URL; real-device tests and owner-controlled release signing remain outstanding. The current compile-only workflow does not publish a test APK.
 - Archive binary upload/download and private object storage, background/bulk export jobs, retention/legal hold and complete DANA streaming/tool orchestration remain incomplete.
 - DANA's provider credentials/model selection are not configured in a dedicated VAYRO runtime. AI billing is explicitly NOT_CONNECTED.
-- The eleven products are not all independently implemented, deployed and acceptance-tested. A catalogue or API contract is not a completed product.
+- The five direct sub-applications and seven ARIA modules are not all independently implemented, deployed and acceptance-tested. A catalogue or API contract is not a completed product.
 - Owner UAT, incident/restore rehearsal, endpoint-by-endpoint authorization review, CSP/security review and explicit release approval remain required.
 
 Customer onboarding, real payments, production data collection and public release must remain disabled until the relevant gates are independently evidenced.

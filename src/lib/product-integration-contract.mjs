@@ -1,6 +1,6 @@
-import { ALL_PRODUCTS } from "./product-directory.mjs";
+import { ALL_PRODUCTS, ARIA_MODULES } from "./product-directory.mjs";
 
-const KNOWN_PRODUCERS = new Set(["VAYRO", ...ALL_PRODUCTS.map(({ name }) => name)]);
+const KNOWN_PRODUCERS = new Set(["VAYRO", ...ALL_PRODUCTS.map(({ name }) => name), ...ARIA_MODULES.map(({ name }) => name)]);
 const SEMVER = /^\d+\.\d+\.\d+$/;
 const EVENT_TYPE = /^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*){1,5}$/;
 const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/;

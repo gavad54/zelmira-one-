@@ -105,7 +105,7 @@ export async function POST(request: Request) {
             action: "owner.product_catalog_initialized",
             resource: "ProductCatalog",
             resourceId: "vayro-core",
-            metadata: { productKeys: PRODUCT_CATALOG.map(product => product.key), operation: "idempotent_upsert" }
+            metadata: { productKeys: PRODUCT_CATALOG.map(product => product.key), operation: "idempotent_insert" }
           },
           select: { id: true }
         });

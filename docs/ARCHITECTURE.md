@@ -8,14 +8,15 @@
 
 ## 1. Purpose and boundary
 
-VAYRO is the parent platform and governance plane for independently operated specialist products. DANA is an internal orchestration capability, not a separate product. Product repositories, data ownership, identities, authorization, deployments, backups and release evidence remain independent.
+VAYRO is the parent platform and governance plane. The current approved family contains five direct sub-applications: DANA, ARIANA, LEADORA, ARMIN MARKET and ARIA. The seven legacy identities ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM are preserved as modules owned by ARIA, not as direct independent VAYRO products. This baseline supersedes the earlier eleven-product arrangement recorded in this historical architecture document.
 
 Product invariants:
-- ARIA does not contain accounting or ERP.
-- ARIANA owns accounting, finance and ERP.
-- LEADORA owns distribution and sales operations.
+- DANA is an independent command-center sub-application, not an internal ARIA capability.
+- ARIA does not contain accounting, finance-ledger or ERP modules.
+- ARIANA exclusively owns accounting, finance, tax, budgeting and ERP.
+- LEADORA owns distribution and sales operations as an independent product.
 - ARMIN MARKET remains a separate marketplace product.
-- ARVAND, CHARSU, GANJINEH, NEGAH, SEPEHR, NAMA and PAYAM retain their approved product boundaries and must not be represented as production-ready without independent implementation and evidence.
+- All seven legacy module keys remain represented under ARIA; their functionality, API compatibility and data history must not be deleted.
 
 ## 2. Verified application foundation
 
@@ -139,6 +140,6 @@ This addendum supersedes the older reviewed-head and deployment snapshots above.
 - Fresh live VAYRO-CORE inspection found 11 public tables, zero applied migrations, zero public RLS policies, zero FORCE-RLS tables, zero expected VAYRO runtime roles and 0/16 checked application-domain tables. The database has not been reconciled with the current Prisma/migration set. No live DDL, role grant or RLS mutation was performed.
 - Fresh Railway inspection found no independent VAYRO project. The only projects are ARIA Web and LEADORA; each has a VAYRO-named service whose latest deployment is FAILED. These projects and their databases/volumes/secrets must not be repurposed for VAYRO.
 - PR #54 implements conversation/message/attachment metadata and tenant-scoped archive APIs, but does not complete file upload/download, object storage, export, retention/legal hold, AI streaming/thread orchestration or archive UI.
-- The approved product family contains 11 products; DANA remains an internal VAYRO capability. ARIA remains outside accounting/ERP; ARIANA remains the accounting/ERP product.
+- The approved product family contains five direct VAYRO sub-applications and seven ARIA legacy modules. DANA is an independent command-center sub-application. ARIA remains outside accounting/ERP; ARIANA remains the accounting/ERP product.
 
 **Updated release classification:** repository source CI is green on the inspected PR #54 head; live infrastructure and production readiness remain BLOCKED. Independent encrypted backup and verified isolated restore must precede live DB reconciliation. Dedicated hosting, operational services, product contracts, Android acceptance, UAT and explicit release approval remain outstanding.
