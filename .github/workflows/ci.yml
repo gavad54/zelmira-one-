@@ -125,6 +125,44 @@ jobs:
           VALUES ('synthetic-rate-limit-key',CURRENT_TIMESTAMP,1,CURRENT_TIMESTAMP + INTERVAL '1 day');
           SQL
           DATABASE_URL="$UPGRADE_DATABASE_URL" MIGRATION_DATABASE_URL="$UPGRADE_DATABASE_URL" npx prisma migrate resolve --applied 20261106055500_init_vayro_core
+      - name: Inject a controlled PostgreSQL migration failure and verify rollback recovery
+        env:
+          UPGRADE_DATABASE_URL: postgresql://ci:ci@localhost:5432/vayro_upgrade_ci
+        run: |
+          if psql "$UPGRADE_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          BEGIN;
+          \\i prisma/migrations/20261108000000_mfa_session_foundation/migration.sql
+          SELECT 1 / 0;
+          COMMIT;
+          SQL
+          then
+            echo "::error::Injected migration failure unexpectedly succeeded"
+            exit 1
+          fi
+          psql "$UPGRADE_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          DO $
+          BEGIN
+            IF to_regclass('public."UserMfa"') IS NOT NULL
+              OR to_regclass('public."MfaRecoveryCode"') IS NOT NULL
+              OR to_regclass('public."AuthChallenge"') IS NOT NULL
+              OR EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON n.oid = t.typnamespace
+                WHERE n.nspname = 'public'
+                  AND t.typname IN ('SessionAssurance', 'AuthChallengePurpose')
+              )
+              OR (
+                SELECT count(*) FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'Session'
+                  AND column_name IN ('revokedAt', 'lastSeenAt', 'assurance', 'mfaAuthenticatedAt')
+              ) <> 0
+            THEN
+              RAISE EXCEPTION 'FAILED_MIGRATION_LEFT_PARTIAL_SCHEMA';
+            END IF;
+          END
+          $;
+          SQL
           DATABASE_URL="$UPGRADE_DATABASE_URL" MIGRATION_DATABASE_URL="$UPGRADE_DATABASE_URL" npx prisma migrate deploy
           psql "$UPGRADE_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/synthetic-upgrade-preservation.sql
       - name: Lint
