@@ -60,6 +60,8 @@ jobs:
         run: psql "postgresql://ci:ci@localhost:5432/vayro_ci" -v ON_ERROR_STOP=1 -c 'CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN;'
       - name: Apply real Prisma migration history
         run: npx prisma migrate deploy
+      - name: Verify VAYRO group-role attribute invariants (isolated PostgreSQL only)
+        run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/group-role-attribute-invariants.sql
       - name: Reconcile Prisma models, migration ledger, and protected RLS catalog (isolated PostgreSQL only)
         run: psql "$CI_DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/sql/catalog-reconciliation.sql
       - name: Verify complete core RLS policy and FORCE-RLS coverage (isolated PostgreSQL only)
