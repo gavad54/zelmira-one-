@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { serializeTaskResult, serializeTaskResultForDatabase } from "../src/lib/task-json.mjs";
-import { safeFailure } from "../src/worker/task-worker.mjs";
+import { safeFailure, normalizeTaskHandlerResult } from "../src/worker/task-worker.mjs";
 
 function captureError(fn, pattern) {
   let captured;
@@ -111,4 +111,15 @@ test("rejects oversized raw strings before invoking JSON.stringify", () => {
   } finally {
     JSON.stringify = originalStringify;
   }
+});
+
+test("worker normalizes handler output without executing getters", () => {
+  let getterInvoked = false;
+  const handlerOutput = {};
+  Object.defineProperty(handlerOutput, "repository", {
+    enumerable: true,
+    get() { getterInvoked = true; return "owner/repo"; }
+  });
+  assert.throws(() => normalizeTaskHandlerResult(handlerOutput), /TASK_RESULT_NOT_JSON/);
+  assert.equal(getterInvoked, false);
 });
