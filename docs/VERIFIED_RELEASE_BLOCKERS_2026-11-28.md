@@ -75,6 +75,11 @@ The repository contains an Android WebView debug-build workflow. Push-triggered 
 
 The inspected Android Gradle configuration does not define a release signing configuration or a verified signed release artifact. No device installation/run evidence or UAT evidence was available.
 
+
+## Isolated migration rehearsal cost gate
+
+A Supabase development-branch listing returned no existing branches. Creating an isolated branch for a migration rehearsal requires a recurring compute charge. The connected organization quote returned on 2026-11-28 is **USD 0.01344 per hour**. No branch was created and no charge was accepted because the user has not explicitly approved this recurring cost. The isolated rehearsal remains blocked pending cost approval or an available no-cost PostgreSQL environment.
+
 ## Release decision
 
 **DEPLOYMENT BLOCKED. Do not publish or represent VAYRO as released.**
